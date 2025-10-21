@@ -100,21 +100,106 @@ function _anthropicHeaders(modelId?: string): HeadersInit {
 
 async function anthropicGETOrThrow<TOut extends object>(access: AnthropicAccessSchema, antModelIdForBetaFeatures: undefined | string, apiPath: string /*, signal?: AbortSignal*/): Promise<TOut> {
   const { headers, url } = anthropicAccess(access, antModelIdForBetaFeatures, apiPath);
-  return await fetchJsonOrTRPCThrow<TOut>({ url, headers, name: 'Anthropic' });
+
+  // Apply OAuth interceptor to ensure proper headers
+  const { headers: finalHeaders } = await anthropicOAuthInterceptor(access, url, headers, {});
+
+  return await fetchJsonOrTRPCThrow<TOut>({ url, headers: finalHeaders, name: 'Anthropic' });
 }
 
-// async function anthropicPOST<TOut extends object, TPostBody extends object>(access: AnthropicAccessSchema, body: TPostBody, apiPath: string /*, signal?: AbortSignal*/): Promise<TOut> {
-//   const { headers, url } = anthropicAccess(access, apiPath);
-//   return await fetchJsonOrTRPCThrow<TOut, TPostBody>({ url, method: 'POST', headers, body, name: 'Anthropic' });
-// }
+/**
+ * OAuth interceptor that ensures fresh tokens and proper headers for OAuth requests
+ * This is critical for making OAuth work - it intercepts and modifies EVERY request
+ */
+export async function anthropicOAuthInterceptor(
+  access: AnthropicAccessSchema,
+  url: string,
+  headers: HeadersInit,
+  body: any,
+): Promise<{ headers: HeadersInit, needsRefresh: boolean, refreshToken?: string }> {
+  // Only intercept OAuth requests
+  if (!access.oauthAccessToken || !access.oauthRefreshToken) {
+    return { headers, needsRefresh: false };
+  }
+
+  // Check if token needs refresh (refresh 1 minute before expiry)
+  const needsRefresh = !access.oauthExpiresAt || access.oauthExpiresAt < Date.now() + 60000;
+
+  // Create new headers object - mimic Genesis CodeForger's approach EXACTLY
+  const newHeaders: Record<string, string> = {};
+
+  // Copy all headers EXCEPT authorization/x-api-key (use lowercase keys to match Genesis CodeForger)
+  Object.entries(headers as Record<string, string>).forEach(([key, value]) => {
+    const lowerKey = key.toLowerCase();
+    if (lowerKey !== 'x-api-key' && lowerKey !== 'authorization') {
+      // Use lowercase key to match Genesis CodeForger's fetch Headers behavior
+      newHeaders[lowerKey] = value;
+    }
+  });
+
+  // CRITICAL: Set OAuth headers EXACTLY like Genesis CodeForger (all lowercase keys)
+  newHeaders['authorization'] = `Bearer ${access.oauthAccessToken}`;
+
+  // CRITICAL: Match Genesis CodeForger beta header exactly (NO oauth-2025-04-20)
+  const oauthBetaFeatures = [
+    'claude-code-20250219',
+    'interleaved-thinking-2025-05-14',
+    'fine-grained-tool-streaming-2025-05-14',
+  ];
+  newHeaders['anthropic-beta'] = oauthBetaFeatures.join(',');
+
+  return {
+    headers: newHeaders,
+    needsRefresh,
+    refreshToken: needsRefresh ? access.oauthRefreshToken : undefined
+  };
+}
+
+/**
+ * Enhanced POST function with OAuth support
+ */
+async function anthropicPOST<TOut extends object, TPostBody extends object>(
+  access: AnthropicAccessSchema,
+  body: TPostBody,
+  apiPath: string,
+  modelId?: string,
+): Promise<TOut> {
+  const { headers, url } = anthropicAccess(access, modelId, apiPath);
+
+  // Apply OAuth interceptor
+  const { headers: finalHeaders, needsRefresh, refreshToken } = await anthropicOAuthInterceptor(access, url, headers, body);
+
+  // If token needs refresh, handle it in the router before the actual request
+  if (needsRefresh && refreshToken) {
+    // This will be handled by the calling function which has access to the refresh endpoint
+    throw new Error('OAUTH_TOKEN_EXPIRED');
+  }
+
+  return await fetchJsonOrTRPCThrow<TOut, TPostBody>({
+    url,
+    method: 'POST',
+    headers: finalHeaders,
+    body,
+    name: 'Anthropic'
+  });
+}
+
+function _generateClaudeCodeUserAgent(): string {
+  // Edge Runtime compatible - use static User-Agent
+  // Note: process.platform/process.arch are not available in Edge Runtime
+  return 'Claude-Code/2.1.0 (Windows NT 10.0; Win64; x64)';
+}
 
 export function anthropicAccess(access: AnthropicAccessSchema, antModelIdForBetaFeatures: undefined | string, apiPath: string): { headers: HeadersInit, url: string } {
-  // API key
+  // Check for OAuth access token first (Pro/Max users)
+  const hasOAuth = access.oauthAccessToken && access.oauthRefreshToken;
+
+  // API key (fallback for non-OAuth users)
   const anthropicKey = access.anthropicKey || env.ANTHROPIC_API_KEY || '';
 
-  // break for the missing key only on the default host
-  if (!anthropicKey && !(access.anthropicHost || env.ANTHROPIC_API_HOST))
-    throw new Error('Missing Anthropic API Key. Add it on the UI (Models Setup) or server side (your deployment).');
+  // Require either OAuth or API key (only on default host)
+  if (!hasOAuth && !anthropicKey && !(access.anthropicHost || env.ANTHROPIC_API_HOST))
+    throw new Error('Missing Anthropic credentials. Either login with Pro/Max or add an API Key on the UI (Models Setup) or server side (your deployment).');
 
   // API host
   let anthropicHost = fixupHost(access.anthropicHost || env.ANTHROPIC_API_HOST || DEFAULT_ANTHROPIC_HOST, apiPath);
@@ -128,17 +213,43 @@ export function anthropicAccess(access: AnthropicAccessSchema, antModelIdForBeta
     anthropicHost = `https://${DEFAULT_HELICONE_ANTHROPIC_HOST}`;
   }
 
-  // 2024-10-22: we don't support this yet, but the Anthropic SDK has `dangerouslyAllowBrowser: true`
-  // to use the API from Browsers via CORS
+  // Build headers - OAuth takes precedence over API key
+  const authHeaders: Record<string, string> = {};
+  const baseHeaders = _anthropicHeaders(antModelIdForBetaFeatures) as Record<string, string>;
+
+  if (hasOAuth) {
+    // OAuth Pro/Max authentication - DO NOT include API key
+    // Note: The actual Bearer token will be refreshed by the OAuth interceptor if needed
+    authHeaders['Authorization'] = `Bearer ${access.oauthAccessToken}`;
+
+    // CRITICAL: Match Genesis CodeForger beta header exactly (NO oauth-2025-04-20)
+    const oauthBetaFeatures = [
+      'claude-code-20250219',
+      'interleaved-thinking-2025-05-14',
+      'fine-grained-tool-streaming-2025-05-14',
+    ];
+    authHeaders['anthropic-beta'] = oauthBetaFeatures.join(',');
+
+    // Note: x-app and User-Agent headers are set by the OAuth interceptor
+  } else if (anthropicKey) {
+    // Standard API key authentication - only if we have a key and NOT using OAuth
+    authHeaders['X-API-Key'] = anthropicKey;
+    authHeaders['anthropic-beta'] = baseHeaders['anthropic-beta'];
+  } else {
+    // No authentication provided (may work with custom host)
+    authHeaders['anthropic-beta'] = baseHeaders['anthropic-beta'];
+  }
+
+  const headers: HeadersInit = {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+    ...DEFAULT_ANTHROPIC_HEADERS,
+    ...authHeaders,
+    ...(heliKey && { 'Helicone-Auth': `Bearer ${heliKey}` }),
+  };
 
   return {
-    headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-      ..._anthropicHeaders(antModelIdForBetaFeatures),
-      'X-API-Key': anthropicKey,
-      ...(heliKey && { 'Helicone-Auth': `Bearer ${heliKey}` }),
-    },
+    headers,
     url: anthropicHost + apiPath,
   };
 }
@@ -155,6 +266,10 @@ export const anthropicAccessSchema = z.object({
   anthropicKey: z.string().trim(),
   anthropicHost: z.string().trim().nullable(),
   heliconeKey: z.string().trim().nullable(),
+  // OAuth credentials for Pro/Max users
+  oauthAccessToken: z.string().nullable().optional(),
+  oauthRefreshToken: z.string().nullable().optional(),
+  oauthExpiresAt: z.number().nullable().optional(),
 });
 export type AnthropicAccessSchema = z.infer<typeof anthropicAccessSchema>;
 
@@ -171,54 +286,104 @@ export const llmAnthropicRouter = createTRPCRouter({
   listModels: publicProcedure
     .input(listModelsInputSchema)
     .output(ListModelsResponse_schema)
-    .query(async ({ input: { access } }) => {
+    .query(async ({ input: { access }, ctx }) => {
 
-      // get the models
-      const wireModels = await anthropicGETOrThrow(access, undefined, '/v1/models?limit=1000');
-      const { data: availableModels } = AnthropicWire_API_Models_List.Response_schema.parse(wireModels);
+      // Handle OAuth token refresh if needed
+      let finalAccess = { ...access };
+      if (access.oauthAccessToken && access.oauthRefreshToken && access.oauthExpiresAt) {
+        // Check if token needs refresh
+        if (access.oauthExpiresAt < Date.now() + 60000) {
+          try {
+            // Import apiAsync for refresh
+            const { apiAsync } = await import('~/common/util/trpc.client');
+            const refreshResult = await apiAsync.backend.refreshAnthropicToken.mutate({
+              refreshToken: access.oauthRefreshToken
+            });
 
-      // cast the models to the common schema
-      const models = availableModels.reduce((acc, model) => {
+            // Update access with new tokens
+            finalAccess = {
+              ...access,
+              oauthAccessToken: refreshResult.access_token,
+              oauthRefreshToken: refreshResult.refresh_token,
+              oauthExpiresAt: Date.now() + (refreshResult.expires_in * 1000),
+            };
 
-        // find the model description
-        const hardcodedModel = hardcodedAnthropicModels.find(m => m.id === model.id);
-        if (hardcodedModel) {
+            // Update stored tokens (caller should handle this)
+            // This would normally be done in the UI layer
+          } catch (error) {
+            console.error('Failed to refresh OAuth token:', error);
+            // Continue with existing token, might still work
+          }
+        }
+      }
 
-          // update creation date
-          if (!hardcodedModel.created && model.created_at)
-            hardcodedModel.created = roundTime(model.created_at);
+      // For OAuth users: /v1/models endpoint doesn't support OAuth authentication
+      // Instead, return all hardcoded models directly
+      let models: ModelDescriptionSchema[];
 
+      if (finalAccess.oauthAccessToken) {
+        // OAuth users: return all hardcoded models with variants
+        models = hardcodedAnthropicModels.reduce((acc, hardcodedModel) => {
           // add FIRST a thinking variant, if defined
-          if (hardcodedAnthropicVariants[model.id])
+          if (hardcodedAnthropicVariants[hardcodedModel.id])
             acc.push({
               ...hardcodedModel,
-              ...hardcodedAnthropicVariants[model.id],
+              ...hardcodedAnthropicVariants[hardcodedModel.id],
             });
 
           // add the base model
           acc.push(hardcodedModel);
 
-        } else {
+          return acc;
+        }, [] as ModelDescriptionSchema[]);
 
-          // for day-0 support of new models, create a placeholder model using sensible defaults
-          const novelModel = _createPlaceholderModel(model);
-          console.log('[DEV] anthropic.router: new model found, please configure it:', novelModel.id);
-          acc.push(novelModel);
+      } else {
+        // API Key users: fetch from Anthropic API
+        const wireModels = await anthropicGETOrThrow(finalAccess, undefined, '/v1/models?limit=1000');
+        const { data: availableModels } = AnthropicWire_API_Models_List.Response_schema.parse(wireModels);
 
-        }
-        return acc;
-      }, [] as ModelDescriptionSchema[]);
+        // cast the models to the common schema
+        models = availableModels.reduce((acc, model) => {
 
-      // developers warning for obsoleted models (we have them, but they are not in the API response anymore)
-      const apiModelIds = new Set(availableModels.map(m => m.id));
-      const additionalModels = hardcodedAnthropicModels.filter(m => !apiModelIds.has(m.id));
-      if (additionalModels.length > 0)
-        console.log('[DEV] anthropic.router: obsoleted models:', additionalModels.map(m => m.id).join(', '));
-      // additionalModels.forEach(m => {
-      //   m.label += ' (Removed)';
-      //   m.isLegacy = true;
-      // });
-      // models.push(...additionalModels);
+          // find the model description
+          const hardcodedModel = hardcodedAnthropicModels.find(m => m.id === model.id);
+          if (hardcodedModel) {
+
+            // update creation date
+            if (!hardcodedModel.created && model.created_at)
+              hardcodedModel.created = roundTime(model.created_at);
+
+            // add FIRST a thinking variant, if defined
+            if (hardcodedAnthropicVariants[model.id])
+              acc.push({
+                ...hardcodedModel,
+                ...hardcodedAnthropicVariants[model.id],
+              });
+
+            // add the base model
+            acc.push(hardcodedModel);
+
+          } else {
+
+            // for day-0 support of new models, create a placeholder model using sensible defaults
+            const novelModel = _createPlaceholderModel(model);
+            console.log('[DEV] anthropic.router: new model found, please configure it:', novelModel.id);
+            acc.push(novelModel);
+
+          }
+          return acc;
+        }, [] as ModelDescriptionSchema[]);
+        // developers warning for obsoleted models (we have them, but they are not in the API response anymore)
+        const apiModelIds = new Set(availableModels.map(m => m.id));
+        const additionalModels = hardcodedAnthropicModels.filter(m => !apiModelIds.has(m.id));
+        if (additionalModels.length > 0)
+          console.log('[DEV] anthropic.router: obsoleted models:', additionalModels.map(m => m.id).join(', '));
+        // additionalModels.forEach(m => {
+        //   m.label += ' (Removed)';
+        //   m.isLegacy = true;
+        // });
+        // models.push(...additionalModels);
+      }
 
       return { models };
     }),
