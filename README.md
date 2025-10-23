@@ -36,8 +36,6 @@ Visit http://localhost:3000 to start using ABOV3 Exodus.
 docker-compose up -d
 ```
 
-See [Installation Guide](docs/installation.md) for detailed setup instructions.
-
 ---
 
 ## ✨ Features
@@ -87,17 +85,6 @@ See [Installation Guide](docs/installation.md) for detailed setup instructions.
 - Custom animated persona icons
 - Dark mode optimized
 - Split-pane multi-conversation support
-
----
-
-## 📚 Documentation
-
-- **[Installation Guide](docs/installation.md)** - Setup and deployment
-- **[Environment Variables](docs/environment-variables.md)** - Configuration options
-- **[Docker Deployment](docs/deploy-docker.md)** - Containerized deployment
-- **[Kubernetes Deployment](docs/deploy-k8s.md)** - K8s configuration
-- **[Customization Guide](docs/customizations.md)** - Branding and features
-- **[Configuration Guides](docs/)** - Provider-specific setup
 
 ---
 
