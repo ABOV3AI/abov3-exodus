@@ -45,7 +45,7 @@ export function PrismRayGrid(props: {
 
       {/* Rays */}
       {props.rayIds.map((rayId, index) => (
-        <BeamRay
+        <PrismRay
           key={'ray-' + rayId}
           rayIndexWeak={index}
           beamStore={props.beamStore}

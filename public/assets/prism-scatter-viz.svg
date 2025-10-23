@@ -1,49 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="1200" height="600">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" style="background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);">
   <defs>
-    <!-- Gradient definitions for light rays -->
-    <linearGradient id="inputBeam" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.2"/>
-      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0.9"/>
-    </linearGradient>
-
-    <!-- Rainbow spectrum gradients -->
-    <linearGradient id="ray1" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#FF0000;stop-opacity:0.3"/>
-      <stop offset="100%" style="stop-color:#FF0000;stop-opacity:0.8"/>
-    </linearGradient>
-    <linearGradient id="ray2" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#FF7F00;stop-opacity:0.3"/>
-      <stop offset="100%" style="stop-color:#FF7F00;stop-opacity:0.8"/>
-    </linearGradient>
-    <linearGradient id="ray3" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#FFFF00;stop-opacity:0.3"/>
-      <stop offset="100%" style="stop-color:#FFFF00;stop-opacity:0.8"/>
-    </linearGradient>
-    <linearGradient id="ray4" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#00FF00;stop-opacity:0.3"/>
-      <stop offset="100%" style="stop-color:#00FF00;stop-opacity:0.8"/>
-    </linearGradient>
-    <linearGradient id="ray5" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#0000FF;stop-opacity:0.3"/>
-      <stop offset="100%" style="stop-color:#0000FF;stop-opacity:0.8"/>
-    </linearGradient>
-    <linearGradient id="ray6" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#4B0082;stop-opacity:0.3"/>
-      <stop offset="100%" style="stop-color:#4B0082;stop-opacity:0.8"/>
-    </linearGradient>
-    <linearGradient id="ray7" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#9400D3;stop-opacity:0.3"/>
-      <stop offset="100%" style="stop-color:#9400D3;stop-opacity:0.8"/>
-    </linearGradient>
-
-    <!-- Prism gradient -->
     <linearGradient id="prismGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:0.6"/>
-      <stop offset="50%" style="stop-color:#7B68EE;stop-opacity:0.7"/>
-      <stop offset="100%" style="stop-color:#9370DB;stop-opacity:0.6"/>
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
     </linearGradient>
-
-    <!-- Glow filter -->
+    <linearGradient id="rayGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#f093fb;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#f5576c;stop-opacity:0.8" />
+    </linearGradient>
+    <linearGradient id="rayGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#4facfe;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#00f2fe;stop-opacity:0.8" />
+    </linearGradient>
+    <linearGradient id="rayGrad3" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#43e97b;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#38f9d7;stop-opacity:0.8" />
+    </linearGradient>
+    <linearGradient id="rayGrad4" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#fa709a;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#fee140;stop-opacity:0.8" />
+    </linearGradient>
     <filter id="glow">
       <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
       <feMerge>
@@ -51,61 +27,98 @@
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
+    <filter id="softGlow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
 
-  <!-- Dark background -->
-  <rect width="1200" height="600" fill="#0A0E27"/>
+  <text x="400" y="30" font-family="'Inter', 'Segoe UI', Arial, sans-serif" font-size="20" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="2">
+    PRISM SCATTER PHASE
+  </text>
+  <text x="400" y="50" font-family="'Inter', 'Segoe UI', Arial, sans-serif" font-size="12" fill="#a0a0a0" text-anchor="middle" letter-spacing="1">
+    Multi-Model Parallel Processing
+  </text>
 
-  <!-- Input query label -->
-  <text x="80" y="280" fill="#8B9DC3" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="500">Single Query</text>
+  <g transform="translate(80, 200)">
+    <circle cx="0" cy="0" r="35" fill="url(#prismGrad)" filter="url(#glow)" opacity="0.9"/>
+    <circle cx="0" cy="0" r="30" fill="#1a1a2e" stroke="url(#prismGrad)" stroke-width="2"/>
+    <text x="0" y="-50" font-family="'Inter', sans-serif" font-size="11" font-weight="600" fill="#8b92ff" text-anchor="middle">USER QUERY</text>
+    <text x="0" y="5" font-family="'Inter', sans-serif" font-size="24" fill="#667eea" text-anchor="middle">Q</text>
+  </g>
 
-  <!-- Input light beam (white) -->
-  <polygon points="150,300 400,290 400,310" fill="url(#inputBeam)" opacity="0.8" filter="url(#glow)"/>
+  <g transform="translate(280, 200)">
+    <path d="M 0,-40 L 35,20 L -35,20 Z" fill="url(#prismGrad)" opacity="0.3" filter="url(#softGlow)"/>
+    <path d="M 0,-40 L 35,20 L -35,20 Z" fill="none" stroke="url(#prismGrad)" stroke-width="3" filter="url(#glow)"/>
+    <text x="0" y="-55" font-family="'Inter', sans-serif" font-size="11" font-weight="600" fill="#8b92ff" text-anchor="middle">PRISM CORE</text>
+    <text x="0" y="5" font-family="'Inter', sans-serif" font-size="16" font-weight="700" fill="#ffffff" text-anchor="middle">⚡</text>
+  </g>
 
-  <!-- PRISM (triangular prism shape) -->
-  <path d="M 400,200 L 500,250 L 500,350 L 400,400 Z"
-        fill="url(#prismGrad)"
-        stroke="#6C8CD5"
-        stroke-width="2"
-        opacity="0.9"
-        filter="url(#glow)"/>
+  <line x1="115" y1="200" x2="245" y2="200" stroke="url(#prismGrad)" stroke-width="2" opacity="0.6" stroke-dasharray="5,5">
+    <animate attributeName="stroke-dashoffset" from="0" to="-10" dur="1s" repeatCount="indefinite"/>
+  </line>
 
-  <!-- Prism label -->
-  <text x="380" y="460" fill="#8B9DC3" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" text-anchor="middle">PRISM</text>
+  <g>
+    <line x1="315" y1="200" x2="600" y2="100" stroke="url(#rayGrad1)" stroke-width="3" opacity="0.7" filter="url(#softGlow)">
+      <animate attributeName="opacity" values="0.5;0.9;0.5" dur="2s" repeatCount="indefinite"/>
+    </line>
+    <g transform="translate(620, 100)">
+      <rect x="-50" y="-25" width="100" height="50" rx="8" fill="#1a1a2e" stroke="url(#rayGrad1)" stroke-width="2"/>
+      <text x="0" y="-5" font-family="'Inter', sans-serif" font-size="10" font-weight="600" fill="#f093fb" text-anchor="middle">GPT-4</text>
+      <text x="0" y="10" font-family="'Inter', sans-serif" font-size="9" fill="#a0a0a0" text-anchor="middle">Response A</text>
+    </g>
+  </g>
 
-  <!-- Output spectrum rays (7 colors) -->
-  <!-- Red ray (top) -->
-  <polygon points="500,230 1100,150 1100,160 500,240" fill="url(#ray1)" filter="url(#glow)"/>
-  <text x="1050" y="145" fill="#FF6B6B" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500">GPT-4</text>
+  <g>
+    <line x1="315" y1="200" x2="600" y2="160" stroke="url(#rayGrad2)" stroke-width="3" opacity="0.7" filter="url(#softGlow)">
+      <animate attributeName="opacity" values="0.5;0.9;0.5" dur="2.3s" repeatCount="indefinite"/>
+    </line>
+    <g transform="translate(620, 160)">
+      <rect x="-50" y="-25" width="100" height="50" rx="8" fill="#1a1a2e" stroke="url(#rayGrad2)" stroke-width="2"/>
+      <text x="0" y="-5" font-family="'Inter', sans-serif" font-size="10" font-weight="600" fill="#4facfe" text-anchor="middle">CLAUDE</text>
+      <text x="0" y="10" font-family="'Inter', sans-serif" font-size="9" fill="#a0a0a0" text-anchor="middle">Response B</text>
+    </g>
+  </g>
 
-  <!-- Orange ray -->
-  <polygon points="500,250 1100,210 1100,220 500,260" fill="url(#ray2)" filter="url(#glow)"/>
-  <text x="1050" y="205" fill="#FFA07A" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500">Claude</text>
+  <g>
+    <line x1="315" y1="200" x2="600" y2="240" stroke="url(#rayGrad3)" stroke-width="3" opacity="0.7" filter="url(#softGlow)">
+      <animate attributeName="opacity" values="0.5;0.9;0.5" dur="1.8s" repeatCount="indefinite"/>
+    </line>
+    <g transform="translate(620, 240)">
+      <rect x="-50" y="-25" width="100" height="50" rx="8" fill="#1a1a2e" stroke="url(#rayGrad3)" stroke-width="2"/>
+      <text x="0" y="-5" font-family="'Inter', sans-serif" font-size="10" font-weight="600" fill="#43e97b" text-anchor="middle">GEMINI</text>
+      <text x="0" y="10" font-family="'Inter', sans-serif" font-size="9" fill="#a0a0a0" text-anchor="middle">Response C</text>
+    </g>
+  </g>
 
-  <!-- Yellow ray -->
-  <polygon points="500,270 1100,260 1100,270 500,280" fill="url(#ray3)" filter="url(#glow)"/>
-  <text x="1050" y="255" fill="#FFD700" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500">Gemini</text>
+  <g>
+    <line x1="315" y1="200" x2="600" y2="300" stroke="url(#rayGrad4)" stroke-width="3" opacity="0.7" filter="url(#softGlow)">
+      <animate attributeName="opacity" values="0.5;0.9;0.5" dur="2.5s" repeatCount="indefinite"/>
+    </line>
+    <g transform="translate(620, 300)">
+      <rect x="-50" y="-25" width="100" height="50" rx="8" fill="#1a1a2e" stroke="url(#rayGrad4)" stroke-width="2"/>
+      <text x="0" y="-5" font-family="'Inter', sans-serif" font-size="10" font-weight="600" fill="#fa709a" text-anchor="middle">MIXTRAL</text>
+      <text x="0" y="10" font-family="'Inter', sans-serif" font-size="9" fill="#a0a0a0" text-anchor="middle">Response D</text>
+    </g>
+  </g>
 
-  <!-- Green ray (middle) -->
-  <polygon points="500,290 1100,300 1100,310 500,300" fill="url(#ray4)" filter="url(#glow)"/>
-  <text x="1050" y="295" fill="#90EE90" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500">Llama</text>
+  <text x="400" y="370" font-family="'Inter', sans-serif" font-size="10" fill="#606060" text-anchor="middle" font-style="italic">
+    Parallel processing across diverse AI architectures for comprehensive perspective coverage
+  </text>
 
-  <!-- Blue ray -->
-  <polygon points="500,310 1100,340 1100,350 500,320" fill="url(#ray5)" filter="url(#glow)"/>
-  <text x="1050" y="335" fill="#87CEEB" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500">Mistral</text>
-
-  <!-- Indigo ray -->
-  <polygon points="500,330 1100,390 1100,400 500,340" fill="url(#ray6)" filter="url(#glow)"/>
-  <text x="1050" y="385" fill="#9370DB" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500">DeepSeek</text>
-
-  <!-- Violet ray (bottom) -->
-  <polygon points="500,350 1100,440 1100,450 500,360" fill="url(#ray7)" filter="url(#glow)"/>
-  <text x="1050" y="435" fill="#DA70D6" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500">Perplexity</text>
-
-  <!-- Spectrum label -->
-  <text x="900" y="500" fill="#8B9DC3" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="500">AI Model Spectrum</text>
-
-  <!-- Title -->
-  <text x="600" y="50" fill="#FFFFFF" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="700" text-anchor="middle">PRISM SCATTER PHASE</text>
-  <text x="600" y="75" fill="#8B9DC3" font-family="system-ui, -apple-system, sans-serif" font-size="14" text-anchor="middle">Multi-Model Parallel Processing</text>
+  <circle r="3" fill="#f093fb" filter="url(#glow)">
+    <animateMotion dur="3s" repeatCount="indefinite" path="M 315 200 L 600 100"/>
+  </circle>
+  <circle r="3" fill="#4facfe" filter="url(#glow)">
+    <animateMotion dur="3s" repeatCount="indefinite" path="M 315 200 L 600 160"/>
+  </circle>
+  <circle r="3" fill="#43e97b" filter="url(#glow)">
+    <animateMotion dur="3s" repeatCount="indefinite" path="M 315 200 L 600 240"/>
+  </circle>
+  <circle r="3" fill="#fa709a" filter="url(#glow)">
+    <animateMotion dur="3s" repeatCount="indefinite" path="M 315 200 L 600 300"/>
+  </circle>
 </svg>
