@@ -209,7 +209,7 @@ export class ConversationHandler {
 
     // if zeroing the messages, also terminate an active prism
     if (!messages.length)
-      this.beamStore.getState().terminateKeepingSettings();
+      this.prismStore.getState().terminateKeepingSettings();
   }
 
   historyTruncateTo(messageId: DMessageId, offset: number = 0): void {
@@ -248,9 +248,9 @@ export class ConversationHandler {
    * @param destReplaceMessageId If set, the output will replace the message with this id, otherwise it will append to the history
    */
   beamInvoke(viewHistory: Readonly<DMessage[]>, importMessages: DMessage[], destReplaceMessageId: DMessage['id'] | null): void {
-    const { open: beamOpen, importRays: beamImportRays, terminateKeepingSettings } = this.beamStore.getState();
+    const { open: prismOpen, importRays: prismImportRays, terminateKeepingSettings } = this.prismStore.getState();
 
-    const onBeamSuccess = (messageUpdate: Pick<DMessage, 'fragments' | 'generator'>) => {
+    const onPrismSuccess = (messageUpdate: Pick<DMessage, 'fragments' | 'generator'>) => {
 
       // set output when going back to the chat
       if (destReplaceMessageId) {
@@ -269,8 +269,8 @@ export class ConversationHandler {
       terminateKeepingSettings();
     };
 
-    beamOpen(viewHistory, getChatLLMId(), !!destReplaceMessageId, onBeamSuccess);
-    importMessages.length && beamImportRays(importMessages, getChatLLMId());
+    prismOpen(viewHistory, getChatLLMId(), !!destReplaceMessageId, onPrismSuccess);
+    importMessages.length && prismImportRays(importMessages, getChatLLMId());
   }
 
 
