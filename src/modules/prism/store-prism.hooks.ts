@@ -3,14 +3,14 @@ import { type StoreApi, useStore } from 'zustand';
 
 import { useShallowStable } from '~/common/util/hooks/useShallowObject';
 
-import type { BeamStore } from './store-beam_vanilla';
+import type { PrismStore } from './store-prism_vanilla';
 
 
-export type PrismStoreApi = Readonly<StoreApi<BeamStore>>;
+export type PrismStoreApi = Readonly<StoreApi<PrismStore>>;
 
 
-export const usePrismStore = <T, >(beamStore: PrismStoreApi, selector: (store: BeamStore) => T): T =>
-  useStore(beamStore, selector);
+export const usePrismStore = <T, >(prismStore: PrismStoreApi, selector: (store: PrismStore) => T): T =>
+  useStore(prismStore, selector);
 
 /*export const useIsBeamOpen = (beamStore?: PrismStoreApi) => {
   const [open, setOpen] = React.useState(false);
@@ -30,26 +30,26 @@ export const usePrismStore = <T, >(beamStore: PrismStoreApi, selector: (store: B
   return open;
 };*/
 
-export function useArePrismsOpen(beamStores: (PrismStoreApi | null)[]): boolean[] {
+export function useArePrismsOpen(prismStores: (PrismStoreApi | null)[]): boolean[] {
 
   // state
   const [_changeVersion, setChangeVersion] = React.useState(0);
 
   // [effect] monitor the stores for changes
   React.useEffect(() => {
-    const updateIfOpenChanges = (state: BeamStore, prevState: BeamStore) => {
+    const updateIfOpenChanges = (state: PrismStore, prevState: PrismStore) => {
       if (state.isOpen !== prevState.isOpen)
         setChangeVersion(version => version + 1);
     };
 
     // monitor the open status of all stores
-    const unsubscribes = beamStores.filter(store => !!store).map((beamStore) => {
-      return beamStore?.subscribe(updateIfOpenChanges);
+    const unsubscribes = prismStores.filter(store => !!store).map((prismStore) => {
+      return prismStore?.subscribe(updateIfOpenChanges);
     });
 
     // unsubscribe on cleanup or when the stores change
     return () => unsubscribes.forEach((unsubscribe) => unsubscribe?.());
-  }, [beamStores]);
+  }, [prismStores]);
 
-  return useShallowStable(beamStores.map(beamStore => beamStore?.getState().isOpen ?? false));
+  return useShallowStable(prismStores.map(prismStore => prismStore?.getState().isOpen ?? false));
 }

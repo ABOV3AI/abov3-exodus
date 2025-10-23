@@ -15,9 +15,9 @@ import { createScatterSlice, reInitScatterStateSlice, ScatterStoreSlice } from '
 /// Prism Store (vanilla, creator function) ///
 // Uses the Slices pattern, described in: https://docs.pmnd.rs/zustand/guides/typescript#slices-pattern
 
-export type BeamStore = RootStoreSlice & GatherStoreSlice & ScatterStoreSlice;
+export type PrismStore = RootStoreSlice & GatherStoreSlice & ScatterStoreSlice;
 
-export const createBeamVanillaStore = (): StoreApi<BeamStore> => createVanillaStore<BeamStore>()((...a) => ({
+export const createPrismVanillaStore = (): StoreApi<PrismStore> => createVanillaStore<PrismStore>()((...a) => ({
 
   ...createRootSlice(...a),
   ...createScatterSlice(...a),
@@ -67,7 +67,7 @@ export interface RootStoreSlice extends RootStateSlice {
 }
 
 
-const createRootSlice: StateCreator<BeamStore, [], [], RootStoreSlice> = (_set, _get) => ({
+const createRootSlice: StateCreator<PrismStore, [], [], RootStoreSlice> = (_set, _get) => ({
 
   // init state
   ...initRootStateSlice(),
