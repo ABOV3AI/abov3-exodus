@@ -147,4 +147,4 @@ Copyright © 2025 ABOV3 Genesis. All rights reserved.
 
 ---
 
-Built with ❤️ by ABOV3 Genesis
+Built with ❤️ by ABOV3 Exodus
