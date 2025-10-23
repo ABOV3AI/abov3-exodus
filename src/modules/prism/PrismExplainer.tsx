@@ -43,7 +43,7 @@ In the Scatter phase, your input query is simultaneously dispatched to multiple 
 **Enterprise Considerations:**
 - **Token Economics:** Parallel operations consume proportional tokens (n models × token count)
 - **Best Practice:** Optimal for early-stage analysis with shorter context windows
-- **Model Diversity:** Combine architectures (GPT-4, Claude, Gemini) for comprehensive coverage
+- **Model Diversity:** Combine architectures (GPT-4, Anthropic, Gemini) for comprehensive coverage
 
 **Cost-Benefit Analysis:** Higher upfront token investment yields superior output quality and reduced iteration cycles.
 `,
@@ -98,9 +98,9 @@ Prism positions AI as an augmentation layer—you provide strategic direction an
 
 ### Model Selection Strategy
 **Recommended Ensembles:**
-- **Balanced:** GPT-4 Turbo + Claude Sonnet + Gemini Pro
-- **Reasoning-Heavy:** o1 + Claude Opus + GPT-4
-- **Cost-Optimized:** GPT-4 Mini + Gemini Flash + Claude Haiku
+- **Balanced:** GPT-4 Turbo + Anthropic Sonnet + Gemini Pro
+- **Reasoning-Heavy:** o1 + Anthropic Opus + GPT-4
+- **Cost-Optimized:** GPT-4 Mini + Gemini Flash + Anthropic Haiku
 
 [Learn more about Prism](https://abov3.com/docs/prism-multi-model-reasoning)
 `,
