@@ -1,6 +1,6 @@
 # LLM Parameters System
 
-This document describes how parameters flow through Big-AGI's LLM parameters system, from definition to API invocation.
+This document describes how parameters flow through ABOV3 Exodus's LLM parameters system, from definition to API invocation.
 
 ## System Overview
 

@@ -182,7 +182,7 @@ sequenceDiagram
 ---
 
 ### 2025-03-14 Update
-AIX is used in production in Big-AGI and is stable and performant.
+AIX is used in production in ABOV3 Exodus and is stable and performant.
 The code is tightly coupled with the tRPC framework and the rest of our codebase,
 so it is not recommended to use it outside of our ecosystem.
 

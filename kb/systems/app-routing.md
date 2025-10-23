@@ -1,10 +1,10 @@
-# Big-AGI Routing & Display States
+# ABOV3 Exodus Routing & Display States
 
-This document describes the routing architecture and display state hierarchy in Big-AGI, from top-level providers down to component-level states.
+This document describes the routing architecture and display state hierarchy in ABOV3 Exodus, from top-level providers down to component-level states.
 
 ## Overview
 
-Big-AGI uses Next.js Pages Router with a provider stack that determines what users see based on application state and configuration.
+ABOV3 Exodus uses Next.js Pages Router with a provider stack that determines what users see based on application state and configuration.
 
 ## Quick Reference: Route Configurations
 
@@ -140,7 +140,7 @@ For detailed initialization sequence and provider functions, see [app-startup-se
 
 ## Storage System
 
-Big-AGI uses a local-first architecture:
+ABOV3 Exodus uses a local-first architecture:
 - **Zustand** for reactive state management
 - **IndexedDB** for persistent storage via Zustand persist middleware
 - **Version-based migrations** for data structure upgrades

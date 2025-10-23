@@ -1,6 +1,6 @@
 # Knowledge Base
 
-Internal documentation for Big-AGI architecture and systems, for use by AI agents and developers.
+Internal documentation for ABOV3 Exodus architecture and systems, for use by AI agents and developers.
 
 **Structure:**
 - `/kb/modules/` - Core business logic (e.g. AIX)
