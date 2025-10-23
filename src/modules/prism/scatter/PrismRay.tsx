@@ -143,7 +143,7 @@ function RayControls(props: {
 }
 
 
-export function BeamRay(props: {
+export function PrismRay(props: {
   beamStore: PrismStoreApi,
   hadImportedRays: boolean,
   isMobile: boolean,
