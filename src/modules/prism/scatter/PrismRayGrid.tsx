@@ -27,7 +27,7 @@ const rayGridMobileSx: SxProps = {
 } as const;
 
 
-export function BeamRayGrid(props: {
+export function PrismRayGrid(props: {
   beamStore: PrismStoreApi,
   hadImportedRays: boolean,
   isMobile: boolean,

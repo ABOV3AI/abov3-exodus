@@ -6,7 +6,7 @@ import type { DMessage, DMessageId } from '~/common/stores/chat/chat.message';
 import type { DMessageFragment, DMessageFragmentId } from '~/common/stores/chat/chat.fragments';
 import { llmsHeuristicGetTopDiverseLlmIds } from '~/common/stores/llms/store-llms-domains_slice';
 
-import { BeamConfigSnapshot, useModuleBeamStore } from './store-module-prism';
+import { BeamConfigSnapshot, useModulePrismStore } from './store-module-prism';
 import { SCATTER_RAY_DEF } from './prism.config';
 import { createGatherSlice, GatherStoreSlice, reInitGatherStateSlice } from './gather/prism.gather';
 import { createScatterSlice, reInitScatterStateSlice, ScatterStoreSlice } from './scatter/prism.scatter';
@@ -107,7 +107,7 @@ const createRootSlice: StateCreator<BeamStore, [], [], RootStoreSlice> = (_set, 
       return;
 
     // if empty, initialize from the persisted config, if any
-    loadBeamConfig(useModuleBeamStore.getState().lastConfig);
+    loadBeamConfig(useModulePrismStore.getState().lastConfig);
     if (_get().rays.length)
       return;
 

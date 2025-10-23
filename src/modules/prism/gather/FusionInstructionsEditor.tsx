@@ -9,7 +9,7 @@ import type { PrismStoreApi } from '../store-prism.hooks';
 import type { GatherInstruction } from './instructions/GatherInstruction';
 import type { FusionFactorySpec } from './instructions/prism.gather.factories';
 import type { Instruction } from './instructions/prism.gather.execution';
-import { useModuleBeamStore } from '../store-module-prism';
+import { useModulePrismStore } from '../store-module-prism';
 
 
 // Editor for a ChatInstruction
@@ -89,7 +89,7 @@ function EditableInstruction(props: {
 }) {
 
   // external state
-  const gatherShowAllPrompts = useModuleBeamStore(state => state.gatherShowAllPrompts);
+  const gatherShowAllPrompts = useModulePrismStore(state => state.gatherShowAllPrompts);
 
   // derived state
   const { instruction, instructionIndex, onInstructionEdit } = props;

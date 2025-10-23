@@ -10,14 +10,14 @@ import { copyToClipboard } from '~/common/util/clipboardUtils';
 import { messageFragmentsReduceText } from '~/common/stores/chat/chat.message';
 import { useUICounter } from '~/common/stores/store-ui';
 
-import { BeamExplainer } from './BeamExplainer';
-import { BeamFusionGrid } from './gather/BeamFusionGrid';
-import { BeamGatherPane } from './gather/BeamGatherPane';
-import { BeamRayGrid } from './scatter/BeamRayGrid';
-import { BeamScatterInput } from './scatter/BeamScatterInput';
-import { BeamScatterPane } from './scatter/BeamScatterPane';
+import { PrismExplainer } from './PrismExplainer';
+import { PrismFusionGrid } from './gather/PrismFusionGrid';
+import { PrismGatherPane } from './gather/PrismGatherPane';
+import { PrismRayGrid } from './scatter/PrismRayGrid';
+import { PrismScatterInput } from './scatter/PrismScatterInput';
+import { PrismScatterPane } from './scatter/PrismScatterPane';
 import { PrismStoreApi, usePrismStore } from './store-prism.hooks';
-import { useModuleBeamStore } from './store-module-prism';
+import { useModulePrismStore } from './store-module-prism';
 
 
 export function PrismView(props: {
@@ -33,7 +33,7 @@ export function PrismView(props: {
 
   // external state
   const { novel: explainerUnseen, touch: explainerCompleted, forget: explainerShow } = useUICounter('prism-wizard');
-  const { cardAdd, gatherAutoStartAfterScatter } = useModuleBeamStore(useShallow(state => ({
+  const { cardAdd, gatherAutoStartAfterScatter } = useModulePrismStore(useShallow(state => ({
     cardAdd: state.cardAdd,
     gatherAutoStartAfterScatter: state.gatherAutoStartAfterScatter,
   })));
@@ -148,7 +148,7 @@ export function PrismView(props: {
 
   // Explainer, if unseen
   if (props.showExplainer && explainerUnseen)
-    return <BeamExplainer onWizardComplete={explainerCompleted} />;
+    return <PrismExplainer onWizardComplete={explainerCompleted} />;
 
   return <>
 
@@ -176,14 +176,14 @@ export function PrismView(props: {
 
 
       {/* User Message */}
-      <BeamScatterInput
+      <PrismScatterInput
         isMobile={props.isMobile}
         history={inputHistory}
         onMessageFragmentReplace={inputHistoryReplaceMessageFragment}
       />
 
       {/* Scatter Controls */}
-      <BeamScatterPane
+      <PrismScatterPane
         beamStore={props.beamStore}
         isMobile={props.isMobile}
         rayCount={raysCount}
@@ -199,7 +199,7 @@ export function PrismView(props: {
 
 
       {/* Rays Grid - BeamRay[] > <ChatMessage /> */}
-      <BeamRayGrid
+      <PrismRayGrid
         beamStore={props.beamStore}
         isMobile={props.isMobile}
         rayIds={rayIds}
@@ -217,7 +217,7 @@ export function PrismView(props: {
 
 
       {/* Gather Controls */}
-      <BeamGatherPane
+      <PrismGatherPane
         beamStore={props.beamStore}
         canGather={canGather}
         isMobile={props.isMobile}
@@ -226,7 +226,7 @@ export function PrismView(props: {
       />
 
       {/* Fusion Grid - Fusion[] > <ChatMessage /> */}
-      <BeamFusionGrid
+      <PrismFusionGrid
         beamStore={props.beamStore}
         canGather={canGather}
         fusionIds={fusionIds}

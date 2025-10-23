@@ -10,7 +10,7 @@ import type { DMessageFragment, DMessageFragmentId } from '~/common/stores/chat/
 import { hasSystemMessageInHistory } from '~/common/stores/chat/chat.conversation';
 
 import { BEAM_INVERT_BACKGROUND } from '../prism.config';
-import { useModuleBeamStore } from '../store-module-prism';
+import { useModulePrismStore } from '../store-module-prism';
 
 
 const userMessageWrapperSx: SxProps = {
@@ -54,7 +54,7 @@ const userChatMessageSx: SxProps = {
 } as const;
 
 
-export function BeamScatterInput(props: {
+export function PrismScatterInput(props: {
   isMobile: boolean,
   history: DMessage[] | null,
   onMessageFragmentReplace: (messageId: DMessageId, fragmentId: DMessageFragmentId, newFragment: DMessageFragment) => void,
@@ -65,7 +65,7 @@ export function BeamScatterInput(props: {
 
   // external state
   const isDarkMode = useTheme().palette.mode === 'dark';
-  const scatterShowPrevMessages = useModuleBeamStore(state => state.scatterShowPrevMessages);
+  const scatterShowPrevMessages = useModulePrismStore(state => state.scatterShowPrevMessages);
 
   // derived state
 

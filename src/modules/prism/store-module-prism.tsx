@@ -56,7 +56,7 @@ interface ModuleBeamStore extends ModuleBeamState {
 }
 
 
-export const useModuleBeamStore = create<ModuleBeamStore>()(persist(
+export const useModulePrismStore = create<ModuleBeamStore>()(persist(
   (_set, _get) => ({
 
     presets: [],
@@ -146,21 +146,21 @@ export const useModuleBeamStore = create<ModuleBeamStore>()(persist(
 
 
 export function getBeamCardScrolling() {
-  return useModuleBeamStore.getState().cardScrolling;
+  return useModulePrismStore.getState().cardScrolling;
 }
 
 export function useBeamCardScrolling() {
-  return useModuleBeamStore((state) => state.cardScrolling);
+  return useModulePrismStore((state) => state.cardScrolling);
 }
 
 export function useBeamScatterShowLettering() {
-  return useModuleBeamStore((state) => state.scatterShowLettering);
+  return useModulePrismStore((state) => state.scatterShowLettering);
 }
 
 export function useIsBeamOpenForConversation(conversationId: DConversationId | null): boolean {
-  return useModuleBeamStore(state => conversationId ? state.openBeamConversationIds[conversationId] ?? false : false);
+  return useModulePrismStore(state => conversationId ? state.openBeamConversationIds[conversationId] ?? false : false);
 }
 
 export function updateBeamLastConfig(update: Partial<BeamConfigSnapshot>) {
-  useModuleBeamStore.getState().updateLastConfig(update);
+  useModulePrismStore.getState().updateLastConfig(update);
 }

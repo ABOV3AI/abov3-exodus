@@ -13,7 +13,7 @@ import { TooltipOutlined } from '~/common/components/TooltipOutlined';
 
 import type { PrismStoreApi } from '../store-prism.hooks';
 import { BEAM_BTN_SX, SCATTER_COLOR, SCATTER_RAY_PRESETS } from '../prism.config';
-import { BeamScatterDropdown } from './BeamScatterPaneDropdown';
+import { BeamScatterDropdown } from './PrismScatterPaneDropdown';
 import { beamPaneSx } from '../BeamCard';
 
 
@@ -60,7 +60,7 @@ const _styles = {
 } as const;
 
 
-export function BeamScatterPane(props: {
+export function PrismScatterPane(props: {
   beamStore: PrismStoreApi,
   isMobile: boolean,
   rayCount: number,

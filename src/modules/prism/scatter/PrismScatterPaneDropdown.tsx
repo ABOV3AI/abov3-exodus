@@ -12,7 +12,7 @@ import { DEV_MODE_SETTINGS } from '../../../apps/settings-modal/UxLabsSettings';
 import type { DLLMId } from '~/common/stores/llms/llms.types';
 
 import type { PrismStoreApi } from '../store-prism.hooks';
-import { useModuleBeamStore } from '../store-module-prism';
+import { useModulePrismStore } from '../store-module-prism';
 
 
 /// Naming Dialog ///
@@ -74,7 +74,7 @@ export function BeamScatterDropdown(props: {
     scatterShowLettering, toggleScatterShowLettering,
     gatherAutoStartAfterScatter, toggleGatherAutoStartAfterScatter,
     gatherShowAllPrompts, toggleGatherShowAllPrompts,
-  } = useModuleBeamStore();
+  } = useModulePrismStore();
 
 
   // handlers - load/save presets
@@ -89,14 +89,14 @@ export function BeamScatterDropdown(props: {
   }, [addPreset, handleClosePresetNaming, props.beamStore]);
 
   const handlePresetLoad = React.useCallback((presetId: string) => {
-    const preset = useModuleBeamStore.getState().presets.find(preset => preset.id === presetId);
+    const preset = useModulePrismStore.getState().presets.find(preset => preset.id === presetId);
     preset && props.beamStore.getState().loadBeamConfig(preset);
   }, [props.beamStore]);
 
   // NOTE: DEVS only - DEBUG only
   const handleClearLastConfig = React.useCallback(() => {
     // this is used to debug the heuristics for model selection
-    useModuleBeamStore.getState().deleteLastConfig();
+    useModulePrismStore.getState().deleteLastConfig();
   }, []);
 
 

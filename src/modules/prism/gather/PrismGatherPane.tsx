@@ -14,7 +14,7 @@ import { PrismStoreApi, usePrismStore } from '../store-prism.hooks';
 import { FFactoryId, FUSION_FACTORIES } from './instructions/prism.gather.factories';
 import { BEAM_SHOW_REASONING_ICON, GATHER_COLOR } from '../prism.config';
 import { beamPaneSx } from '../BeamCard';
-import { useModuleBeamStore } from '../store-module-prism';
+import { useModulePrismStore } from '../store-module-prism';
 
 
 const gatherPaneClasses = {
@@ -55,7 +55,7 @@ const desktopGatherPaneSx: SxProps = {
 };
 
 
-export function BeamGatherPane(props: {
+export function PrismGatherPane(props: {
   beamStore: PrismStoreApi,
   canGather: boolean,
   isMobile: boolean,
@@ -81,7 +81,7 @@ export function BeamGatherPane(props: {
     setCurrentFactoryId: state.setCurrentFactoryId,
     setCurrentGatherLlmId: state.setCurrentGatherLlmId,
   })));
-  const gatherAutoStartAfterScatter = useModuleBeamStore(state => state.gatherAutoStartAfterScatter);
+  const gatherAutoStartAfterScatter = useModulePrismStore(state => state.gatherAutoStartAfterScatter);
   const disableUnlessAutoStart = !props.canGather && !gatherAutoStartAfterScatter;
   const [llmOrNull, gatherLlmComponent/*, gatherLlmIcon*/] = useLLMSelect(currentGatherLlmId, setCurrentGatherLlmId, {
     label: props.isMobile ? '' : 'Merge Model',

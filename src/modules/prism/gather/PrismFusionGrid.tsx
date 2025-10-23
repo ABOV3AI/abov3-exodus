@@ -66,7 +66,7 @@ export function FusionAddButton(props: {
 }
 
 
-export function BeamFusionGrid(props: {
+export function PrismFusionGrid(props: {
   beamStore: PrismStoreApi,
   canGather: boolean,
   fusionIds: string[],
