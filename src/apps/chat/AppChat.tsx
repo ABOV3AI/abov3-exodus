@@ -631,8 +631,8 @@ export function AppChat() {
         const _paneConversationId = pane.conversationId;
         const _paneChatHandler = paneHandlers[idx] ?? null;
         const _paneIsIncognito = _paneChatHandler?.isIncognito() ?? false;
-        const _panePrismStoreApi = paneBeamStores[idx] ?? null;
-        const _paneBeamIsOpen = !!beamsOpens?.[idx] && !!_panePrismStoreApi;
+        const _panePrismStoreApi = panePrismStores[idx] ?? null;
+        const _paneBeamIsOpen = !!prismsOpens?.[idx] && !!_panePrismStoreApi;
         const _panesCount = chatPanes.length;
         const _keyAndId = `chat-pane-${pane.paneId}`;
         const _sepId = `sep-pane-${idx}`;
