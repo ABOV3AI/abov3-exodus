@@ -21,12 +21,12 @@ import { copyToClipboard } from '~/common/util/clipboardUtils';
 import { messageFragmentsReduceText } from '~/common/stores/chat/chat.message';
 import { useLLMSelect } from '~/common/components/forms/useLLMSelect';
 
-import { BeamCard, beamCardClasses, beamCardMessageScrollingSx, beamCardMessageSx, beamCardMessageWrapperSx } from '../BeamCard';
+import { PrismCard, prismCardClasses, prismCardMessageScrollingSx, prismCardMessageSx, prismCardMessageWrapperSx } from '../PrismCard';
 import { PrismStoreApi, usePrismStore } from '../store-prism.hooks';
 import { BEAM_SHOW_REASONING_ICON, GATHER_COLOR, SCATTER_COLOR, SCATTER_RAY_SHOW_DRAG_HANDLE } from '../prism.config';
 import { TooltipOutlined } from '~/common/components/TooltipOutlined';
 import { rayIsError, rayIsImported, rayIsScattering, rayIsSelectable, rayIsUserSelected } from './prism.scatter';
-import { useBeamCardScrolling, useBeamScatterShowLettering } from '../store-module-prism';
+import { usePrismCardScrolling, useBeamScatterShowLettering } from '../store-module-prism';
 import { useMessageAvatarLabel } from '~/common/util/dMessageUtils';
 
 
@@ -155,7 +155,7 @@ export function BeamRay(props: {
 
   // external state
   const ray = usePrismStore(props.beamStore, store => store.rays.find(ray => ray.rayId === props.rayId) ?? null);
-  const cardScrolling = useBeamCardScrolling();
+  const cardScrolling = usePrismCardScrolling();
   const showLettering = useBeamScatterShowLettering();
 
   // derived state
@@ -221,13 +221,13 @@ export function BeamRay(props: {
 
 
   return (
-    <BeamCard
+    <PrismCard
       role='prism-card'
       tabIndex={-1}
       // onClick={isSelectable ? handleRayToggleSelect : undefined}
       className={
-        (isError ? beamCardClasses.errored : '')
-        + (isSelectable ? beamCardClasses.selectable + ' ' : '')
+        (isError ? prismCardClasses.errored : '')
+        + (isSelectable ? prismCardClasses.selectable + ' ' : '')
       }
     >
 
@@ -254,7 +254,7 @@ export function BeamRay(props: {
 
       {/* Ray Message */}
       {(!!ray?.message?.fragments.length || ray?.status === 'scattering') && (
-        <Box sx={beamCardMessageWrapperSx}>
+        <Box sx={prismCardMessageWrapperSx}>
           {!!ray.message && (
             <ChatMessageMemo
               message={ray.message}
@@ -263,7 +263,7 @@ export function BeamRay(props: {
               hideAvatar
               showUnsafeHtmlCode={true}
               adjustContentScaling={-1}
-              sx={!cardScrolling ? beamCardMessageSx : beamCardMessageScrollingSx}
+              sx={!cardScrolling ? prismCardMessageSx : prismCardMessageScrollingSx}
             />
           )}
         </Box>
@@ -328,6 +328,6 @@ export function BeamRay(props: {
           <CheckCircleOutlineRoundedIcon sx={{ fontSize: 'md', color: 'success.solidBg' }} />
         </Box>
       )}
-    </BeamCard>
+    </PrismCard>
   );
 }

@@ -13,7 +13,7 @@ import { useLLMSelect } from '~/common/components/forms/useLLMSelect';
 import { PrismStoreApi, usePrismStore } from '../store-prism.hooks';
 import { FFactoryId, FUSION_FACTORIES } from './instructions/prism.gather.factories';
 import { BEAM_SHOW_REASONING_ICON, GATHER_COLOR } from '../prism.config';
-import { beamPaneSx } from '../BeamCard';
+import { beamPaneSx } from '../PrismCard';
 import { useModulePrismStore } from '../store-module-prism';
 
 

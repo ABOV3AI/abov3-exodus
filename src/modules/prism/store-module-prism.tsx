@@ -145,11 +145,11 @@ export const useModulePrismStore = create<ModuleBeamStore>()(persist(
 ));
 
 
-export function getBeamCardScrolling() {
+export function getPrismCardScrolling() {
   return useModulePrismStore.getState().cardScrolling;
 }
 
-export function useBeamCardScrolling() {
+export function usePrismCardScrolling() {
   return useModulePrismStore((state) => state.cardScrolling);
 }
 

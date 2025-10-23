@@ -7,7 +7,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import TelegramIcon from '@mui/icons-material/Telegram';
 
 import type { PrismStoreApi } from '../store-prism.hooks';
-import { BeamCard } from '../BeamCard';
+import { PrismCard } from '../PrismCard';
 import { SCATTER_RAY_MAX, SCATTER_RAY_MIN } from '../prism.config';
 
 import { BeamRay } from './BeamRay';
@@ -59,7 +59,7 @@ export function PrismRayGrid(props: {
 
       {/* Add Ray */}
       {(props.showRayAdd && raysCount < SCATTER_RAY_MAX) && (
-        <BeamCard sx={{ mb: 'auto' }}>
+        <PrismCard sx={{ mb: 'auto' }}>
           <Button variant='plain' color='neutral' onClick={props.onIncreaseRayCount} sx={{
             minHeight: 'calc(2 * var(--Card-padding) + 2rem - 0.5rem)',
             marginBlock: 'calc(-1 * var(--Card-padding) + 0.25rem)',
@@ -68,7 +68,7 @@ export function PrismRayGrid(props: {
           }}>
             <AddCircleOutlineRoundedIcon />
           </Button>
-        </BeamCard>
+        </PrismCard>
       )}
 
       {/* Multi-Use and Copy Buttons */}

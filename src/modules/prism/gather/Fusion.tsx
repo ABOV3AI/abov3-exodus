@@ -15,14 +15,14 @@ import { animationEnterBelow } from '~/common/util/animUtils';
 import { copyToClipboard } from '~/common/util/clipboardUtils';
 import { useLLMSelect } from '~/common/components/forms/useLLMSelect';
 
-import { BeamCard, beamCardClasses, beamCardMessageScrollingSx, beamCardMessageSx, beamCardMessageWrapperSx } from '../BeamCard';
+import { PrismCard, prismCardClasses, prismCardMessageScrollingSx, prismCardMessageSx, prismCardMessageWrapperSx } from '../PrismCard';
 import { PrismStoreApi, usePrismStore } from '../store-prism.hooks';
 import { FusionControlsMemo } from './FusionControls';
 import { FusionInstructionsEditor } from './FusionInstructionsEditor';
 import { GATHER_COLOR } from '../prism.config';
 import { findFusionFactory } from './instructions/prism.gather.factories';
 import { fusionIsEditable, fusionIsError, fusionIsFusing, fusionIsIdle, fusionIsStopped, fusionIsUsableOutput } from './prism.gather';
-import { useBeamCardScrolling } from '../store-module-prism';
+import { usePrismCardScrolling } from '../store-module-prism';
 import { useMessageAvatarLabel } from '~/common/util/dMessageUtils';
 
 
@@ -37,7 +37,7 @@ export function Fusion(props: {
 
   // external state
   const fusion = usePrismStore(props.beamStore, store => store.fusions.find(fusion => fusion.fusionId === props.fusionId) ?? null);
-  const cardScrolling = useBeamCardScrolling();
+  const cardScrolling = usePrismCardScrolling();
 
   // derived state
   const isEditable = fusionIsEditable(fusion);
@@ -108,15 +108,15 @@ export function Fusion(props: {
     return;
 
   return (
-    <BeamCard
+    <PrismCard
       role='prism-card'
       tabIndex={-1}
       className={
-        // (isIdle ? beamCardClasses.fusionIdle : '')
-        (isError ? beamCardClasses.errored + ' ' : '')
-        + ((isUsable || isFusing || isIdle) ? beamCardClasses.selectable + ' ' : '')
-        + (isFusing ? beamCardClasses.attractive + ' ' : '')
-        // + (beamCardClasses.smashTop + ' ')
+        // (isIdle ? prismCardClasses.fusionIdle : '')
+        (isError ? prismCardClasses.errored + ' ' : '')
+        + ((isUsable || isFusing || isIdle) ? prismCardClasses.selectable + ' ' : '')
+        + (isFusing ? prismCardClasses.attractive + ' ' : '')
+        // + (prismCardClasses.smashTop + ' ')
       }
     >
 
@@ -158,7 +158,7 @@ export function Fusion(props: {
 
       {/* Output Message */}
       {(!!fusion?.outputDMessage?.fragments.length || fusion?.stage === 'fusing') && (
-        <Box sx={beamCardMessageWrapperSx}>
+        <Box sx={prismCardMessageWrapperSx}>
           {!!fusion.outputDMessage && (
             <ChatMessageMemo
               message={fusion.outputDMessage}
@@ -167,7 +167,7 @@ export function Fusion(props: {
               hideAvatar
               showUnsafeHtmlCode={true}
               adjustContentScaling={-1}
-              sx={!cardScrolling ? beamCardMessageSx : beamCardMessageScrollingSx}
+              sx={!cardScrolling ? prismCardMessageSx : prismCardMessageScrollingSx}
             />
           )}
         </Box>
@@ -216,6 +216,6 @@ export function Fusion(props: {
         </Box>
       )}
 
-    </BeamCard>
+    </PrismCard>
   );
 }

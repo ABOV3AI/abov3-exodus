@@ -11,7 +11,7 @@ import { BrowserLang } from '~/common/util/pwaUtils';
 import { Fusion } from './Fusion';
 import { findFusionFactory, FusionFactorySpec } from './instructions/prism.gather.factories';
 
-import { BeamCard, beamCardClasses } from '../BeamCard';
+import { PrismCard, prismCardClasses } from '../PrismCard';
 import { PrismStoreApi, usePrismStore } from '../store-prism.hooks';
 import { GATHER_COLOR } from '../prism.config';
 
@@ -118,8 +118,8 @@ export function PrismFusionGrid(props: {
 
       {/* Add Fusion (Card) */}
       {(isEmpty || !isNoFactorySelected) && (
-        <BeamCard
-          className={isEmpty ? beamCardClasses.smashTop : undefined}
+        <PrismCard
+          className={isEmpty ? prismCardClasses.smashTop : undefined}
           sx={{
             backgroundColor: props.canGather ? `${GATHER_COLOR}.softBg` : isDarkMode ? 'neutral.700' : undefined,
             // boxShadow: `0px 6px 16px -12px rgb(var(--joy-palette-${props.canGather ? GATHER_COLOR : 'neutral'}-darkChannel) / 40%)`,
@@ -152,7 +152,7 @@ export function PrismFusionGrid(props: {
               Waiting for multiple responses.
             </Typography>
           )}
-        </BeamCard>
+        </PrismCard>
       )}
 
       {/* Full-width warning if not */}

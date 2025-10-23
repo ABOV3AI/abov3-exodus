@@ -12,8 +12,8 @@ import { getIsMobile } from '~/common/components/useMatchMedia';
 import { getUXLabsHighPerformance } from '~/common/stores/store-ux-labs';
 
 import type { BaseInstruction, ExecutionInputState } from './prism.gather.execution';
-import { beamCardMessageScrollingSx, beamCardMessageSx } from '../../BeamCard';
-import { getBeamCardScrolling } from '../../store-module-prism';
+import { prismCardMessageScrollingSx, prismCardMessageSx } from '../../PrismCard';
+import { getPrismCardScrolling } from '../../store-module-prism';
 
 
 type ChatGenerateMethods =
@@ -96,7 +96,7 @@ export async function executeGatherInstruction(_i: GatherInstruction, inputs: Ex
             isMobile={isMobile}
             hideAvatar
             adjustContentScaling={-1}
-            sx={!getBeamCardScrolling() ? beamCardMessageSx : beamCardMessageScrollingSx}
+            sx={!getPrismCardScrolling() ? prismCardMessageSx : prismCardMessageScrollingSx}
           />,
         );
         return;

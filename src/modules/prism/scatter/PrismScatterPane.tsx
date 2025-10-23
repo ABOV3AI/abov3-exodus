@@ -14,7 +14,7 @@ import { TooltipOutlined } from '~/common/components/TooltipOutlined';
 import type { PrismStoreApi } from '../store-prism.hooks';
 import { BEAM_BTN_SX, SCATTER_COLOR, SCATTER_RAY_PRESETS } from '../prism.config';
 import { BeamScatterDropdown } from './PrismScatterPaneDropdown';
-import { beamPaneSx } from '../BeamCard';
+import { beamPaneSx } from '../PrismCard';
 
 
 const scatterPaneSx: SxProps = {

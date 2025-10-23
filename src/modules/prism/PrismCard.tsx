@@ -6,18 +6,18 @@ import { animationShadowLimey } from '~/common/util/animUtils';
 import { BEAM_INVERT_BACKGROUND, BEAM_PANE_ZINDEX } from './prism.config';
 
 
-export const beamCardClasses = {
-  fusionIdle: 'beamCard-fusionIdle',
-  errored: 'beamCard-Errored',
-  selectable: 'beamCard-Selectable',
-  attractive: 'beamCard-Attractive',
-  smashTop: 'beamCard-SmashTop',
+export const prismCardClasses = {
+  fusionIdle: 'prismCard-fusionIdle',
+  errored: 'prismCard-Errored',
+  selectable: 'prismCard-Selectable',
+  attractive: 'prismCard-Attractive',
+  smashTop: 'prismCard-SmashTop',
 };
 
 /**
  * Used for message-containing cards.
  */
-export const BeamCard = styled(Box)(({ theme }) => ({
+export const PrismCard = styled(Box)(({ theme }) => ({
   '--Card-padding': '1rem',
 
   backgroundColor: theme.vars.palette.background.surface,
@@ -27,24 +27,24 @@ export const BeamCard = styled(Box)(({ theme }) => ({
 
   padding: 'var(--Card-padding)',
 
-  // [`&.${beamCardClasses.active}`]: {
+  // [`&.${prismCardClasses.active}`]: {
   //   boxShadow: 'inset 0 0 0 2px #00f, inset 0 0 0 4px #00a',
   // },
 
-  [`&.${beamCardClasses.fusionIdle}`]: {
+  [`&.${prismCardClasses.fusionIdle}`]: {
     backgroundColor: BEAM_INVERT_BACKGROUND ? theme.vars.palette.background.level2 : theme.vars.palette.background.surface,
   },
-  [`&.${beamCardClasses.selectable}`]: {
+  [`&.${prismCardClasses.selectable}`]: {
     backgroundColor: theme.vars.palette.background.popup,
   },
-  [`&.${beamCardClasses.errored}`]: {
+  [`&.${prismCardClasses.errored}`]: {
     backgroundColor: theme.vars.palette.danger.softBg,
     borderColor: theme.vars.palette.danger.outlinedBorder,
   },
-  [`&.${beamCardClasses.attractive}`]: {
+  [`&.${prismCardClasses.attractive}`]: {
     animation: `${animationShadowLimey} 2s linear infinite`,
   },
-  [`&.${beamCardClasses.smashTop}`]: {
+  [`&.${prismCardClasses.smashTop}`]: {
     borderTop: 'none',
     borderTopLeftRadius: 0,
     borderTopRightRadius: 0,
@@ -60,10 +60,10 @@ export const BeamCard = styled(Box)(({ theme }) => ({
   // maxHeight: 'calc(0.8 * (100dvh - 16rem))',
   // overflow: 'auto',
 }));
-BeamCard.displayName = 'BeamCard'; // [shared] scatter/gather pane style
+PrismCard.displayName = 'PrismCard'; // [shared] scatter/gather pane style
 
 
-export const beamCardMessageWrapperSx: SxProps = {
+export const prismCardMessageWrapperSx: SxProps = {
   minHeight: '1.5rem',
   display: 'flex',
   flexDirection: 'column',
@@ -73,7 +73,7 @@ export const beamCardMessageWrapperSx: SxProps = {
   // aspectRatio: 1,
 };
 
-export const beamCardMessageSx: SxProps = {
+export const prismCardMessageSx: SxProps = {
   // style: to undo the style of ChatMessage
   backgroundColor: 'none',
   border: 'none',
@@ -83,8 +83,8 @@ export const beamCardMessageSx: SxProps = {
   py: 0,
 };
 
-export const beamCardMessageScrollingSx: SxProps = {
-  ...beamCardMessageSx,
+export const prismCardMessageScrollingSx: SxProps = {
+  ...prismCardMessageSx,
   overflow: 'auto',
   maxHeight: 'max(18rem, calc(50lvh - 16rem))',
 };
