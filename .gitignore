@@ -48,6 +48,7 @@ next-env.d.ts
 .idea/
 .claude/
 .github/
+/docs/
 
 # Ingore k8s/env-secret.yaml
 ./k8s/env-secret.yaml
