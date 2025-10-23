@@ -2,7 +2,7 @@
 
 **Advanced AI Workspace for Multi-Model Reasoning, Coding, and Research**
 
-ABOV3 Exodus is a next-generation AI workspace built for professionals who demand more from their AI tools. Fork of the exceptional [Big-AGI](https://github.com/enricoros/big-AGI) project, enhanced with additional features and ABOV3 branding.
+ABOV3 Exodus is a next-generation AI workspace built for professionals who demand more from their AI tools.
 
 **What makes ABOV3 Exodus different:**
 **Intelligence** with Beam & Merge for multi-model reasoning and bleeding-edge AI models - **Control** with personas, data ownership, unlimited usage with your API keys, and *no vendor lock-in* - **Speed** with a local-first, over-powered, zero-latency web application.
@@ -123,43 +123,15 @@ abov3-exodus/
 
 ---
 
-## 🤝 Attribution
-
-ABOV3 Exodus is built upon the outstanding [Big-AGI](https://github.com/enricoros/big-AGI) project by [Enrico Ros](https://github.com/enricoros).
-
-**Original Project:**
-- **Repository**: https://github.com/enricoros/big-AGI
-- **Author**: Enrico Ros
-- **License**: MIT License
-- **Website**: https://big-agi.com
-
-We are deeply grateful to Enrico Ros and the Big-AGI community for creating such an exceptional foundation. Big-AGI pioneered many advanced AI interaction patterns including multi-model reasoning (Beam), persona systems, and local-first architecture.
-
-**ABOV3 Modifications:**
-- Complete UI rebrand with ABOV3 visual identity
-- Custom persona icon system with animations
-- Additional project management features
-- Enhanced file system integration
-- Production-ready configuration
-
-Both projects are licensed under the MIT License. See [LICENSE](LICENSE) and [ATTRIBUTION.md](ATTRIBUTION.md) for full details.
-
----
-
 ## 📝 License
 
-MIT License - see [LICENSE](LICENSE) file for details.
-
-**Copyright:**
-- 2025 ABOV3 Genesis (modifications)
-- 2023-2025 Enrico Ros (original Big-AGI)
+Copyright © 2025 ABOV3 Genesis. All rights reserved.
 
 ---
 
 ## 🔗 Links
 
 - **ABOV3 Website**: https://abov3.com
-- **Original Big-AGI**: https://big-agi.com
 - **Repository**: https://github.com/ABOV3AI/abov3-exodus
 - **Issues**: https://github.com/ABOV3AI/abov3-exodus/issues
 - **Privacy Policy**: https://abov3.com/privacy
@@ -176,4 +148,3 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ---
 
 Built with ❤️ by ABOV3 Genesis
-Based on Big-AGI by Enrico Ros

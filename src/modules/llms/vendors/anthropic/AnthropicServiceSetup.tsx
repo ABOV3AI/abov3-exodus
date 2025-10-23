@@ -225,7 +225,7 @@ export function AnthropicServiceSetup(props: { serviceId: DModelsServiceId }) {
     {advanced.on && <FormTextField
       autoCompleteId='anthropic-host'
       title='API Host'
-      description={<>e.g., <Link level='body-sm' href='https://github.com/enricoros/big-agi/blob/main/docs/config-aws-bedrock.md' target='_blank'>bedrock-claude</Link></>}
+      description={<>e.g., <Link level='body-sm' href='https://github.com/ABOV3AI/abov3-exodus/blob/main/docs/config-aws-bedrock.md' target='_blank'>bedrock-claude</Link></>}
       placeholder='deployment.service.region.amazonaws.com'
       isError={false}
       value={anthropicHost || ''}

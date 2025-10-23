@@ -210,7 +210,7 @@ export function AppChatSettingsAI() {
     {/*<FormControl disabled orientation='horizontal' sx={{ justifyContent: 'space-between' }}>*/}
     {/*  <FormLabelStart title='Auto Questions'*/}
     {/*                  description={autoSuggestQuestions ? 'LLM Questions' : 'No'}*/}
-    {/*                  tooltip={<>Vote <Link href='https://github.com/enricoros/big-agi/issues/228' target='_blank'>#228</Link></>} />*/}
+    {/*                  tooltip='Coming soon' />*/}
     {/*  <Switch checked={autoSuggestQuestions} onChange={handleAutoSuggestQuestionsChange}*/}
     {/*          endDecorator={autoSuggestQuestions ? 'On' : 'Off'}*/}
     {/*          slotProps={{ endDecorator: { sx: { minWidth: 26 } } }} />*/}

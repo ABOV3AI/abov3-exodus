@@ -4,7 +4,7 @@ import type { DBlobAsset, DBlobAssetId, DBlobAssetType, DBlobDBAsset, DBlobDBCon
 
 
 /**
- * Dexie DB for Big-AGI
+ * Dexie DB for ABOV3 Exodus
  * - assets: we store large assets like images/audio/video/documents...
  *
  * [DEV NOTE] To delete the full DB (don't do it!):
@@ -14,11 +14,11 @@ import type { DBlobAsset, DBlobAssetId, DBlobAssetType, DBlobDBAsset, DBlobDBCon
  * aswe need to request persistent storage for the current origin, sot that
  * indexedDB's content is not evicted.
  */
-class BigAgiDB extends Dexie {
+class Abov3ExodusDB extends Dexie {
   largeAssets!: Dexie.Table<DBlobDBAsset, string>;
 
   constructor() {
-    super('Big-AGI');
+    super('ABOV3-Exodus');
     this.version(1).stores({
       // Index common properties (and compound indexes)
       largeAssets: 'id, [contextId+scopeId], assetType, [assetType+contextId+scopeId], data.mimeType, origin.ot, origin.source, createdAt, updatedAt',
@@ -29,11 +29,11 @@ class BigAgiDB extends Dexie {
 
 // In development mode, reuse the same instance of the DB to avoid re-creating it on every hot reload
 const globalForDexie = globalThis as unknown as {
-  bigAgiDB: BigAgiDB | undefined;
+  abov3ExodusDB: Abov3ExodusDB | undefined;
 };
 
-const _db = globalForDexie.bigAgiDB ?? new BigAgiDB();
-if (process.env.NODE_ENV !== 'production') globalForDexie.bigAgiDB = _db;
+const _db = globalForDexie.abov3ExodusDB ?? new Abov3ExodusDB();
+if (process.env.NODE_ENV !== 'production') globalForDexie.abov3ExodusDB = _db;
 
 const assetsTable = _db.largeAssets;
 

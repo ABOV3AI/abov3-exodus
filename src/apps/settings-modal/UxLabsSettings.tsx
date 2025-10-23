@@ -115,7 +115,7 @@ export function UxLabsSettings() {
 
     {/*
       Other Graduated (removed or backlog):
-        - <Link href='https://github.com/enricoros/big-AGI/issues/359' target='_blank'>Draw App</Link>
+        - Draw App
         - Text Tools: dinamically shown where applicable (e.g. Diff)
         - Chat Mode: follow-ups; moved to Chat Advanced UI
     */}

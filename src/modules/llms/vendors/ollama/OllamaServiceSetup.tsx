@@ -45,7 +45,7 @@ export function OllamaServiceSetup(props: { serviceId: DModelsServiceId }) {
     <FormTextField
       autoCompleteId='ollama-host'
       title='Ollama Host'
-      description={<Link level='body-sm' href='https://github.com/enricoros/big-agi/blob/main/docs/config-local-ollama.md' target='_blank'>Information</Link>}
+      description={<Link level='body-sm' href='https://github.com/ABOV3AI/abov3-exodus/blob/main/docs/config-local-ollama.md' target='_blank'>Information</Link>}
       placeholder='http://127.0.0.1:11434'
       isError={hostError}
       value={ollamaHost || ''}

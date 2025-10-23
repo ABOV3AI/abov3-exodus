@@ -2,8 +2,8 @@
   "name": "abov3-exodus",
   "version": "0.0.1",
   "private": true,
-  "author": "ABOV3 Genesis",
-  "repository": "https://github.com/abov3-genesis/abov3-exodus",
+  "author": "Fahad Ibn Omar Fajardo <fahad@abov3.com>",
+  "repository": "https://github.com/ABOV3AI/abov3-exodus",
   "scripts": {
     "dev": "next dev --turbopack",
     "dev-debug": "cross-env NODE_OPTIONS='--inspect' next dev",
