@@ -142,129 +142,124 @@ export function makeMessageAvatarIcon(
         || messageGeneratorName === 'Prodia';
       const isReact = messageGeneratorName?.startsWith('react-');
 
-      // Extra appearance
-      if (uiComplexityMode === 'extra') {
-
-        // Pending animations - ABOV3 dual-logo with fade/pulse animation
-        if (messageIncomplete)
-          return <Box sx={{
-            ...avatarIconSx,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative',
+      // Pending animations - ABOV3 dual-logo with fade/pulse animation (Extra mode only)
+      if (uiComplexityMode === 'extra' && messageIncomplete)
+        return <Box sx={{
+          ...avatarIconSx,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          borderRadius: 'sm',
+          overflow: 'hidden',
+        }}>
+          {/* Outer pulsing ring with rotation */}
+          <Box sx={{
+            position: 'absolute',
+            width: '100%',
+            height: '100%',
             borderRadius: 'sm',
-            overflow: 'hidden',
+            border: '2px solid',
+            borderColor: 'primary.solidBg',
+            animation: 'abov3-pulse-rotate 3s ease-in-out infinite',
+            '@keyframes abov3-pulse-rotate': {
+              '0%, 100%': {
+                opacity: 0.3,
+                transform: 'scale(1) rotate(0deg)',
+              },
+              '50%': {
+                opacity: 0.7,
+                transform: 'scale(1.15) rotate(180deg)',
+              },
+            },
+          }} />
+
+          {/* Background glow effect */}
+          <Box sx={{
+            position: 'absolute',
+            width: '120%',
+            height: '120%',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(0, 212, 255, 0.2) 0%, transparent 70%)',
+            animation: 'abov3-glow-pulse 2s ease-in-out infinite',
+            '@keyframes abov3-glow-pulse': {
+              '0%, 100%': {
+                opacity: 0.4,
+                transform: 'scale(0.8)',
+              },
+              '50%': {
+                opacity: 0.8,
+                transform: 'scale(1.2)',
+              },
+            },
+          }} />
+
+          {/* First Logo - Black background version (fades in/out) */}
+          <Box sx={{
+            position: 'absolute',
+            animation: 'abov3-fade-1 4s ease-in-out infinite',
+            '@keyframes abov3-fade-1': {
+              '0%, 100%': {
+                opacity: 1,
+                transform: 'scale(1)',
+              },
+              '50%': {
+                opacity: 0,
+                transform: 'scale(0.9)',
+              },
+            },
           }}>
-            {/* Outer pulsing ring with rotation */}
-            <Box sx={{
-              position: 'absolute',
-              width: '100%',
-              height: '100%',
-              borderRadius: 'sm',
-              border: '2px solid',
-              borderColor: 'primary.solidBg',
-              animation: 'abov3-pulse-rotate 3s ease-in-out infinite',
-              '@keyframes abov3-pulse-rotate': {
-                '0%, 100%': {
-                  opacity: 0.3,
-                  transform: 'scale(1) rotate(0deg)',
-                },
-                '50%': {
-                  opacity: 0.7,
-                  transform: 'scale(1.15) rotate(180deg)',
-                },
+            <NextImage
+              src="/icons/favicon-black.png"
+              alt="Processing"
+              width={larger ? 28 : 20}
+              height={larger ? 28 : 20}
+              style={{
+                width: larger ? '28px' : '20px',
+                height: larger ? '28px' : '20px',
+                objectFit: 'contain',
+              }}
+            />
+          </Box>
+
+          {/* Second Logo - Alternative version (fades opposite) */}
+          <Box sx={{
+            position: 'absolute',
+            animation: 'abov3-fade-2 4s ease-in-out infinite',
+            '@keyframes abov3-fade-2': {
+              '0%, 100%': {
+                opacity: 0,
+                transform: 'scale(0.9)',
               },
-            }} />
-
-            {/* Background glow effect */}
-            <Box sx={{
-              position: 'absolute',
-              width: '120%',
-              height: '120%',
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(0, 212, 255, 0.2) 0%, transparent 70%)',
-              animation: 'abov3-glow-pulse 2s ease-in-out infinite',
-              '@keyframes abov3-glow-pulse': {
-                '0%, 100%': {
-                  opacity: 0.4,
-                  transform: 'scale(0.8)',
-                },
-                '50%': {
-                  opacity: 0.8,
-                  transform: 'scale(1.2)',
-                },
+              '50%': {
+                opacity: 1,
+                transform: 'scale(1)',
               },
-            }} />
+            },
+          }}>
+            <NextImage
+              src="/icons/favicon-alt.png"
+              alt="Processing"
+              width={larger ? 28 : 20}
+              height={larger ? 28 : 20}
+              style={{
+                width: larger ? '28px' : '20px',
+                height: larger ? '28px' : '20px',
+                objectFit: 'contain',
+              }}
+            />
+          </Box>
+        </Box>;
 
-            {/* First Logo - Black background version (fades in/out) */}
-            <Box sx={{
-              position: 'absolute',
-              animation: 'abov3-fade-1 4s ease-in-out infinite',
-              '@keyframes abov3-fade-1': {
-                '0%, 100%': {
-                  opacity: 1,
-                  transform: 'scale(1)',
-                },
-                '50%': {
-                  opacity: 0,
-                  transform: 'scale(0.9)',
-                },
-              },
-            }}>
-              <NextImage
-                src="/icons/favicon-black.png"
-                alt="Processing"
-                width={larger ? 28 : 20}
-                height={larger ? 28 : 20}
-                style={{
-                  width: larger ? '28px' : '20px',
-                  height: larger ? '28px' : '20px',
-                  objectFit: 'contain',
-                }}
-              />
-            </Box>
-
-            {/* Second Logo - Alternative version (fades opposite) */}
-            <Box sx={{
-              position: 'absolute',
-              animation: 'abov3-fade-2 4s ease-in-out infinite',
-              '@keyframes abov3-fade-2': {
-                '0%, 100%': {
-                  opacity: 0,
-                  transform: 'scale(0.9)',
-                },
-                '50%': {
-                  opacity: 1,
-                  transform: 'scale(1)',
-                },
-              },
-            }}>
-              <NextImage
-                src="/icons/favicon-alt.png"
-                alt="Processing"
-                width={larger ? 28 : 20}
-                height={larger ? 28 : 20}
-                style={{
-                  width: larger ? '28px' : '20px',
-                  height: larger ? '28px' : '20px',
-                  objectFit: 'contain',
-                }}
-              />
-            </Box>
-          </Box>;
-
-        // Purpose image (if present)
-        const purposeImage = SystemPurposes[messagePurposeId as SystemPurposeId]?.imageUri ?? undefined;
-        if (purposeImage)
-          return <Avatar
-            variant='plain'
-            alt={nameOfRole}
-            src={purposeImage}
-            sx={avatarIconSx}
-          />;
-
-      }
+      // Purpose image (if present) - ALWAYS use professional SVG icons regardless of complexity mode
+      const purposeImage = SystemPurposes[messagePurposeId as SystemPurposeId]?.imageUri ?? undefined;
+      if (purposeImage)
+        return <Avatar
+          variant='plain'
+          alt={nameOfRole}
+          src={purposeImage}
+          sx={avatarIconSx}
+        />;
 
       // mode: text-to-image
       if (isTextToImage)
@@ -276,7 +271,7 @@ export function makeMessageAvatarIcon(
       // TODO: llm symbol (if messageIncomplete)
       // if (messageIncomplete)
 
-      // purpose symbol (if present)
+      // purpose symbol (if present) - Fallback to emoji only if no SVG icon exists
       const symbol = SystemPurposes[messagePurposeId as SystemPurposeId]?.symbol;
       if (symbol)
         return <Box sx={{
