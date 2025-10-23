@@ -81,7 +81,7 @@ export function BlockEdit_TextFragment(props: {
   // NOTE: we disabled `useUIPreferencesStore(state => state.enterIsNewline)` on 2024-06-19, as it's
   //       not a good pattern for this kind of editing and we have buttons to take care of Save/Cancel
   //
-  // NOTE2: as per #https://github.com/enricoros/big-AGI/issues/760, this is a UX break of behavior.
+  // NOTE2: as per #https://github.com/ABOV3AI/abov3-exodus/issues/760, this is a UX break of behavior.
   //        adding a configuration option to quickly
   const isControlled = !!props.controlled;
   const enterIsNewline = useUIPreferencesStore(state => isControlled ? true : FORCE_ENTER_IS_NEWLINE !== undefined ? FORCE_ENTER_IS_NEWLINE : state.enterIsNewline);

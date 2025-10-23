@@ -105,7 +105,7 @@ const _archivedNewsItems: NewsItem[] = [
       { text: <><B>Web Search</B> with citations for supported models</> },
       { text: <><B>UI</B> &amp; Mobile UI overhaul with peeking and side panels</> },
       // { text: <><B>Performance</B>: 10x faster tokenization, lazy modals, fragment system</> },
-      { text: <>And many more <ExternalLink href='https://github.com/enricoros/big-AGI/issues/567#issuecomment-2262187617'>Big-AGI 2 changes</ExternalLink></> },
+      { text: <>And many more <ExternalLink href='https://github.com/ABOV3AI/abov3-exodus/issues/567#issuecomment-2262187617'>Big-AGI 2 changes</ExternalLink></> },
       { text: <>Built for the future, madly optimized</> },
     ],
   },
@@ -265,7 +265,7 @@ const _archivedNewsItems: NewsItem[] = [
       { text: <>Updated Ollama (v0.1.17) and OpenRouter models</> },
       { text: <>More: fixed ⌘ shortcuts on Mac</> },
       { text: <><Link href='https://big-agi.com'>Website</Link>: official downloads</> },
-      { text: <>Easier Vercel deployment, documented <Link href='https://github.com/enricoros/big-AGI/issues/276#issuecomment-1858591483'>network troubleshooting</Link></>, dev: true },
+      { text: <>Easier Vercel deployment, documented <Link href='https://github.com/ABOV3AI/abov3-exodus/issues/276#issuecomment-1858591483'>network troubleshooting</Link></>, dev: true },
     ],
   },
   {

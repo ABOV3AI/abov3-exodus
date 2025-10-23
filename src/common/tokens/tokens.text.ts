@@ -84,7 +84,7 @@ export function textTokensForLLM(text: string, llm: DLLM, debugFrom: string): nu
   }
 
   // Note: the try/catch shouldn't be necessary, but there could be corner cases where the tiktoken library throws
-  // https://github.com/enricoros/big-agi/issues/182
+  // https://github.com/ABOV3AI/abov3-exodus/issues/182
   let count = 0;
   try {
     count = tokenEncoders[openaiModel]?.encode(text, 'all', [])?.length || 0;

@@ -471,7 +471,7 @@ export function ChatMessage(props: {
 
   const closeBubble = React.useCallback((anchorEl?: HTMLElement, options?: { clearSelection?: boolean }) => {
     // NOTE - we used to have this always on, which would remove the highlighted text, but it's fired too much and in particular
-    // it was corrupting the extension of text selection (http://github.com/enricoros/big-AGI/issues/788)
+    // it was corrupting the extension of text selection (http://github.com/ABOV3AI/abov3-exodus/issues/788)
     //
     // However the likely expected user behavior here is to keep the selection, hence by default we don't clear it
     if (options?.clearSelection)
@@ -556,7 +556,7 @@ export function ChatMessage(props: {
   }, [doubleClickToEdit, handleOpsEditToggle, props.onMessageFragmentReplace]);
 
   const handleBlocksMouseUp = React.useCallback((event: React.MouseEvent) => {
-    // https://github.com/enricoros/big-AGI/issues/788
+    // https://github.com/ABOV3AI/abov3-exodus/issues/788
     // If shift is pressed, it's a selection extension attempt. Let the browser handle it.
     if (event.shiftKey)
       return;

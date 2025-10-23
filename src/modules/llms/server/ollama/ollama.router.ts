@@ -222,7 +222,7 @@ export const llmOllamaRouter = createTRPCRouter({
           }
 
           /* Find the context window from the 'num_ctx' line in the parameters string, if present
-           *  - https://github.com/enricoros/big-AGI/issues/309
+           *  - https://github.com/ABOV3AI/abov3-exodus/issues/309
            *  - Note: as of 2024-01-26 the num_ctx line is present in 50% of the models, and in most cases set to 4096
            *  - We are tracking the Upstream issue https://github.com/ollama/ollama/issues/1473 for better ways to do this in the future
            */

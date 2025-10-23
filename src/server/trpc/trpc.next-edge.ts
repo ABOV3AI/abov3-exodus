@@ -6,7 +6,7 @@ declare global {
 
 /**
  * 2025-05-22: Workaround an issue that appeared in all Vercel deployments.
- * https://github.com/enricoros/big-AGI/issues/805
+ * https://github.com/ABOV3AI/abov3-exodus/issues/805
  *
  * This is an emergency workaround for the 'Stream closed' issue, while the 6 Exceptions are still
  * thrown on each tRPC call.

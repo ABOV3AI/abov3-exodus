@@ -236,7 +236,7 @@ function RenderCodeImpl(props: RenderCodeBaseProps & {
     flexDirection: 'column',
     // justifyContent: (renderMermaid || renderPlantUML) ? 'center' : undefined,
 
-    // fix for SVG diagrams over dark mode: https://github.com/enricoros/big-AGI/issues/520
+    // fix for SVG diagrams over dark mode: https://github.com/ABOV3AI/abov3-exodus/issues/520
     '[data-joy-color-scheme="dark"] &': isRenderingDiagram ? { backgroundColor: 'neutral.500' } : {},
 
     // lots more style, incl font, background, embossing, radius, etc.

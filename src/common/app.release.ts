@@ -1,6 +1,6 @@
 /**
- * Copyright (c) 2025 ABOV3 Genesis
- * Based on Big-AGI - Copyright (c) 2023-2025 Enrico Ros
+ * Copyright (c) 2025 ABOV3 Genesis - All Rights Reserved
+ * Author: Fahad Ibn Omar Fajardo
  *
  * This file is include by both the frontend and backend, however depending on the time
  * of the build, the values may be different.
@@ -61,5 +61,5 @@ export const Release = {
 
 export const BaseProduct = {
   ReleaseNotes: '',
-  SupportForm: (_userId?: string) => 'https://github.com/abov3-genesis/abov3-exodus/issues',
+  SupportForm: (_userId?: string) => 'https://github.com/ABOV3AI/abov3-exodus/issues',
 } as const;

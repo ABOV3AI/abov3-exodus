@@ -24,7 +24,7 @@ export function geminiAccess(access: GeminiAccessSchema, modelRefId: string | nu
   const geminiHost = fixupHost(access.geminiHost || DEFAULT_GEMINI_HOST, apiPath);
   let geminiKey = access.geminiKey || env.GEMINI_API_KEY || '';
 
-  // multi-key with random selection - https://github.com/enricoros/big-AGI/issues/653
+  // multi-key with random selection - https://github.com/ABOV3AI/abov3-exodus/issues/653
   if (geminiKey.includes(',')) {
     const multiKeys = geminiKey
       .split(',')

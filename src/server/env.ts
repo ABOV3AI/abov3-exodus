@@ -116,7 +116,7 @@ export const env = createEnv({
 
   },
 
-  // matches user expectations - see https://github.com/enricoros/big-AGI/issues/279
+  // matches user expectations - see https://github.com/ABOV3AI/abov3-exodus/issues/279
   emptyStringAsUndefined: true,
 
   // with Noext.JS >= 13.4.4 we'd only need to destructure client variables
