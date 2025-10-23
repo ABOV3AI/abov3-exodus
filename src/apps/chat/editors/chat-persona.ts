@@ -6,12 +6,19 @@ import { DConversationId, splitSystemMessageFromHistory } from '~/common/stores/
 import type { DLLMId } from '~/common/stores/llms/llms.types';
 import { AudioGenerator } from '~/common/util/audio/AudioGenerator';
 import { ConversationsManager } from '~/common/chat-overlay/ConversationsManager';
-import { DMessage, MESSAGE_FLAG_NOTIFY_COMPLETE, messageWasInterruptedAtStart } from '~/common/stores/chat/chat.message';
+import { createDMessageFromFragments, DMessage, MESSAGE_FLAG_NOTIFY_COMPLETE, messageWasInterruptedAtStart } from '~/common/stores/chat/chat.message';
 import { getUXLabsHighPerformance } from '~/common/stores/store-ux-labs';
 
 import { PersonaChatMessageSpeak } from './persona/PersonaChatMessageSpeak';
 import { getChatAutoAI, getIsNotificationEnabledForModel } from '../store-app-chat';
 import { getInstantAppChatPanesCount } from '../components/panes/store-panes-manager';
+
+// File operations integration
+import { useProjectsStore } from '~/apps/projects/store-projects';
+import { FILE_OPERATIONS_TOOLS } from '~/modules/fileops/fileops.tools';
+import { executeFileOperation } from '~/modules/fileops/fileops.executor';
+import type { AixTools_ToolDefinition } from '~/modules/aix/server/api/aix.wiretypes';
+import { create_FunctionCallResponse_ContentFragment, isToolInvocationPart } from '~/common/stores/chat/chat.fragments';
 
 
 // configuration
@@ -64,6 +71,10 @@ export async function runPersonaOnConversationHead(
   const abortController = new AbortController();
   cHandler.setAbortController(abortController, 'chat-persona');
 
+  // Check if there's an active project - if so, add file operation tools
+  const activeProject = useProjectsStore.getState().getActiveProject();
+  const tools: AixTools_ToolDefinition[] | undefined = activeProject?.handle ? FILE_OPERATIONS_TOOLS : undefined;
+
   // stream the assistant's messages directly to the state store
   const messageStatus = await aixChatGenerateContent_DMessage_FromConversation(
     assistantLlmId,
@@ -94,6 +105,7 @@ export async function runPersonaOnConversationHead(
       // if (messageComplete)
       //   AudioGenerator.basicAstralChimes({ volume: 0.4 }, 0, 2, 250);
     },
+    tools, // Pass file operation tools if active project exists
   );
 
   // final message update (needed only in case of error)
@@ -112,6 +124,62 @@ export async function runPersonaOnConversationHead(
   if (cHandler.messageHasUserFlag(assistantMessageId, MESSAGE_FLAG_NOTIFY_COMPLETE)) {
     cHandler.messageSetUserFlag(assistantMessageId, MESSAGE_FLAG_NOTIFY_COMPLETE, false, false);
     AudioGenerator.chatNotifyResponse();
+  }
+
+  // Handle file operation tool invocations if present
+  if (activeProject?.handle && lastDeepCopy.fragments) {
+    const fileOperationTools = ['read_file', 'write_file', 'list_files', 'create_directory'];
+
+    // Execute tool invocations and create tool response message
+    const toolResponseFragments = await Promise.all(
+      lastDeepCopy.fragments.map(async (frag) => {
+        // Type guard to check if this is a tool invocation fragment
+        const part = frag.part;
+        if (part.pt !== 'tool_invocation') return null;
+        if (part.invocation.type !== 'function_call') return null;
+        if (!fileOperationTools.includes(part.invocation.name)) return null;
+
+        const invocation = part.invocation;
+        try {
+          const result = await executeFileOperation(
+            invocation.name,
+            invocation.args,
+            activeProject.handle!
+          );
+
+          return create_FunctionCallResponse_ContentFragment(
+            part.id,
+            result.error || false,
+            invocation.name,
+            result.result,
+            'client'
+          );
+        } catch (error: any) {
+          return create_FunctionCallResponse_ContentFragment(
+            part.id,
+            error.message || 'File operation failed',
+            invocation.name,
+            '',
+            'client'
+          );
+        }
+      })
+    );
+
+    // Filter out null results and append tool response message
+    const validResponses = toolResponseFragments.filter(f => f !== null);
+    if (validResponses.length > 0) {
+      // Create and append tool response message as a user message
+      // (tool responses are sent back to the AI as user messages)
+      const toolResponseMessage = createDMessageFromFragments('user', validResponses);
+      cHandler.messageAppend(toolResponseMessage);
+
+      // Trigger continuation with tool results
+      // We'll do this by calling runPersonaOnConversationHead again recursively
+      // but we need to prevent infinite loops, so we'll only do this if the AI requested tools
+      await runPersonaOnConversationHead(assistantLlmId, conversationId);
+      return true; // Return early as the recursive call will handle the rest
+    }
   }
 
   // check if aborted

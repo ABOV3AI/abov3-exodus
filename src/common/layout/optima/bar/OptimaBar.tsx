@@ -1,4 +1,5 @@
 import * as React from 'react';
+import NextImage from 'next/image';
 
 import type { SxProps } from '@mui/joy/styles/types';
 import { Box, IconButton, Typography } from '@mui/joy';
@@ -7,7 +8,6 @@ import MenuIcon from '@mui/icons-material/Menu';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 
-import { BigAgiSquircleIcon } from '~/common/components/icons/big-agi/BigAgiSquircleIcon';
 import { Brand } from '~/common/app.config';
 import { LayoutSidebarRight } from '~/common/components/icons/LayoutSidebarRight';
 import { Link } from '~/common/components/Link';
@@ -59,9 +59,18 @@ function CenterItemsFallback(props: { currentApp?: NavItemApp }) {
     gap: { xs: 1, md: 2 },
   }}>
 
-    {/* Squircle */}
+    {/* ABOV3 Logo Icon */}
     <Link href={ROUTE_INDEX}>
-      <BigAgiSquircleIcon inverted sx={{ width: 32, height: 32, color: 'white' }} />
+      <NextImage
+        src="/icons/favicon-32x32.png"
+        alt="ABOV3"
+        width={32}
+        height={32}
+        style={{
+          width: '32px',
+          height: '32px',
+        }}
+      />
     </Link>
 
     {/* Title */}
@@ -118,6 +127,28 @@ export function OptimaBar(props: { component: React.ElementType, currentApp?: Na
       <CenterItemsPortal currentApp={props.currentApp} />
 
       {/* We used to have the Preview (lightbulb) menu here */}
+
+      {/* ABOV3 Logo */}
+      <Box sx={{
+        mr: 1,
+        display: 'flex',
+        alignItems: 'center',
+        // Hide on very small screens if needed
+        display: { xs: 'none', sm: 'flex' }
+      }}>
+        <NextImage
+          src="/images/abov3-logo-white.png"
+          alt="ABOV3"
+          width={120}
+          height={40}
+          style={{
+            height: 'auto',
+            maxHeight: '32px',
+            width: 'auto',
+          }}
+          priority
+        />
+      </Box>
 
       {/* Panel Open: has content always on Mobile (the app menu) */}
       {panelHasContent && (

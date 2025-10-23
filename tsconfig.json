@@ -30,9 +30,11 @@
     /* Path Aliases */
     "baseUrl": ".",
     "paths": {
+      "~/apps/*": ["src/apps/*"],
       "~/common/*": ["src/common/*"],
       "~/modules/*": ["src/modules/*"],
-      "~/server/*": ["src/server/*"]
+      "~/server/*": ["src/server/*"],
+      "~/genesis-bridge/*": ["src/genesis-bridge/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts",

@@ -1,0 +1,54 @@
+<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark background -->
+  <rect width="120" height="120" fill="#0a0e27" rx="20"/>
+
+  <!-- Rotating gear -->
+  <g>
+    <animateTransform attributeName="transform" type="rotate" from="0 60 50" to="360 60 50" dur="8s" repeatCount="indefinite"/>
+
+    <!-- Gear outer ring -->
+    <circle cx="60" cy="50" r="15" fill="none" stroke="#00d4ff" stroke-width="2.5">
+      <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite"/>
+    </circle>
+
+    <!-- Gear teeth -->
+    <rect x="58" y="30" width="4" height="8" fill="#00d4ff"/>
+    <rect x="58" y="62" width="4" height="8" fill="#00d4ff"/>
+    <rect x="38" y="48" width="8" height="4" fill="#00d4ff"/>
+    <rect x="74" y="48" width="8" height="4" fill="#00d4ff"/>
+
+    <rect x="44" y="36" width="4" height="8" fill="#00d4ff" transform="rotate(45 46 40)"/>
+    <rect x="72" y="36" width="4" height="8" fill="#00d4ff" transform="rotate(-45 74 40)"/>
+    <rect x="44" y="56" width="4" height="8" fill="#00d4ff" transform="rotate(-45 46 60)"/>
+    <rect x="72" y="56" width="4" height="8" fill="#00d4ff" transform="rotate(45 74 60)"/>
+  </g>
+
+  <!-- Inner gear -->
+  <circle cx="60" cy="50" r="7" fill="none" stroke="#ffffff" stroke-width="2">
+    <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite"/>
+    <animateTransform attributeName="transform" type="rotate" from="0 60 50" to="-360 60 50" dur="6s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Center dot with pulse -->
+  <circle cx="60" cy="50" r="3" fill="#ffffff">
+    <animate attributeName="r" values="2.5;3.5;2.5" dur="1.5s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.8;1;0.8" dur="1.5s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Sparkle effects -->
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite"/>
+    <path d="M 75 35 L 77 38 L 80 36 L 78 39 L 81 41 L 78 41 L 77 44 L 76 41 L 73 41 L 76 39 Z" fill="#00d4ff"/>
+  </g>
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;1;0" dur="2s" begin="0.7s" repeatCount="indefinite"/>
+    <path d="M 42 32 L 44 35 L 47 33 L 45 36 L 48 38 L 45 38 L 44 41 L 43 38 L 40 38 L 43 36 Z" fill="#ffffff" transform="scale(0.8)"/>
+  </g>
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;1;0" dur="2s" begin="1.3s" repeatCount="indefinite"/>
+    <path d="M 80 60 L 82 63 L 85 61 L 83 64 L 86 66 L 83 66 L 82 69 L 81 66 L 78 66 L 81 64 Z" fill="#00d4ff" transform="scale(0.7)"/>
+  </g>
+
+  <!-- Label -->
+  <text x="60" y="95" font-family="Arial, sans-serif" font-size="11" font-weight="600" fill="#ffffff" text-anchor="middle" opacity="0.9">CUSTOM</text>
+</svg>

@@ -11,6 +11,10 @@ interface DAnthropicServiceSettings {
   anthropicKey: string;
   anthropicHost: string;
   heliconeKey: string;
+  // OAuth credentials for Pro/Max users
+  oauthAccessToken?: string;
+  oauthRefreshToken?: string;
+  oauthExpiresAt?: number;
 }
 
 export const ModelVendorAnthropic: IModelVendor<DAnthropicServiceSettings, AnthropicAccessSchema> = {
@@ -28,6 +32,10 @@ export const ModelVendorAnthropic: IModelVendor<DAnthropicServiceSettings, Anthr
     anthropicKey: partialSetup?.anthropicKey || '',
     anthropicHost: partialSetup?.anthropicHost || null,
     heliconeKey: partialSetup?.heliconeKey || null,
+    // Pass OAuth credentials if available
+    oauthAccessToken: partialSetup?.oauthAccessToken || null,
+    oauthRefreshToken: partialSetup?.oauthRefreshToken || null,
+    oauthExpiresAt: partialSetup?.oauthExpiresAt || null,
   }),
 
 

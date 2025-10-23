@@ -178,7 +178,6 @@ export const navItems: {
       hideDrawer: true,
       hideOnMobile: true,
       hideIcon: true,
-      isDev: true,
     },
     {
       name: 'Beam',
@@ -187,7 +186,6 @@ export const navItems: {
       route: '/dev/beam',
       hideDrawer: true,
       hideIcon: true,
-      isDev: true,
     },
     {
       name: 'Media Library',
@@ -241,24 +239,7 @@ export const navItems: {
 
   // External links
   links: [
-    // {
-    //   type: 'extLink',
-    //   name: 'X',
-    //   icon: TwitterIcon,
-    //   href: 'https://twitter.com',
-    // },
-    {
-      type: 'extLink',
-      name: 'Discord',
-      icon: DiscordIcon,
-      href: Brand.URIs.SupportInvite,
-    },
-    {
-      type: 'extLink',
-      name: 'GitHub',
-      icon: GitHubIcon,
-      href: Brand.URIs.OpenRepo,
-    },
+    // ABOV3 Exodus is standalone - no external community links yet
   ],
 
 };

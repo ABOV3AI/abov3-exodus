@@ -1,6 +1,7 @@
 MIT License
 
-Copyright (c) 2023-2025 Enrico Ros
+Copyright (c) 2025 ABOV3 Genesis
+Based on Big-AGI - Copyright (c) 2023-2025 Enrico Ros
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +20,8 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+This project is a fork of Big-AGI (https://github.com/enricoros/big-agi).
+See ATTRIBUTION.md for full attribution details.

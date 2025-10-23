@@ -104,9 +104,23 @@ export async function* chatGenerateContentImpl(
   let dispatchResponse: Response;
   try {
 
+    // Apply OAuth interceptor for Anthropic requests
+    let finalHeaders = dispatch.request.headers;
+
+    if (access.dialect === 'anthropic') {
+      const { anthropicOAuthInterceptor } = await import('~/modules/llms/server/anthropic/anthropic.router');
+      const interceptResult = await anthropicOAuthInterceptor(
+        access as any, // AnthropicAccessSchema
+        dispatch.request.url,
+        dispatch.request.headers,
+        dispatch.request.body
+      );
+      finalHeaders = interceptResult.headers;
+    }
+
     // [DEV] Debugging the request without requiring a server restart
     if (echoDispatchRequest) {
-      chatGenerateTx.addDebugRequest(!AIX_SECURITY_ONLY_IN_DEV_BUILDS, dispatch.request.url, dispatch.request.headers, dispatch.request.body);
+      chatGenerateTx.addDebugRequest(!AIX_SECURITY_ONLY_IN_DEV_BUILDS, dispatch.request.url, finalHeaders, dispatch.request.body);
       yield* chatGenerateTx.emitParticles();
     }
 
@@ -115,7 +129,7 @@ export async function* chatGenerateContentImpl(
     dispatchResponse = yield* heartbeatsWhileAwaiting(fetchResponseOrTRPCThrow({
       url: dispatch.request.url,
       method: 'POST',
-      headers: dispatch.request.headers,
+      headers: finalHeaders,
       body: dispatch.request.body,
       signal: intakeAbortSignal,
       name: `Aix.${prettyDialect}`,

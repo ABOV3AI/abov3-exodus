@@ -63,16 +63,25 @@ export const DevNewsItem: NewsItem = {
   versionName: 'Development Build',
   versionDate: undefined,
   items: [
-    { text: <>You&apos;re running an unsupported <B>developer build</B> of Big-AGI Open {_frontendPkgVersion}</> },
-    { text: <>This branch carries breaking features that are subject to change</> },
-    { text: <>Please report screenshots of breakages and console error messages</> },
-    { text: <>Do not use, no cloud backups</> },
-    { text: <ExternalLink href='https://big-agi.com'>Back to the official version</ExternalLink> },
+    { text: <>You&apos;re running a <B>developer build</B> of ABOV3 Exodus {_frontendPkgVersion}</> },
+    { text: <>This build carries features that are subject to change</> },
+    { text: <>Please report any issues or bugs you encounter</> },
+    { text: <ExternalLink href='https://abov3.com'>Visit ABOV3 website</ExternalLink> },
   ],
 } as const;
 
 // news and feature surfaces
 export const NewsItems: NewsItem[] = [
+  {
+    versionCode: '0.0.1',
+    versionName: 'Exodus',
+    versionDate: new Date(),
+    items: [],
+  },
+] as const;
+
+// Legacy Big-AGI news items (archived)
+const _archivedNewsItems: NewsItem[] = [
   {
     versionCode: '2.0.0',
     versionName: 'Open',

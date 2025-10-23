@@ -1,0 +1,42 @@
+<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark background -->
+  <rect width="120" height="120" fill="#0a0e27" rx="20"/>
+
+  <!-- Rocket shape with lift-off animation -->
+  <g>
+    <animateTransform attributeName="transform" type="translate" values="0,0; 0,-3; 0,0" dur="1.5s" repeatCount="indefinite"/>
+
+    <path d="M 60 25 L 65 40 L 70 55 L 70 65 L 50 65 L 50 55 L 55 40 Z" fill="#00d4ff" stroke="#ffffff" stroke-width="1.5">
+      <animate attributeName="opacity" values="0.9;1;0.9" dur="1.5s" repeatCount="indefinite"/>
+    </path>
+
+    <!-- Rocket window -->
+    <circle cx="60" cy="45" r="6" fill="#0a0e27" stroke="#ffffff" stroke-width="1.5"/>
+
+    <!-- Rocket fins -->
+    <path d="M 50 60 L 42 70 L 50 65 Z" fill="#00d4ff" opacity="0.8"/>
+    <path d="M 70 60 L 78 70 L 70 65 Z" fill="#00d4ff" opacity="0.8"/>
+  </g>
+
+  <!-- Animated exhaust flames -->
+  <ellipse cx="60" cy="68" rx="5" ry="8" fill="#ffffff" opacity="0.6">
+    <animate attributeName="ry" values="6;10;6" dur="0.3s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.4;0.8;0.4" dur="0.3s" repeatCount="indefinite"/>
+  </ellipse>
+  <ellipse cx="60" cy="73" rx="7" ry="10" fill="#00d4ff" opacity="0.4">
+    <animate attributeName="ry" values="8;14;8" dur="0.4s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.2;0.6;0.2" dur="0.4s" repeatCount="indefinite"/>
+  </ellipse>
+  <ellipse cx="60" cy="78" rx="8" ry="12" fill="#ffffff" opacity="0.2">
+    <animate attributeName="ry" values="10;16;10" dur="0.5s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.1;0.4;0.1" dur="0.5s" repeatCount="indefinite"/>
+  </ellipse>
+
+  <!-- Upward arrow/trajectory with dash -->
+  <path d="M 60 65 L 60 78" stroke="#00d4ff" stroke-width="2" opacity="0.5" stroke-dasharray="2,2">
+    <animate attributeName="stroke-dashoffset" values="0;-10" dur="1s" repeatCount="indefinite"/>
+  </path>
+
+  <!-- Label -->
+  <text x="60" y="95" font-family="Arial, sans-serif" font-size="11" font-weight="600" fill="#ffffff" text-anchor="middle" opacity="0.9">CATALYST</text>
+</svg>

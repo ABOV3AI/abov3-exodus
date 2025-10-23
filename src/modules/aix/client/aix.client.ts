@@ -164,6 +164,8 @@ export async function aixChatGenerateContent_DMessage_FromConversation(
   // others
   clientOptions: AixClientOptions,
   onStreamingUpdate: (update: AixChatGenerateContent_DMessage, isDone: boolean) => MaybePromise<void>,
+  // optional tools for function calling
+  tools?: import('../server/api/aix.wiretypes').AixTools_ToolDefinition[],
 ): Promise<StreamMessageStatus> {
 
   let errorMessage: string | undefined;
@@ -183,6 +185,7 @@ export async function aixChatGenerateContent_DMessage_FromConversation(
     const aixChatContentGenerateRequest: AixAPIChatGenerate_Request = {
       systemMessage: await aixCGR_SystemMessage_FromDMessageOrThrow(chatSystemInstruction),
       chatSequence: await aixCGR_ChatSequence_FromDMessagesOrThrow(chatHistoryWithoutSystemMessages),
+      ...(tools && tools.length > 0 ? { tools } : {}),
     };
 
     await aixChatGenerateContent_DMessage(

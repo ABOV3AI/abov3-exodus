@@ -49,6 +49,8 @@ interface LlmsRootActions {
 
   // special
   setOpenRouterKey: (key: string) => void;
+  setAnthropicOAuth: (tokens: { accessToken: string; refreshToken: string; expiresAt: number }) => void;
+  clearAnthropicOAuth: () => void;
 
 }
 
@@ -234,6 +236,46 @@ export const useModelsStore = create<LlmsStore>()(persist(
           sources: state.sources.map((s: DModelsService): DModelsService =>
             s.id === firstOpenRouterService.id
               ? { ...s, setup: { ...s.setup, oaiKey: key satisfies DOpenRouterServiceSettings['oaiKey'] } }
+              : s,
+          ),
+        };
+      }),
+
+    setAnthropicOAuth: (tokens: { accessToken: string; refreshToken: string; expiresAt: number }) =>
+      set(state => {
+        const firstAnthropicService = state.sources.find(s => s.vId === 'anthropic');
+        return !firstAnthropicService ? state : {
+          sources: state.sources.map((s: DModelsService): DModelsService =>
+            s.id === firstAnthropicService.id
+              ? {
+                  ...s,
+                  setup: {
+                    ...s.setup,
+                    oauthAccessToken: tokens.accessToken,
+                    oauthRefreshToken: tokens.refreshToken,
+                    oauthExpiresAt: tokens.expiresAt,
+                  },
+                }
+              : s,
+          ),
+        };
+      }),
+
+    clearAnthropicOAuth: () =>
+      set(state => {
+        const firstAnthropicService = state.sources.find(s => s.vId === 'anthropic');
+        return !firstAnthropicService ? state : {
+          sources: state.sources.map((s: DModelsService): DModelsService =>
+            s.id === firstAnthropicService.id
+              ? {
+                  ...s,
+                  setup: {
+                    ...s.setup,
+                    oauthAccessToken: null,
+                    oauthRefreshToken: null,
+                    oauthExpiresAt: null,
+                  },
+                }
               : s,
           ),
         };

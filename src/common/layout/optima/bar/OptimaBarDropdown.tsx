@@ -1,4 +1,5 @@
 import * as React from 'react';
+import NextImage from 'next/image';
 
 import type { SelectSlotsAndSlotProps } from '@mui/joy/Select/SelectProps';
 import { Box, ListDivider, listItemButtonClasses, ListItemDecorator, listItemDecoratorClasses, Option, optionClasses, Select, selectClasses } from '@mui/joy';
@@ -110,6 +111,7 @@ const _styles = {
 export type OptimaDropdownItems = Record<string, {
   title: string,
   symbol?: string,
+  imageUri?: string,
   type?: 'separator'
   icon?: React.ReactNode,
 }>;
@@ -168,6 +170,32 @@ function OptimaBarDropdown<TValue extends string>(props: {
   const itemsKeys = Object.keys(props.items);
   const hasItems = itemsKeys.length >= 1;
 
+  // Custom render for selected value to show image icon
+  const renderValue = React.useCallback((option: any) => {
+    if (!option) return null;
+    const selectedItem = props.items[option.value];
+    if (!selectedItem) return option.label;
+
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        {selectedItem.imageUri && (
+          <NextImage
+            src={selectedItem.imageUri}
+            alt={selectedItem.title}
+            width={24}
+            height={24}
+            style={{
+              width: '24px',
+              height: '24px',
+              objectFit: 'contain',
+            }}
+          />
+        )}
+        <span>{selectedItem.title}</span>
+      </Box>
+    );
+  }, [props.items]);
+
   return (
     <Select
       variant='plain'
@@ -179,6 +207,7 @@ function OptimaBarDropdown<TValue extends string>(props: {
       indicator={<KeyboardArrowDownIcon />}
       slotProps={optimaSelectSlotProps}
       className={props.showGone ? 'agi-gone' : props.showFaded ? 'agi-faded' : ''}
+      renderValue={renderValue}
     >
 
       {/* Prepender */}
@@ -194,8 +223,21 @@ function OptimaBarDropdown<TValue extends string>(props: {
 
           // Label & Decorators
           const safeTitle = _item.title || '';
-          const label = (props.showSymbols && _item.symbol && !(_item.title === 'Default' && _item.symbol === '🧠')) ? `${_item.symbol} ${safeTitle}` : safeTitle;
-          const iconOrSymbol = _item.icon || _item.symbol || '';
+          // Use simple title as label (no emoji) if imageUri exists, otherwise use emoji + title
+          const label = (props.showSymbols && _item.symbol && !_item.imageUri && !(_item.title === 'Default' && _item.symbol === '🧠')) ? `${_item.symbol} ${safeTitle}` : safeTitle;
+          const iconOrSymbol = _item.icon || (_item.imageUri ? (
+            <NextImage
+              src={_item.imageUri}
+              alt={safeTitle}
+              width={32}
+              height={32}
+              style={{
+                width: '32px',
+                height: '32px',
+                objectFit: 'contain',
+              }}
+            />
+          ) : _item.symbol) || '';
 
           return _item.type === 'separator' ? (
             <ListDivider key={_itemKey || `sep-${idx}`}>

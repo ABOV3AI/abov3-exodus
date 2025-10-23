@@ -35,6 +35,7 @@ import { ChatFolderList } from './folders/ChatFolderList';
 import { ChatNavGrouping, ChatSearchDepth, ChatSearchSorting, isDrawerSearching, useChatDrawerRenderItems } from './useChatDrawerRenderItems';
 import { ClearFolderText } from '../layout-bar/useFolderDropdown';
 import { useChatDrawerFilters } from '../../store-app-chat';
+import { ProjectsSidebar } from '~/apps/projects/ProjectsSidebar';
 
 
 // this is here to make shallow comparisons work on the next hook
@@ -302,6 +303,17 @@ function ChatDrawer(props: {
         </IconButton>
       </Tooltip>
     </OptimaDrawerHeader>
+
+    {/* Projects Sidebar */}
+    <Box sx={{
+      flexShrink: 0,
+      maxHeight: '30vh',
+      overflow: 'hidden',
+      borderBottom: '1px solid',
+      borderColor: 'divider',
+    }}>
+      <ProjectsSidebar />
+    </Box>
 
     {/* Folders List (shrink at twice the rate as the Titles) */}
     {/*<Box sx={{*/}

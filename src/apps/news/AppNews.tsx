@@ -27,36 +27,8 @@ const NEWS_INITIAL_COUNT = 3;
 const NEWS_LOAD_STEP = 2;
 
 
-export const newsRoadmapCallout =
-  <Card variant='solid' invertedColors>
-    <CardContent sx={{ gap: 2 }}>
-      <Typography level='title-lg'>
-        Open Roadmap
-      </Typography>
-      <Typography level='body-sm'>
-        Take a peek at our roadmap to see what&apos;s in the pipeline.
-        Discover upcoming features and let us know what excites you the most!
-      </Typography>
-      <Grid container spacing={1}>
-        <Grid xs={12} sm={7}>
-          <Button
-            fullWidth variant='soft' color='primary' endDecorator={<LaunchIcon />}
-            component={Link} href={Brand.URIs.OpenProject} noLinkStyle target='_blank'
-          >
-            Explore
-          </Button>
-        </Grid>
-        <Grid xs={12} sm={5} sx={{ display: 'flex', flexAlign: 'center', justifyContent: 'center' }}>
-          <Button
-            fullWidth variant='plain' color='primary' endDecorator={<LaunchIcon />}
-            component={Link} href={Brand.URIs.OpenRepo + '/issues/new?template=roadmap-request.md&title=%5BSuggestion%5D'} noLinkStyle target='_blank'
-          >
-            Suggest a Feature
-          </Button>
-        </Grid>
-      </Grid>
-    </CardContent>
-  </Card>;
+// Roadmap callout removed for ABOV3 Exodus - no public roadmap yet
+// export const newsRoadmapCallout = ...
 
 export function BuildInfoCard(props: { noMargin?: boolean }) {
   return (
@@ -198,42 +170,27 @@ export function AppNews() {
       }}>
 
         <Typography level='h1' sx={{ fontSize: '2.7rem', mb: 4 }}>
-          Welcome to <Box component='span' sx={{ animation: `${animationColorBlues} 10s infinite`, zIndex: 1 /* perf-opt */ }}>Big-AGI Open</Box>!
+          Welcome to <Box component='span' sx={{ animation: `${animationColorBlues} 10s infinite`, zIndex: 1 /* perf-opt */ }}>ABOV3 Exodus</Box>!
         </Typography>
 
         <Typography sx={{ mb: 2, textAlign: 'center', lineHeight: 'lg' }} level='title-sm'>
-          Big-AGI has been updated to version {firstNews?.versionCode}<br/>
+          ABOV3 Exodus version {firstNews?.versionCode}<br/>
           {/*You are running version {firstNews?.versionCode}<br/>*/}
           {/*{!!newsFrontendTimestamp && <span style={{ opacity: 0.5 }}>Updated <TimeAgo date={newsFrontendTimestamp} /></span>}*/}
         </Typography>
 
         <Box sx={{ mb: 5, display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
           <Button
-            variant='solid' color='neutral' size='lg'
+            variant='solid' color='primary' size='lg'
             component={Link} href={ROUTE_INDEX} noLinkStyle
             endDecorator={<ArrowForwardRoundedIcon />}
             sx={{
-              // boxShadow: '0 8px 24px -4px rgb(var(--joy-palette-primary-mainChannel) / 20%)',
+              boxShadow: '0 8px 24px -4px rgb(var(--joy-palette-primary-mainChannel) / 20%)',
               minWidth: 180,
             }}
           >
             Continue
           </Button>
-          {!Release.IsNodeDevBuild && (
-            <Button
-              variant='solid' color='primary' size='lg'
-              component={Link} href={bigAgiProUrl} target='_blank' noLinkStyle
-              endDecorator={<><ArrowOutwardRoundedIcon /></>}
-              sx={{
-                boxShadow: '0 8px 24px -4px rgb(var(--joy-palette-primary-mainChannel) / 20%)',
-                minWidth: 180,
-                // transform: 'translateY(-1px)',
-              }}
-            >
-              Big-AGI Pro
-              {/*✨*/}
-            </Button>
-          )}
         </Box>
 
         {/*<Typography level='title-sm' sx={{ mb: 1, placeSelf: 'start', ml: 1 }}>*/}
@@ -267,12 +224,7 @@ export function AppNews() {
               {/* News Item */}
               <NewsCard key={'news-' + idx} newsItem={ni} idx={idx} addPadding={addPadding} />
 
-              {/* Inject the roadmap item here*/}
-              {idx === 3 && (
-                <Box sx={{ mb: 3 }}>
-                  {newsRoadmapCallout}
-                </Box>
-              )}
+              {/* Roadmap callout removed for ABOV3 Exodus */}
 
             </React.Fragment>;
           })}

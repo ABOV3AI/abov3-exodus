@@ -1,0 +1,44 @@
+<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark background -->
+  <rect width="120" height="120" fill="#0a0e27" rx="20"/>
+
+  <!-- Nucleus with glow -->
+  <circle cx="60" cy="50" r="5" fill="#00d4ff">
+    <animate attributeName="r" values="4.5;5.5;4.5" dur="2s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Rotating electron orbits -->
+  <ellipse cx="60" cy="50" rx="25" ry="12" fill="none" stroke="#00d4ff" stroke-width="2" opacity="0.7">
+    <animateTransform attributeName="transform" type="rotate" from="0 60 50" to="360 60 50" dur="4s" repeatCount="indefinite"/>
+  </ellipse>
+  <ellipse cx="60" cy="50" rx="25" ry="12" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.6">
+    <animateTransform attributeName="transform" type="rotate" from="60 60 50" to="420 60 50" dur="4s" repeatCount="indefinite"/>
+  </ellipse>
+  <ellipse cx="60" cy="50" rx="25" ry="12" fill="none" stroke="#00d4ff" stroke-width="2" opacity="0.5">
+    <animateTransform attributeName="transform" type="rotate" from="120 60 50" to="480 60 50" dur="4s" repeatCount="indefinite"/>
+  </ellipse>
+
+  <!-- Orbiting electrons -->
+  <g>
+    <animateTransform attributeName="transform" type="rotate" from="0 60 50" to="360 60 50" dur="4s" repeatCount="indefinite"/>
+    <circle cx="85" cy="50" r="3.5" fill="#ffffff">
+      <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  <g>
+    <animateTransform attributeName="transform" type="rotate" from="120 60 50" to="480 60 50" dur="4s" repeatCount="indefinite"/>
+    <circle cx="47" cy="38" r="3.5" fill="#ffffff">
+      <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" begin="0.7s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  <g>
+    <animateTransform attributeName="transform" type="rotate" from="240 60 50" to="600 60 50" dur="4s" repeatCount="indefinite"/>
+    <circle cx="47" cy="62" r="3.5" fill="#ffffff">
+      <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" begin="1.3s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- Label -->
+  <text x="60" y="95" font-family="Arial, sans-serif" font-size="11" font-weight="600" fill="#ffffff" text-anchor="middle" opacity="0.9">SCIENTIST</text>
+</svg>

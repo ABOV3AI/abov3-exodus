@@ -1,10 +1,13 @@
 import * as React from 'react';
 import Router from 'next/router';
+import NextImage from 'next/image';
 
 import type { SxProps } from '@mui/joy/styles/types';
-import { Divider, Dropdown, ListDivider, ListItem, ListItemButton, ListItemDecorator, Menu, MenuButton, MenuItem, Tooltip, Typography } from '@mui/joy';
+import { Box, Divider, Dropdown, ListDivider, ListItem, ListItemButton, ListItemDecorator, Menu, MenuButton, MenuItem, Tooltip, Typography } from '@mui/joy';
 import CodeIcon from '@mui/icons-material/Code';
+import EmailIcon from '@mui/icons-material/Email';
 import HistoryIcon from '@mui/icons-material/History';
+import LanguageIcon from '@mui/icons-material/Language';
 import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined';
 import MenuIcon from '@mui/icons-material/Menu';
 import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined';
@@ -15,7 +18,6 @@ import { blocksRenderHTMLIFrameCss } from '~/modules/blocks/code/code-renderers/
 import { BuildInfoCard } from '../../../../apps/news/AppNews';
 
 import { BaseProduct } from '~/common/app.release';
-import { BigAgiSquircleIcon } from '~/common/components/icons/big-agi/BigAgiSquircleIcon';
 import { FeatureBadge } from '~/common/components/FeatureBadge';
 import { GoodModal } from '~/common/components/modals/GoodModal';
 import { PhSquaresFour } from '~/common/components/icons/phosphor/PhSquaresFour';
@@ -207,6 +209,14 @@ export function DesktopNav(props: { component: React.ElementType, currentApp?: N
               Support
             </Typography>
           </ListItem>
+          <ListItemButton component="a" href="https://www.abov3.com" target="_blank">
+            <ListItemDecorator><LanguageIcon /></ListItemDecorator>
+            Visit ABOV3.com
+          </ListItemButton>
+          <ListItemButton component="a" href="mailto:support@abov3.com">
+            <ListItemDecorator><EmailIcon /></ListItemDecorator>
+            Email Support
+          </ListItemButton>
           <ListItemButton component="a" href={BaseProduct.SupportForm()} target="_blank">
             <ListItemDecorator><LightbulbOutlinedIcon /></ListItemDecorator>
             I Have Feedback
@@ -302,7 +312,18 @@ export function DesktopNav(props: { component: React.ElementType, currentApp?: N
             onPointerDown={logoButtonTogglesPane ? optimaToggleDrawer : undefined}
             className={navItemClasses.typeMenu}
           >
-            {logoButtonTogglesPane ? (isDrawerPeeking ? <PushPinOutlinedIcon sx={{ fontSize: 'xl', transform: 'rotate(45deg)' }} /> : <MenuIcon />) : <BigAgiSquircleIcon inverted sx={{ color: 'white' }} />}
+            {logoButtonTogglesPane ? (isDrawerPeeking ? <PushPinOutlinedIcon sx={{ fontSize: 'xl', transform: 'rotate(45deg)' }} /> : <MenuIcon />) : (
+              <NextImage
+                src="/icons/favicon-32x32.png"
+                alt="ABOV3"
+                width={24}
+                height={24}
+                style={{
+                  width: '24px',
+                  height: '24px',
+                }}
+              />
+            )}
           </DesktopNavIcon>
         </Tooltip>
       </InvertedBarCornerItem>
@@ -310,6 +331,33 @@ export function DesktopNav(props: { component: React.ElementType, currentApp?: N
       <DesktopNavGroupBox>
         {navAppItems}
       </DesktopNavGroupBox>
+
+      <Box sx={{ flexGrow: 1 }} />
+
+      {/* EXODUS Vertical Text */}
+      <Box sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 'var(--Bar)',
+        height: 'calc(var(--Bar) * 3)',
+        mb: '0.75in',
+      }}>
+        <Typography
+          sx={{
+            transform: 'rotate(-90deg)',
+            fontSize: 'calc(var(--Bar) - 4px)',
+            letterSpacing: '0.05em',
+            fontWeight: 800,
+            color: 'inherit',
+            whiteSpace: 'nowrap',
+            userSelect: 'none',
+            lineHeight: 1,
+          }}
+        >
+          EXODUS
+        </Typography>
+      </Box>
 
       <DesktopNavGroupBox sx={bottomGroupSx}>
         {/*<UserNavIcon />*/}

@@ -1,5 +1,6 @@
 /**
- * Copyright (c)2024-2025 Enrico Ros
+ * Copyright (c) 2025 ABOV3 Genesis
+ * Based on Big-AGI - Copyright (c) 2023-2025 Enrico Ros
  *
  * This file is include by both the frontend and backend, however depending on the time
  * of the build, the values may be different.
@@ -11,7 +12,7 @@
  */
 export const Release = {
   // CHANGE ME - this is the tenant ID, 'dev' reserved for development only, 'open' reserved for GitHub
-  TenantSlug: 'open',
+  TenantSlug: 'abov3',
 
   // Future compatibility
   Features: {
@@ -60,5 +61,5 @@ export const Release = {
 
 export const BaseProduct = {
   ReleaseNotes: '',
-  SupportForm: (_userId?: string) => 'https://github.com/enricoros/big-agi/issues',
+  SupportForm: (_userId?: string) => 'https://github.com/abov3-genesis/abov3-exodus/issues',
 } as const;

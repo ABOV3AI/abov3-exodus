@@ -8,27 +8,27 @@
  */
 export const Brand = {
   Title: {
-    Base: 'big-AGI',
-    Common: (process.env.NODE_ENV === 'development' ? '[DEV] ' : '') + 'big-AGI',
+    Base: 'ABOV3',
+    Common: 'ABOV3 Exodus',
   },
   Meta: {
-    Description: 'Launch big-AGI to unlock the full potential of AI, with precise control over your data and models. Voice interface, AI personas, advanced features, and fun UX.',
-    SiteName: 'big-AGI | Precision AI for You',
+    Description: 'ABOV3 Exodus - Advanced AI workspace for multi-model reasoning, coding, and research. Built on cutting-edge AI technology with full control over your data.',
+    SiteName: 'ABOV3 Exodus | Advanced AI Workspace',
     ThemeColor: '#32383E',
-    TwitterSite: '@enricoros',
+    TwitterSite: '@abov3genesis',
   },
   URIs: {
-    Home: 'https://big-agi.com',
-    // App: 'https://get.big-agi.com',
-    CardImage: 'https://big-agi.com/icons/card-dark-1200.png',
-    OpenRepo: 'https://github.com/enricoros/big-agi',
-    OpenProject: 'https://github.com/users/enricoros/projects/4',
-    SupportInvite: 'https://discord.gg/MkH4qj2Jp9',
-    // Twitter: 'https://www.twitter.com/enricoros',
-    PrivacyPolicy: 'https://big-agi.com/privacy',
-    TermsOfService: 'https://big-agi.com/terms',
+    Home: 'https://abov3.com',
+    // App: 'https://get.abov3.com',
+    CardImage: 'https://abov3.com/icons/card-dark-1200.png',
+    // OpenRepo: 'https://github.com/abov3-genesis/abov3-exodus',  // Not ready yet
+    // OpenProject: 'https://github.com/users/abov3-genesis/projects/1',  // Not ready yet
+    // SupportInvite: 'https://discord.gg/abov3',  // Not ready yet
+    // Twitter: 'https://www.twitter.com/abov3genesis',
+    PrivacyPolicy: 'https://abov3.com/privacy',
+    TermsOfService: 'https://abov3.com/terms',
   },
   Docs: {
-    Public: (docPage: string) => `https://big-agi.com/docs/${docPage}`,
+    Public: (docPage: string) => `https://abov3.com/docs/${docPage}`,
   }
 } as const;

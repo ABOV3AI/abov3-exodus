@@ -1,9 +1,9 @@
 {
-  "name": "big-agi",
-  "version": "2.0.0",
+  "name": "abov3-exodus",
+  "version": "0.0.1",
   "private": true,
-  "author": "Enrico Ros <enrico.ros@gmail.com>",
-  "repository": "https://github.com/enricoros/big-agi",
+  "author": "ABOV3 Genesis",
+  "repository": "https://github.com/abov3-genesis/abov3-exodus",
   "scripts": {
     "dev": "next dev --turbopack",
     "dev-debug": "cross-env NODE_OPTIONS='--inspect' next dev",

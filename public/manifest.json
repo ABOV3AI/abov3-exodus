@@ -1,9 +1,9 @@
 {
-  "name": "big-AGI",
-  "short_name": "big-AGI",
+  "name": "ABOV3 Exodus",
+  "short_name": "ABOV3",
   "theme_color": "#32383E",
   "background_color": "#9FA6AD",
-  "description": "Your Generative AI Suite",
+  "description": "Advanced AI Workspace for Multi-Model Reasoning",
   "categories": [
     "productivity",
     "AI",
@@ -37,9 +37,9 @@
     {
       "action": "/link/share_target",
       "accept": {
-        "application/big-agi": [
-          ".agi",
-          ".agi.json"
+        "application/abov3": [
+          ".abov3",
+          ".abov3.json"
         ]
       }
     }

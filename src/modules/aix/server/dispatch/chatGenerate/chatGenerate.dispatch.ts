@@ -37,10 +37,12 @@ export function createChatGenerateDispatch(access: AixAPI_Access, model: AixAPI_
 
   switch (access.dialect) {
     case 'anthropic':
+      // Check if OAuth is being used (thinking is not supported with OAuth)
+      const isOAuth = !!(access as any).oauthAccessToken && !!(access as any).oauthRefreshToken;
       return {
         request: {
           ...anthropicAccess(access, model.id, '/v1/messages'),
-          body: aixToAnthropicMessageCreate(model, chatGenerate, streaming),
+          body: aixToAnthropicMessageCreate(model, chatGenerate, streaming, isOAuth),
         },
         demuxerFormat: streaming ? 'fast-sse' : null,
         chatGenerateParse: streaming ? createAnthropicMessageParser() : createAnthropicMessageParserNS(),
