@@ -471,7 +471,7 @@ export async function aixChatGenerateContent_DMessage<TServiceSettings extends o
       name: llmId,
       aix: {
         vId: llm.vId,
-        mId: llm.id, // NOTE: using llm.id instead of aixModel.id (the ref) so we can re-select them in the UI (Beam)
+        mId: llm.id, // NOTE: using llm.id instead of aixModel.id (the ref) so we can re-select them in the UI (Prism)
       },
       // metrics: undefined,
       // tokenStopReason: undefined,
@@ -648,7 +648,7 @@ async function _aixChatGenerateContent_LL(
    * For now we turn it on for Responses API for select kinds of request.
    */
   const requestResumability = (false as boolean) && !!aixModel.vndOaiResponsesAPI &&
-    (['conversation', 'beam-scatter', 'beam-gather'] satisfies (AixAPI_Context_ChatGenerate['name'] | string)[]).includes(aixContext.name);
+    (['conversation', 'prism-scatter', 'prism-gather'] satisfies (AixAPI_Context_ChatGenerate['name'] | string)[]).includes(aixContext.name);
 
   /**
    * Particles Reassembler.

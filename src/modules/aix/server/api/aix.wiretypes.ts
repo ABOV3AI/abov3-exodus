@@ -452,8 +452,8 @@ export namespace AixWire_API {
       // streaming AI operations
       'ai-diagram',               // making a diagram - messageId
       'ai-flattener',             // flattening a thread - messageId of the first message
-      'beam-gather',              // fusing beam rays - fusionId
-      'beam-scatter',             // scattering beam rays - rayId
+      'prism-gather',              // fusing prism rays - fusionId
+      'prism-scatter',             // scattering prism rays - rayId
       'call',                     // having a phone conversation - messageId of the first message
       'conversation',             // chatting with a persona - conversationId
       'persona-extract',          // extracting a persona from texts - chainId

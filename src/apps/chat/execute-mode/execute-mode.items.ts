@@ -28,14 +28,14 @@ export const ExecuteModeItems: { [key in ChatExecuteMode]: ModeDescription } = {
     sendColor: 'primary',
     sendText: 'Chat',
   },
-  'beam-content': {
-    label: 'Beam', // Best of, Auto-Prime, Top Pick, Select Best
+  'prism-content': {
+    label: 'Prism', // Best of, Auto-Prime, Top Pick, Select Best
     description: 'Combine multiple models', // Smarter: combine...
     shortcut: 'Ctrl + Enter',
     canAttach: true,
     hideOnDesktop: true,
     sendColor: 'primary',
-    sendText: 'Beam',
+    sendText: 'Prism',
   },
   'append-user': {
     label: 'Add',

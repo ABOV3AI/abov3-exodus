@@ -26,9 +26,9 @@ export const AIX_SECURITY_ONLY_IN_DEV_BUILDS = process.env.NODE_ENV === 'develop
  * These are the only contexts that can be captured in production builds for security.
  */
 const AIX_INSPECTOR_ALLOWED_CONTEXTS: (AixAPI_Context_ChatGenerate['name'] | string)[] = [
-  'beam-followup',
-  'beam-gather',
-  'beam-scatter',
+  'prism-followup',
+  'prism-gather',
+  'prism-scatter',
   'chat-react-turn',
   'conversation',
   'scratch-chat',

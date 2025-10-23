@@ -26,7 +26,7 @@ const _styles = {
   followUpChip: {
     px: 1.5,
     py: 0.375,
-    my: '1px', // to not crop the outline on mobile, or on beam
+    my: '1px', // to not crop the outline on mobile, or on prism
     outline: '1px solid',
     outlineColor: 'primary.solidBg', // .outlinedBorder
     boxShadow: `1px 2px 4px -3px var(--joy-palette-primary-solidBg)`,

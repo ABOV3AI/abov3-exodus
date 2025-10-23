@@ -5,8 +5,8 @@ import { FormSelectControl, FormSelectOption } from '~/common/components/forms/F
 import { useUIPreferencesStore } from '~/common/stores/store-ui';
 
 
-const QuickOptions: FormSelectOption<'off' | 'call' | 'beam'>[] = [
-  { value: 'beam', label: 'Beam', description: 'Beam it' },
+const QuickOptions: FormSelectOption<'off' | 'call' | 'prism'>[] = [
+  { value: 'prism', label: 'Prism', description: 'Prism it' },
   { value: 'call', label: 'Call', description: 'Call Persona' },
   { value: 'off', label: 'Off', description: 'Hide' },
 ];

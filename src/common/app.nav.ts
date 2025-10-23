@@ -21,7 +21,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 
 
 import { Brand } from '~/common/app.config';
-import { ChatBeamIcon } from '~/common/components/icons/ChatBeamIcon';
+import { ChatPrismIcon } from '~/common/components/icons/ChatPrismIcon';
 import { PhChats } from '~/common/components/icons/phosphor/PhChats';
 import { PhChatsDuotone } from '~/common/components/icons/phosphor/PhChatsDuotone';
 import { hasNoChatLinkItems } from '~/modules/trade/link/store-share-link';
@@ -180,10 +180,10 @@ export const navItems: {
       hideIcon: true,
     },
     {
-      name: 'Beam',
-      icon: ChatBeamIcon,
+      name: 'Prism',
+      icon: ChatPrismIcon,
       type: 'app',
-      route: '/dev/beam',
+      route: '/dev/prism',
       hideDrawer: true,
       hideIcon: true,
     },

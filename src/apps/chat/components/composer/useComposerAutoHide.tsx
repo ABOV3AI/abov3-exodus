@@ -15,7 +15,7 @@ const compressibleStyle = {
 
   // Note: the following in the composer's style would make for a much better animation
   // sx={{
-  //   // Add slide animation for both beam and auto-hide
+  //   // Add slide animation for both prism and auto-hide
   //   transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
   //   transform: composerAutoHide.isHidden ? 'translateY(100%)' : 'translateY(0)',
   // }}

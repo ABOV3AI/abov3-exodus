@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="1200" height="600">
+  <defs>
+    <!-- Input spectrum gradients -->
+    <linearGradient id="input-ray1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FF0000;stop-opacity:0.8"/>
+      <stop offset="100%" style="stop-color:#FF0000;stop-opacity:0.3"/>
+    </linearGradient>
+    <linearGradient id="input-ray2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FF7F00;stop-opacity:0.8"/>
+      <stop offset="100%" style="stop-color:#FF7F00;stop-opacity:0.3"/>
+    </linearGradient>
+    <linearGradient id="input-ray3" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FFFF00;stop-opacity:0.8"/>
+      <stop offset="100%" style="stop-color:#FFFF00;stop-opacity:0.3"/>
+    </linearGradient>
+    <linearGradient id="input-ray4" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00FF00;stop-opacity:0.8"/>
+      <stop offset="100%" style="stop-color:#00FF00;stop-opacity:0.3"/>
+    </linearGradient>
+    <linearGradient id="input-ray5" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#0000FF;stop-opacity:0.8"/>
+      <stop offset="100%" style="stop-color:#0000FF;stop-opacity:0.3"/>
+    </linearGradient>
+    <linearGradient id="input-ray6" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#4B0082;stop-opacity:0.8"/>
+      <stop offset="100%" style="stop-color:#4B0082;stop-opacity:0.3"/>
+    </linearGradient>
+    <linearGradient id="input-ray7" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#9400D3;stop-opacity:0.8"/>
+      <stop offset="100%" style="stop-color:#9400D3;stop-opacity:0.3"/>
+    </linearGradient>
+
+    <!-- Output focused beam -->
+    <linearGradient id="outputBeam" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.3"/>
+      <stop offset="50%" style="stop-color:#ffffff;stop-opacity:0.9"/>
+      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:1"/>
+    </linearGradient>
+
+    <!-- Prism gradient -->
+    <linearGradient id="prismGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:0.6"/>
+      <stop offset="50%" style="stop-color:#7B68EE;stop-opacity:0.7"/>
+      <stop offset="100%" style="stop-color:#9370DB;stop-opacity:0.6"/>
+    </linearGradient>
+
+    <!-- Glow filter -->
+    <filter id="glow2">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Strong glow for output -->
+    <filter id="strongGlow">
+      <feGaussianBlur stdDeviation="5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Dark background -->
+  <rect width="1200" height="600" fill="#0A0E27"/>
+
+  <!-- Input spectrum labels -->
+  <text x="50" y="145" fill="#FF6B6B" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500">GPT-4</text>
+  <text x="50" y="205" fill="#FFA07A" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500">Claude</text>
+  <text x="50" y="255" fill="#FFD700" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500">Gemini</text>
+  <text x="50" y="295" fill="#90EE90" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500">Llama</text>
+  <text x="50" y="335" fill="#87CEEB" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500">Mistral</text>
+  <text x="50" y="385" fill="#9370DB" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500">DeepSeek</text>
+  <text x="50" y="435" fill="#DA70D6" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="500">Perplexity</text>
+
+  <!-- Input spectrum rays (7 colors converging) -->
+  <!-- Red ray (top) -->
+  <polygon points="100,150 700,230 700,240 100,160" fill="url(#input-ray1)" filter="url(#glow2)"/>
+
+  <!-- Orange ray -->
+  <polygon points="100,210 700,250 700,260 100,220" fill="url(#input-ray2)" filter="url(#glow2)"/>
+
+  <!-- Yellow ray -->
+  <polygon points="100,260 700,270 700,280 100,270" fill="url(#input-ray3)" filter="url(#glow2)"/>
+
+  <!-- Green ray (middle) -->
+  <polygon points="100,300 700,290 700,300 100,310" fill="url(#input-ray4)" filter="url(#glow2)"/>
+
+  <!-- Blue ray -->
+  <polygon points="100,340 700,310 700,320 100,350" fill="url(#input-ray5)" filter="url(#glow2)"/>
+
+  <!-- Indigo ray -->
+  <polygon points="100,390 700,330 700,340 100,400" fill="url(#input-ray6)" filter="url(#glow2)"/>
+
+  <!-- Violet ray (bottom) -->
+  <polygon points="100,440 700,350 700,360 100,450" fill="url(#input-ray7)" filter="url(#glow2)"/>
+
+  <!-- Spectrum label -->
+  <text x="150" y="500" fill="#8B9DC3" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="500">AI Model Outputs</text>
+
+  <!-- PRISM (triangular prism shape - reversed) -->
+  <path d="M 700,200 L 800,250 L 800,350 L 700,400 Z"
+        fill="url(#prismGrad2)"
+        stroke="#6C8CD5"
+        stroke-width="2"
+        opacity="0.9"
+        filter="url(#glow2)"/>
+
+  <!-- Prism label -->
+  <text x="720" y="460" fill="#8B9DC3" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" text-anchor="middle">PRISM</text>
+
+  <!-- Output focused beam (bright white) -->
+  <polygon points="800,290 1150,300 1150,300 800,310" fill="url(#outputBeam)" opacity="0.9" filter="url(#strongGlow)"/>
+
+  <!-- Additional glow layer for emphasis -->
+  <polygon points="800,290 1150,300 1150,300 800,310" fill="#FFFFFF" opacity="0.3" filter="url(#strongGlow)"/>
+
+  <!-- Output label -->
+  <text x="1020" y="280" fill="#FFFFFF" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="500">Focused Intelligence</text>
+
+  <!-- Title -->
+  <text x="600" y="50" fill="#FFFFFF" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="700" text-anchor="middle">PRISM GATHER PHASE</text>
+  <text x="600" y="75" fill="#8B9DC3" font-family="system-ui, -apple-system, sans-serif" font-size="14" text-anchor="middle">Intelligent Multi-Model Synthesis</text>
+</svg>

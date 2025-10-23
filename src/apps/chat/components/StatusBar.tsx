@@ -200,9 +200,9 @@ export function StatusBar(props: { toggleMinimized?: () => void, isMinimized?: b
       if (a.key === ShortcutKey.Esc) return -1;
       if (b.key === ShortcutKey.Esc) return 1;
 
-      // 3. Special case for 'Beam Edit'
-      if (a.description === 'Beam Edit') return 1;
-      if (b.description === 'Beam Edit') return -1;
+      // 3. Special case for 'Prism Edit'
+      if (a.description === 'Prism Edit') return 1;
+      if (b.description === 'Prism Edit') return -1;
 
       // 4. Finally alphabetically by key
       return a.key.localeCompare(b.key);

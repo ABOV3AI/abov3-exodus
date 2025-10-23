@@ -101,13 +101,13 @@ export function BlockEdit_TextFragment(props: {
         e.preventDefault();
         if (!isControlled && (!withControl || props.enableRestart))
           onSubmit(withControl);
-      } // [Beam] eat up pure Ctrl+Enter, to not restart beams
+      } // [Prism] eat up pure Ctrl+Enter, to not restart beams
       else if (e.ctrlKey) {
         e.stopPropagation(); // prevents the global shortcut
       }
     } else if (e.key === 'Escape') {
       e.preventDefault();
-      e.stopPropagation(); // prevents the global shortcut, e.g. closing beam after this
+      e.stopPropagation(); // prevents the global shortcut, e.g. closing prism after this
       onEscapePressed();
     }
   }, [enterIsNewline, isControlled, onEscapePressed, onSubmit, props.enableRestart]);

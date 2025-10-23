@@ -16,7 +16,7 @@ import { createVariformOverlayStoreSlice, VariformOverlayStore } from './store-p
  */
 export type PerChatOverlayStore = AttachmentsDraftsStore & ComposerOverlayStore & EphemeralsOverlayStore & VariformOverlayStore;
 
-/* Note: at this time there is another overlay stores, beam (vanilla).
+/* Note: at this time there is another overlay stores, prism (vanilla).
  * - EphemeralsStore was based on EventTarget and subscription/unsubscription to it (inside useEffect),
  *   using `eventUtils` but it's been ported now.
  */

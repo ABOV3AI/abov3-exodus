@@ -172,7 +172,7 @@ export const themeBgAppChatComposer = 'background.surface';
 export const lineHeightChatTextMd = 1.75;
 export const lineHeightTextareaMd = 1.75;
 
-export const themeZIndexBeamView = 10;
+export const themeZIndexPrismView = 10;
 export const themeZIndexPageBar = 25;
 export const themeZIndexDesktopDrawer = 26;
 export const themeZIndexDesktopPanel = 27;

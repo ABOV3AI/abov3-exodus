@@ -20,7 +20,7 @@ export function BigAgiProNewsCallout() {
         <Typography level='title-lg'>ABOV3 Exodus ✨</Typography>
 
         <Typography level='title-sm' sx={{ lineHeight: 'xl' }}>
-          Professional AI workspace with <b>Beam</b> multi-model reasoning, <b>Personas</b>, and <b>local-first</b> architecture for complete data control.
+          Professional AI workspace with <b>Prism</b> multi-model reasoning, <b>Personas</b>, and <b>local-first</b> architecture for complete data control.
         </Typography>
 
         <Grid container spacing={1}>

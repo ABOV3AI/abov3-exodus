@@ -21,7 +21,7 @@ import { DLLM, LLM_IF_OAI_Vision } from '~/common/stores/llms/llms.types';
 import { AudioGenerator } from '~/common/util/audio/AudioGenerator';
 import { AudioPlayer } from '~/common/util/audio/AudioPlayer';
 import { ButtonAttachFilesMemo, openFileForAttaching } from '~/common/components/ButtonAttachFiles';
-import { ChatBeamIcon } from '~/common/components/icons/ChatBeamIcon';
+import { ChatPrismIcon } from '~/common/components/icons/ChatPrismIcon';
 import { ConfirmationModal } from '~/common/components/modals/ConfirmationModal';
 import { ConversationsManager } from '~/common/chat-overlay/ConversationsManager';
 import { DMessageId, DMessageMetadata, DMetaReferenceItem, messageFragmentsReduceText } from '~/common/stores/chat/chat.message';
@@ -65,7 +65,7 @@ import { ButtonAttachCameraMemo, useCameraCaptureModalDialog } from './buttons/B
 import { ButtonAttachClipboardMemo } from './buttons/ButtonAttachClipboard';
 import { ButtonAttachScreenCaptureMemo } from './buttons/ButtonAttachScreenCapture';
 import { ButtonAttachWebMemo } from './buttons/ButtonAttachWeb';
-import { ButtonBeamMemo } from './buttons/ButtonBeam';
+import { ButtonPrismMemo } from './buttons/ButtonPrism';
 import { ButtonCallMemo } from './buttons/ButtonCall';
 import { ButtonGroupDrawRepeat } from './buttons/ButtonGroupDrawRepeat';
 import { ButtonMicContinuationMemo } from './buttons/ButtonMicContinuation';
@@ -459,10 +459,10 @@ export function Composer(props: {
       return;
     }
     if (composeText) {
-      await handleSendAction('beam-content', composeText); // 'beam' button
+      await handleSendAction('prism-content', composeText); // 'prism' button
     } else {
       if (targetConversationId)
-        void onConversationBeamEdit(targetConversationId); // beam-edit conversation
+        void onConversationBeamEdit(targetConversationId); // prism-edit conversation
     }
   }, [composeText, handleSendAction, micIsRunning, onConversationBeamEdit, targetConversationId]);
 
@@ -555,7 +555,7 @@ export function Composer(props: {
 
       // Ctrl (Windows) or Command (Mac) + Enter: send for beaming
       if (e.ctrlKey && !e.metaKey && !e.altKey) {
-        if (await handleSendAction('beam-content', composeText)) { // 'ctrl+enter' -> beam
+        if (await handleSendAction('prism-content', composeText)) { // 'ctrl+enter' -> prism
           touchCtrlEnter();
           e.stopPropagation();
         }
@@ -678,7 +678,7 @@ export function Composer(props: {
   // ...
 
   const isText = chatExecuteMode === 'generate-content';
-  const isTextBeam = chatExecuteMode === 'beam-content';
+  const isTextBeam = chatExecuteMode === 'prism-content';
   const isAppend = chatExecuteMode === 'append-user';
   const isReAct = chatExecuteMode === 'react-content';
   const isDraw = chatExecuteMode === 'generate-image';
@@ -699,7 +699,7 @@ export function Composer(props: {
     micContinuation ? null
       : isAppend ? <SendIcon sx={{ fontSize: 18 }} />
         : isReAct ? <PsychologyIcon />
-          : isTextBeam ? <ChatBeamIcon /> /* <GavelIcon /> */
+          : isTextBeam ? <ChatPrismIcon /> /* <GavelIcon /> */
             : isDraw ? <PhPaintBrush />
               : <TelegramIcon />;
 
@@ -734,7 +734,7 @@ export function Composer(props: {
       // else if (explainAltEnter)
     //   textPlaceholder += platformAwareKeystrokes('\n\n⭳ Tip: Alt + Enter to just append the message');
     else if (explainCtrlEnter)
-      textPlaceholder += platformAwareKeystrokes('\n\n⫷ Tip: Ctrl + Enter to beam');
+      textPlaceholder += platformAwareKeystrokes('\n\n⫷ Tip: Ctrl + Enter to prism');
   }
 
   const stableGridSx: SxProps = React.useMemo(() => ({
@@ -1003,14 +1003,14 @@ export function Composer(props: {
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, height: '100%' } as const}>
 
               {/* [mobile] This row is here only for the [mobile] bottom-start corner item */}
-              {/* [desktop] This column arrangement will have the [desktop] beam button right under call */}
+              {/* [desktop] This column arrangement will have the [desktop] prism button right under call */}
               <Box sx={isMobile ? { display: 'flex' } : { display: 'grid', gap: 1 }}>
 
                 {/* [mobile] bottom-corner secondary button */}
                 {isMobile && (showChatExtras
                     ? (composerQuickButton === 'call'
                       ? <ButtonCallMemo isMobile disabled={noConversation || noLLM} onClick={handleCallClicked} />
-                      : <ButtonBeamMemo isMobile disabled={noConversation /*|| noLLM*/} color={beamButtonColor} hasContent={!!composeText} onClick={handleSendTextBeamClicked} />)
+                      : <ButtonPrismMemo isMobile disabled={noConversation /*|| noLLM*/} color={beamButtonColor} hasContent={!!composeText} onClick={handleSendTextBeamClicked} />)
                     : isDraw
                       ? <ButtonOptionsDraw isMobile onClick={handleDrawOptionsClicked} sx={{ mr: { xs: 1, md: 2 } }} />
                       : <IconButton disabled sx={{ mr: { xs: 1, md: 2 } }} />
@@ -1053,10 +1053,10 @@ export function Composer(props: {
                     </Button>
                   )}
 
-                  {/* [Beam] Open Beam */}
-                  {/*{isText && <Tooltip title='Open Beam'>*/}
+                  {/* [Prism] Open Prism */}
+                  {/*{isText && <Tooltip title='Open Prism'>*/}
                   {/*  <IconButton variant='outlined' disabled={noConversation || noLLM} onClick={handleSendTextBeamClicked}>*/}
-                  {/*    <ChatBeamIcon />*/}
+                  {/*    <ChatPrismIcon />*/}
                   {/*  </IconButton>*/}
                   {/*</Tooltip>}*/}
 
@@ -1080,7 +1080,7 @@ export function Composer(props: {
 
                 {/* [desktop] secondary-top buttons */}
                 {isDesktop && showChatExtras && !assistantAbortible && (
-                  <ButtonBeamMemo
+                  <ButtonPrismMemo
                     color={beamButtonColor}
                     disabled={noConversation /*|| noLLM*/}
                     hasContent={!!composeText}

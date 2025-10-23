@@ -31,7 +31,7 @@ export interface DMessage {
   // TODO: @deprecated remove this, it's really view-dependent
   tokenCount: number;                 // cache for token count, using the current Conversation model (0 = not yet calculated)
 
-  // TODO: add a Beam JSON state load/store
+  // TODO: add a Prism JSON state load/store
   // volatileBeamRestore?: object;
 
   created: number;                    // created timestamp
@@ -50,7 +50,7 @@ export interface DMessageMetadata {
   entangled?: DMessageEntangled; // entangled messages info
   /**
    * Initially intended recipients of this message.
-   * Defaults to `undefined` i.e. the current persona for the active operation (chat, beam, etc).
+   * Defaults to `undefined` i.e. the current persona for the active operation (chat, prism, etc).
    * If set, has to be honored by the UI and the sending operation.
    */
   initialRecipients?: DMessageRecipientPersona[];

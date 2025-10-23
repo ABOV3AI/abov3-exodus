@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { useModuleBeamStore } from '~/modules/beam/store-module-beam';
+import { useModuleBeamStore } from '~/modules/prism/store-module-prism';
 
 import type { DFolder } from '~/common/stores/folders/store-chat-folders';
 import { DMessage, DMessageUserFlag, MESSAGE_FLAG_STARRED, messageFragmentsReduceText, messageHasUserFlag, messageUserFlagToEmoji } from '~/common/stores/chat/chat.message';

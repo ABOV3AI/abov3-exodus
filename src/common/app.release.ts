@@ -30,7 +30,7 @@ export const Release = {
 
   // Frontend: pretty features
   TechLevels: {
-    AIX: '1.1', Apply: '0.8', Beam: '2.0', LFS: '0.5', /*Precog: '0.1',*/ React: '1.5',
+    AIX: '1.1', Apply: '0.8', Prism: '2.0', LFS: '0.5', /*Precog: '0.1',*/ React: '1.5',
   },
   AiFunctions: [
     // from `ContextChatGenerate_schema`
@@ -39,7 +39,7 @@ export const Release = {
     'create-attach-prompts', 'create-image-prompt', 'create-persona',
     'diff-whole',
     'fixup',
-    'reason-beam', 'reason-merge', 'reason-react',
+    'reason-prism', 'reason-merge', 'reason-react',
   ],
 
   /**

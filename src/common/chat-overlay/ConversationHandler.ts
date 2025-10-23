@@ -4,8 +4,8 @@ import { bareBonesPromptMixer } from '~/modules/persona/pmix/pmix';
 
 import { SystemPurposes } from '../../data';
 
-import { BeamStore, createBeamVanillaStore } from '~/modules/beam/store-beam_vanilla';
-import { useModuleBeamStore } from '~/modules/beam/store-module-beam';
+import { BeamStore, createBeamVanillaStore } from '~/modules/prism/store-beam_vanilla';
+import { useModuleBeamStore } from '~/modules/prism/store-module-prism';
 
 import type { DConversationId } from '~/common/stores/chat/chat.conversation';
 import type { DLLMId } from '~/common/stores/llms/llms.types';
@@ -207,7 +207,7 @@ export class ConversationHandler {
 
     void gcChatImageAssets(); // fire/forget
 
-    // if zeroing the messages, also terminate an active beam
+    // if zeroing the messages, also terminate an active prism
     if (!messages.length)
       this.beamStore.getState().terminateKeepingSettings();
   }
@@ -236,15 +236,15 @@ export class ConversationHandler {
   }
 
 
-  // Beam
+  // Prism
 
   getBeamStore = () => this.beamStore;
 
   /**
-   * Opens a beam over the given history
+   * Opens a prism over the given history
    *
-   * @param viewHistory The history up to the point where the beam is invoked
-   * @param importMessages If set, any message to import into the beam as pre-set rays
+   * @param viewHistory The history up to the point where the prism is invoked
+   * @param importMessages If set, any message to import into the prism as pre-set rays
    * @param destReplaceMessageId If set, the output will replace the message with this id, otherwise it will append to the history
    */
   beamInvoke(viewHistory: Readonly<DMessage[]>, importMessages: DMessage[], destReplaceMessageId: DMessage['id'] | null): void {
@@ -255,17 +255,17 @@ export class ConversationHandler {
       // set output when going back to the chat
       if (destReplaceMessageId) {
         // replace a single message in the conversation history
-        this.messageEdit(destReplaceMessageId, messageUpdate, true, true); // [chat] replace assistant:Beam contentParts
+        this.messageEdit(destReplaceMessageId, messageUpdate, true, true); // [chat] replace assistant:Prism contentParts
       } else {
         // replace (may truncate) the conversation history and append a message
-        const newMessage = createDMessageFromFragments('assistant', messageUpdate.fragments); // [chat] append Beam message
+        const newMessage = createDMessageFromFragments('assistant', messageUpdate.fragments); // [chat] append Prism message
         newMessage.purposeId = getConversationSystemPurposeId(this.conversationId) ?? undefined;
         newMessage.generator = messageUpdate.generator;
         // TODO: put the other rays in the metadata?! (reqby @Techfren)
         this.messageAppend(newMessage);
       }
 
-      // close beam
+      // close prism
       terminateKeepingSettings();
     };
 

@@ -67,7 +67,7 @@ class _EdgePerformanceFallback {
  */
 function _getPerformanceAPI(): typeof performance | _EdgePerformanceFallback {
 
-  // FIXME: we are forcing the fallback for now, as the performance API would conflict with Beam
+  // FIXME: we are forcing the fallback for now, as the performance API would conflict with Prism
   //        as 'marks' are global and would conflict between chats.
   // if (typeof performance !== 'undefined' && typeof performance.mark === 'function' && typeof performance.measure === 'function')
   //   return performance;

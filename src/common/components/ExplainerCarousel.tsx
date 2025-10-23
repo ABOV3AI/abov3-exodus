@@ -10,7 +10,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { ScaledTextBlockRenderer } from '~/modules/blocks/ScaledTextBlockRenderer';
 
 import { BigAgiSquircleIcon } from '~/common/components/icons/big-agi/BigAgiSquircleIcon';
-import { ChatBeamIcon } from '~/common/components/icons/ChatBeamIcon';
+import { ChatPrismIcon } from '~/common/components/icons/ChatPrismIcon';
 import { ShortcutKey, useGlobalShortcuts } from '~/common/components/shortcuts/useGlobalShortcuts';
 import { animationTextShadowLimey } from '~/common/util/animUtils';
 import { hasGoogleAnalytics, sendGAEvent } from '~/common/components/3rdparty/GoogleAnalytics';
@@ -243,7 +243,7 @@ export function ExplainerCarousel(props: {
           variant='solid'
           color={colorButtons}
           onClick={handleNextPage}
-          endDecorator={isLastPage ? <ChatBeamIcon /> : <ArrowForwardRoundedIcon />}
+          endDecorator={isLastPage ? <ChatPrismIcon /> : <ArrowForwardRoundedIcon />}
           sx={buttonNextSx}
         >
           {isLastPage ? 'Start' : 'Next'}

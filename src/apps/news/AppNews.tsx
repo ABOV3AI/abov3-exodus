@@ -19,7 +19,7 @@ import { useIsMobile } from '~/common/components/useMatchMedia';
 
 import { BigAgiProNewsCallout, bigAgiProUrl } from './bigAgiPro.data';
 import { DevNewsItem, newsFrontendTimestamp, NewsItems } from './news.data';
-import { beamNewsCallout } from './beam.data';
+import { prismNewsCallout } from './prism.data';
 
 
 // number of news items to show by default, before the expander
@@ -214,10 +214,10 @@ export function AppNews() {
               {/*  </Box>*/}
               {/*)}*/}
 
-              {/* Inject the Beam item here*/}
+              {/* Inject the Prism item here*/}
               {idx === 2 && (
                 <Box sx={{ mb: 3 }}>
-                  {beamNewsCallout}
+                  {prismNewsCallout}
                 </Box>
               )}
 

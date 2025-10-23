@@ -67,12 +67,12 @@ export type DMessageVoidFragment = _DMessageFragmentWrapper<'void',
 >;
 
 
-// Future Examples: up to 1 per message, containing the Rays and Merges that would be used to restore the Beam state - could be volatile (omitted at save)
+// Future Examples: up to 1 per message, containing the Rays and Merges that would be used to restore the Prism state - could be volatile (omitted at save)
 // could not be the data store itself, but only used for save/reload
-// export type DMessageBeamFragment = DMessageBaseFragment<'beam'> & {
-//   ft: 'beam',
+// export type DMessageBeamFragment = DMessageBaseFragment<'prism'> & {
+//   ft: 'prism',
 //   fId: DMessageFragmentId;
-//   beam: { rays: any[], merges: any[], ... };
+//   prism: { rays: any[], merges: any[], ... };
 // }
 
 // Sentinel: force the typesystem to work, bark, and detect/reveal corner cases - unused aside from revealing fragment type issues

@@ -35,7 +35,7 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { ModelVendorAnthropic } from '~/modules/llms/vendors/anthropic/anthropic.vendor';
 
 import { AnthropicIcon } from '~/common/components/icons/vendors/AnthropicIcon';
-import { ChatBeamIcon } from '~/common/components/icons/ChatBeamIcon';
+import { ChatPrismIcon } from '~/common/components/icons/ChatPrismIcon';
 import { CloseablePopup } from '~/common/components/CloseablePopup';
 import { DMessage, DMessageId, DMessageUserFlag, DMetaReferenceItem, MESSAGE_FLAG_AIX_SKIP, MESSAGE_FLAG_NOTIFY_COMPLETE, MESSAGE_FLAG_STARRED, MESSAGE_FLAG_VND_ANT_CACHE_AUTO, MESSAGE_FLAG_VND_ANT_CACHE_USER, messageFragmentsReduceText, messageHasUserFlag } from '~/common/stores/chat/chat.message';
 import { KeyStroke } from '~/common/components/KeyStroke';
@@ -635,7 +635,7 @@ export function ChatMessage(props: {
 
     // style: when the message is being edited
     ...(isEditingText && {
-      zIndex: 1, // this is to make the whole message appear on top of Beam Scatter > RayControlsMemo
+      zIndex: 1, // this is to make the whole message appear on top of Prism Scatter > RayControlsMemo
     }),
 
     // for: ENABLE_COPY_MESSAGE_OVERLAY
@@ -1035,7 +1035,7 @@ export function ChatMessage(props: {
               <Switch checked={showDiff} onChange={handleOpsToggleShowDiff} sx={{ ml: 'auto' }} />
             </MenuItem>
           )}
-          {/* Beam/Restart */}
+          {/* Prism/Restart */}
           {(!!props.onMessageAssistantFrom || !!props.onMessageBeam) && <ListDivider />}
           {!!props.onMessageAssistantFrom && (
             <MenuItem disabled={fromSystem} onClick={handleOpsAssistantFrom}>
@@ -1050,13 +1050,13 @@ export function ChatMessage(props: {
           {!!props.onMessageBeam && (
             <MenuItem disabled={fromSystem} onClick={handleOpsBeamFrom}>
               <ListItemDecorator>
-                <ChatBeamIcon color={fromSystem ? undefined : 'primary'} />
+                <ChatPrismIcon color={fromSystem ? undefined : 'primary'} />
               </ListItemDecorator>
               {!fromAssistant
-                ? <>Beam <span style={{ opacity: 0.5 }}>from here</span></>
+                ? <>Prism <span style={{ opacity: 0.5 }}>from here</span></>
                 : !props.isBottom
-                  ? <>Beam Edit</>
-                  : <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'space-between', gap: 1 }}>Beam Edit<KeyStroke variant='outlined' combo='Ctrl + Shift + B' /></Box>}
+                  ? <>Prism Edit</>
+                  : <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'space-between', gap: 1 }}>Prism Edit<KeyStroke variant='outlined' combo='Ctrl + Shift + B' /></Box>}
             </MenuItem>
           )}
         </CloseablePopup>
@@ -1095,9 +1095,9 @@ export function ChatMessage(props: {
                   {props.hasInReferenceTo ? <ReplyAllRoundedIcon sx={{ fontSize: 'xl' }} /> : <ReplyRoundedIcon sx={{ fontSize: 'xl' }} />}
                 </IconButton>
               </Tooltip>}
-              {/*{!!props.onMessageBeam && fromAssistant && <Tooltip disableInteractive arrow placement='top' title='Beam'>*/}
+              {/*{!!props.onMessageBeam && fromAssistant && <Tooltip disableInteractive arrow placement='top' title='Prism'>*/}
               {/*  <IconButton color='primary'>*/}
-              {/*    <ChatBeamIcon sx={{ fontSize: 'xl' }} />*/}
+              {/*    <ChatPrismIcon sx={{ fontSize: 'xl' }} />*/}
               {/*  </IconButton>*/}
               {/*</Tooltip>}*/}
               {!!onAddInReferenceTo && <Divider />}

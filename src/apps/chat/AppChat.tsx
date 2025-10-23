@@ -11,7 +11,7 @@ import type { TradeConfig } from '~/modules/trade/TradeModal';
 import { downloadSingleChat, importConversationsFromFilesAtRest, openConversationsAtRestPicker } from '~/modules/trade/trade.client';
 import { imaginePromptFromTextOrThrow } from '~/modules/aifn/imagine/imaginePromptFromText';
 import { elevenLabsSpeakText } from '~/modules/elevenlabs/elevenlabs.client';
-import { useAreBeamsOpen } from '~/modules/beam/store-beam.hooks';
+import { useAreBeamsOpen } from '~/modules/prism/store-prism.hooks';
 import { useCapabilityTextToImage } from '~/modules/t2i/t2i.client';
 
 import type { DConversation, DConversationId } from '~/common/stores/chat/chat.conversation';
@@ -44,10 +44,10 @@ import { useUIComplexityIsMinimal } from '~/common/stores/store-ui';
 import { useUXLabsStore } from '~/common/stores/store-ux-labs';
 
 import { ChatPane } from './components/layout-pane/ChatPane';
-import { ChatBarBeam } from './components/layout-bar/ChatBarBeam';
+import { ChatBarPrism } from './components/layout-bar/ChatBarPrism';
 import { ChatBarAltTitle } from './components/layout-bar/ChatBarAltTitle';
 import { ChatBarChat } from './components/layout-bar/ChatBarChat';
-import { ChatBeamWrapper } from './components/ChatBeamWrapper';
+import { ChatPrismWrapper } from './components/ChatPrismWrapper';
 import { ChatDrawerMemo } from './components/layout-drawer/ChatDrawer';
 import { ChatMessageList } from './components/ChatMessageList';
 import { Composer } from './components/composer/Composer';
@@ -313,7 +313,7 @@ export function AppChat() {
     if (!focusedPaneConversationId) return;
     const cHandler = ConversationsManager.getHandler(focusedPaneConversationId);
     if (!cHandler.isValid()) return;
-    const inputHistory = cHandler.historyViewHeadOrThrow('chat-beam-shortcut');
+    const inputHistory = cHandler.historyViewHeadOrThrow('chat-prism-shortcut');
     if (!inputHistory.length) return;
 
     // TODO: replace the Persona and Auto-Cache-hint in the history?
@@ -471,7 +471,7 @@ export function AppChat() {
   const barAltTitle = showAltTitleBar ? focusedChatTitle ?? 'No Chat' : null;
 
   const focusedBarContent = React.useMemo(() => beamOpenStoreInFocusedPane
-      ? <ChatBarBeam conversationTitle={focusedChatTitle ?? 'No Chat'} beamStore={beamOpenStoreInFocusedPane} isMobile={isMobile} />
+      ? <ChatBarPrism conversationTitle={focusedChatTitle ?? 'No Chat'} beamStore={beamOpenStoreInFocusedPane} isMobile={isMobile} />
       : (barAltTitle === null)
         ? <ChatBarChat conversationId={focusedPaneConversationId} llmDropdownRef={llmDropdownRef} personaDropdownRef={personaDropdownRef} />
         : <ChatBarAltTitle conversationId={focusedPaneConversationId} conversationTitle={barAltTitle} />
@@ -557,7 +557,7 @@ export function AppChat() {
     let withinBeam = false;
     const activeElement = document.activeElement as HTMLElement;
     if (activeElement) {
-      messageListElement = document.querySelector('[role=beam-list]') as HTMLElement;
+      messageListElement = document.querySelector('[role=prism-list]') as HTMLElement;
       if (!messageListElement)
         messageListElement = activeElement.closest('[role=chat-messages-list]') as HTMLElement;
       else
@@ -572,7 +572,7 @@ export function AppChat() {
     const isAtBottom = Math.abs(scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight) < 1;
 
     // determine the current message and next index
-    const messageElements = Array.from(messageListElement.querySelectorAll(withinBeam ? '[role=beam-card]' : '[role=chat-message]')) as HTMLElement[];
+    const messageElements = Array.from(messageListElement.querySelectorAll(withinBeam ? '[role=prism-card]' : '[role=chat-message]')) as HTMLElement[];
     const currentIndex = messageElements.findIndex(el => el.contains(activeElement));
 
     // if going down and we're at/past the last message, scroll to bottom
@@ -593,7 +593,7 @@ export function AppChat() {
   useGlobalShortcuts('AppChat', React.useMemo(() => [
     // focused conversation
     { key: 'z', ctrl: true, shift: true, disabled: isFocusedChatEmpty, action: handleMessageRegenerateLastInFocusedPane, description: 'Retry' },
-    { key: 'b', ctrl: true, shift: true, disabled: isFocusedChatEmpty, action: handleMessageBeamLastInFocusedPane, description: 'Beam Edit' },
+    { key: 'b', ctrl: true, shift: true, disabled: isFocusedChatEmpty, action: handleMessageBeamLastInFocusedPane, description: 'Prism Edit' },
     { key: 'o', ctrl: true, action: handleConversationsImportFormFilePicker },
     { key: 's', ctrl: true, action: () => handleFileSaveConversation(focusedPaneConversationId) },
     { key: 'n', ctrl: true, shift: true, action: () => handleConversationNewInFocusedPane(false, false) },
@@ -631,8 +631,8 @@ export function AppChat() {
         const _paneConversationId = pane.conversationId;
         const _paneChatHandler = paneHandlers[idx] ?? null;
         const _paneIsIncognito = _paneChatHandler?.isIncognito() ?? false;
-        const _paneBeamStoreApi = paneBeamStores[idx] ?? null;
-        const _paneBeamIsOpen = !!beamsOpens?.[idx] && !!_paneBeamStoreApi;
+        const _panePrismStoreApi = paneBeamStores[idx] ?? null;
+        const _paneBeamIsOpen = !!beamsOpens?.[idx] && !!_panePrismStoreApi;
         const _panesCount = chatPanes.length;
         const _keyAndId = `chat-pane-${pane.paneId}`;
         const _sepId = `sep-pane-${idx}`;
@@ -729,8 +729,8 @@ export function AppChat() {
               )}
 
               {_paneBeamIsOpen && (
-                <ChatBeamWrapper
-                  beamStore={_paneBeamStoreApi}
+                <ChatPrismWrapper
+                  beamStore={_panePrismStoreApi}
                   isMobile={isMobile}
                   inlineSx={chatBeamWrapperSx}
                 />

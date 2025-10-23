@@ -18,7 +18,7 @@ const MAX_CONCURRENT_PANES = 4;
 const DEBUG_PANES_MANAGER = false;
 
 
-// Future: support different types of panes: chat, docs, diff, settings, (beam?) etc.
+// Future: support different types of panes: chat, docs, diff, settings, (prism?) etc.
 // type Pane = ChatPane;
 
 interface ChatPane {

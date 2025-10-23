@@ -48,8 +48,8 @@ interface UIPreferencesStore {
   showModelsHidden: boolean;
   setShowModelsHidden: (showModelsHidden: boolean) => void;
 
-  composerQuickButton: 'off' | 'call' | 'beam';
-  setComposerQuickButton: (composerQuickButton: 'off' | 'call' | 'beam') => void;
+  composerQuickButton: 'off' | 'call' | 'prism';
+  setComposerQuickButton: (composerQuickButton: 'off' | 'call' | 'prism') => void;
 
   // Advanced features
 
@@ -117,8 +117,8 @@ export const useUIPreferencesStore = create<UIPreferencesStore>()(
       showModelsHidden: false,
       setShowModelsHidden: (showModelsHidden: boolean) => set({ showModelsHidden }),
 
-      composerQuickButton: 'beam',
-      setComposerQuickButton: (composerQuickButton: 'off' | 'call' | 'beam') => set({ composerQuickButton }),
+      composerQuickButton: 'prism',
+      setComposerQuickButton: (composerQuickButton: 'off' | 'call' | 'prism') => set({ composerQuickButton }),
 
       // Advanced features
 
@@ -234,7 +234,7 @@ export function uiSetPanelGroupCollapsed(key: string, collapsed: boolean): void 
 //  'share-chat-link'                 // not shared a Chat Link yet
 type KnownKeys =
   | 'acknowledge-translation-warning' // displayed if Chrome is translating the page (may crash)
-  | 'beam-wizard'                     // first Beam
+  | 'prism-wizard'                     // first Prism
   | 'call-wizard'                     // first Call
   | 'composer-shift-enter'            // not used Shift + Enter in the Composer yet
   | 'composer-alt-enter'              // not used Alt + Enter in the Composer yet

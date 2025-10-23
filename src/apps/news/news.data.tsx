@@ -5,7 +5,7 @@ import { Box, Chip, SvgIconProps, Typography } from '@mui/joy';
 import GoogleIcon from '@mui/icons-material/Google';
 
 import { AnthropicIcon } from '~/common/components/icons/vendors/AnthropicIcon';
-import { ChatBeamIcon } from '~/common/components/icons/ChatBeamIcon';
+import { ChatPrismIcon } from '~/common/components/icons/ChatPrismIcon';
 import { ExternalLink } from '~/common/components/ExternalLink';
 import { GroqIcon } from '~/common/components/icons/vendors/GroqIcon';
 import { LocalAIIcon } from '~/common/components/icons/vendors/LocalAIIcon';
@@ -18,7 +18,7 @@ import { Release } from '~/common/app.release';
 import { clientUtmSource } from '~/common/util/pwaUtils';
 import { platformAwareKeystrokes } from '~/common/components/KeyStroke';
 
-import { beamBlogUrl } from './beam.data';
+import { prismBlogUrl } from './prism.data';
 
 
 // Cover Images
@@ -27,7 +27,7 @@ import { beamBlogUrl } from './beam.data';
 import coverV200 from '../../../public/images/covers/release-cover-v2.0.0.png';
 // A landscape image of a capybara made entirely of clear, translucent crystal, wearing oversized black sunglasses, sitting at a sleek, minimalist desk. The desk is bathed in a soft, ethereal light emanating from within the capybara, symbolizing clarity and transparency. The capybara is typing on a futuristic, holographic keyboard, with floating code snippets and diagrams surrounding it, illustrating an improved developer experience and Auto-Diagrams feature. The background is a clean, white space with subtle, geometric patterns. Close-up photography style with a bokeh effect.
 import coverV116 from '../../../public/images/covers/release-cover-v1.16.0.png';
-// (not exactly) Imagine a futuristic, holographically bounded space. Inside this space, four capybaras stand. Three of them are in various stages of materialization, their forms made up of thousands of tiny, vibrant particles of electric blues, purples, and greens. These particles represent the merging of different intelligent inputs, symbolizing the concept of 'Beaming'. Positioned slightly towards the center and ahead of the others, the fourth capybara is fully materialized and composed of shimmering golden cotton candy, representing the optimal solution the 'Beam' feature seeks to achieve. The golden capybara gazes forward confidently, embodying a target achieved. Illuminated grid lines softly glow on the floor and walls of the setting, amplifying the futuristic aspect. In front of the golden capybara, floating, holographic interfaces depict complex networks of points and lines symbolizing the solution space 'Beaming' explores. The capybara interacts with these interfaces, implying the user's ability to control and navigate towards the best outcomes.
+// (not exactly) Imagine a futuristic, holographically bounded space. Inside this space, four capybaras stand. Three of them are in various stages of materialization, their forms made up of thousands of tiny, vibrant particles of electric blues, purples, and greens. These particles represent the merging of different intelligent inputs, symbolizing the concept of 'Beaming'. Positioned slightly towards the center and ahead of the others, the fourth capybara is fully materialized and composed of shimmering golden cotton candy, representing the optimal solution the 'Prism' feature seeks to achieve. The golden capybara gazes forward confidently, embodying a target achieved. Illuminated grid lines softly glow on the floor and walls of the setting, amplifying the futuristic aspect. In front of the golden capybara, floating, holographic interfaces depict complex networks of points and lines symbolizing the solution space 'Beaming' explores. The capybara interacts with these interfaces, implying the user's ability to control and navigate towards the best outcomes.
 import coverV115 from '../../../public/images/covers/release-cover-v1.15.0.png';
 // An image of a capybara sculpted entirely from iridescent blue cotton candy, gazing into a holographic galaxy of floating AI model icons (representing various AI models like Perplexity, Groq, etc.). The capybara is wearing a lightweight, futuristic headset, and its paws are gesturing as if orchestrating the movement of the models in the galaxy. The backdrop is minimalist, with occasional bursts of neon light beams, creating a sense of depth and wonder. Close-up photography, bokeh effect, with a dark but vibrant background to make the colors pop.
 import coverV114 from '../../../public/images/covers/release-cover-v1.14.0.png';
@@ -82,7 +82,7 @@ export const NewsItems: NewsItem[] = [
       { text: <>Custom animated persona icon system</> },
       { text: <>Built on the powerful Big-AGI foundation</> },
       { text: <>Full support for 100+ AI models across 16+ providers</> },
-      { text: <><B>Beam</B> multi-model reasoning for better answers</> },
+      { text: <><B>Prism</B> multi-model reasoning for better answers</> },
       { text: <><B>Local-first</B> architecture - your data stays on your device</> },
       { text: <>Professional personas: Developer, Scientist, Executive, and more</> },
       { text: <>Visit <ExternalLink href='https://abov3.com'>abov3.com</ExternalLink> for more information</> },
@@ -99,7 +99,7 @@ const _archivedNewsItems: NewsItem[] = [
     versionCoverImage: coverV200,
     items: [
       { text: <><B wow>Big-AGI Open</B> is ready and more productive and faster than ever, with:</> },
-      { text: <><B>Beam 2</B>: multi-modal, program-based, follow-ups, save presets</> },
+      { text: <><B>Prism 2</B>: multi-modal, program-based, follow-ups, save presets</> },
       { text: <>Top-notch AI models support including <B>agentic models</B> and <B>reasoning models</B></> },
       { text: <><B>Image Generation</B> and editing with Nano Banana and gpt-image-1</> },
       { text: <><B>Web Search</B> with citations for supported models</> },
@@ -117,7 +117,7 @@ const _archivedNewsItems: NewsItem[] = [
     // versionDate: new Date('2024-05-09T00:00:00Z'),
     versionCoverImage: coverV116,
     items: [
-      { text: <><B href={beamBlogUrl} wow>Beam</B> core and UX improvements based on user feedback</>, issue: 470, icon: ChatBeamIcon },
+      { text: <><B href={prismBlogUrl} wow>Prism</B> core and UX improvements based on user feedback</>, issue: 470, icon: ChatPrismIcon },
       { text: <>Chat <B>Cost estimation</B> with supported models* 💰</> },
       { text: <>Major <B>Auto-Diagrams</B> enhancements</> },
       { text: <>Save/load chat files with Ctrl+S / O</>, issue: 466 },
@@ -140,11 +140,11 @@ const _archivedNewsItems: NewsItem[] = [
   },
   {
     versionCode: '1.15',
-    versionName: 'Beam',
+    versionName: 'Prism',
     versionDate: new Date('2024-04-10T08:00:00Z'),
     versionCoverImage: coverV115,
     items: [
-      { text: <><B href={beamBlogUrl} wow>Beam</B>: Find better answers with multi-model AI reasoning</>, issue: 443, icon: ChatBeamIcon },
+      { text: <><B href={prismBlogUrl} wow>Prism</B>: Find better answers with multi-model AI reasoning</>, issue: 443, icon: ChatPrismIcon },
       // { text: <><B>Explore diverse perspectives</B> and <B>synthesize optimal responses</B></>, noBullet: true },
       { text: <><B issue={436}>Auto-configure</B> models for managed deployments</>, issue: 436 },
       { text: <>Message <B issue={476}>starring ⭐</B>, filtering and attachment</>, issue: 476 },

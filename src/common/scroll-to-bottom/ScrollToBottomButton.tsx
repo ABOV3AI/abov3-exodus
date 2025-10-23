@@ -4,7 +4,7 @@ import type { SxProps } from '@mui/joy/styles/types';
 import { IconButton } from '@mui/joy';
 import KeyboardDoubleArrowDownIcon from '@mui/icons-material/KeyboardDoubleArrowDown';
 
-import { themeZIndexBeamView } from '~/common/app.theme';
+import { themeZIndexPrismView } from '~/common/app.theme';
 
 import { useScrollToBottom } from './useScrollToBottom';
 
@@ -32,7 +32,7 @@ const absoluteButtonSx: SxProps = {
   borderColor: 'neutral.500',
   borderRadius: '50%',
   boxShadow: 'sm',
-  zIndex: themeZIndexBeamView + 1, // stay on top of the Chat Message buttons (e.g. copy)
+  zIndex: themeZIndexPrismView + 1, // stay on top of the Chat Message buttons (e.g. copy)
 
   // place this on the bottom-right corner (FAB-like)
   position: 'absolute',

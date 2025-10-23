@@ -136,9 +136,9 @@ export function ChatMessageList(props: {
   }, [conversationHandler, conversationId, onConversationExecuteHistory]);
 
   const handleMessageBeam = React.useCallback(async (messageId: DMessageId) => {
-    // Message option menu Beam
+    // Message option menu Prism
     if (!conversationId || !conversationHandler || !conversationHandler.isValid()) return;
-    const inputHistory = conversationHandler.historyViewHeadOrThrow('chat-beam-message');
+    const inputHistory = conversationHandler.historyViewHeadOrThrow('chat-prism-message');
     if (!inputHistory.length) return;
 
     // TODO: replace the Persona and Auto-Cache-hint in the history?
@@ -148,7 +148,7 @@ export function ChatMessageList(props: {
     const lastTruncatedMessage = truncatedHistory[truncatedHistory.length - 1];
     if (!lastTruncatedMessage) return;
 
-    // assistant: do an in-place beam
+    // assistant: do an in-place prism
     if (lastTruncatedMessage.role === 'assistant') {
       if (truncatedHistory.length >= 2)
         conversationHandler.beamInvoke(truncatedHistory.slice(0, -1), [lastTruncatedMessage], lastTruncatedMessage.id);

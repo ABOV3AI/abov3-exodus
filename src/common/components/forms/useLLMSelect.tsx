@@ -98,7 +98,7 @@ const _slotProps: SelectSlotsAndSlotProps<false>['slotProps'] = {
 
       // Option: clip width to 200...360px
       [`& .${optionClasses.root}`]: {
-        // NOTE: was maxWidth: 'min(600px, calc(100dvw - 0.25rem))', however llmSelect could be wider on Beam
+        // NOTE: was maxWidth: 'min(600px, calc(100dvw - 0.25rem))', however llmSelect could be wider on Prism
         maxWidth: 'calc(100dvw - 0.25rem)', // the small reduction is to avoid accidental h-scrolling because of the border
         minWidth: 200,
       } as const,

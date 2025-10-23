@@ -71,8 +71,8 @@ export async function _handleExecute(chatExecuteMode: ChatExecuteMode, conversat
     case 'generate-content':
       return await runPersonaOnConversationHead(chatLLMId, conversationId);
 
-    case 'beam-content':
-      const updatedInputHistory = cHandler.historyViewHeadOrThrow('chat-beam-execute');
+    case 'prism-content':
+      const updatedInputHistory = cHandler.historyViewHeadOrThrow('chat-prism-execute');
       cHandler.beamInvoke(updatedInputHistory, [], null);
       return true;
 

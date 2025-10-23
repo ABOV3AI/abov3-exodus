@@ -61,14 +61,14 @@ export async function _handleExecuteCommand(lastMessageId: DMessageId, lastMessa
       cHandler.messageAppendAssistantText(`Available Chat Commands:\n${helpPrettyChatCommands()}`, 'help');
       return true;
 
-    // NOTE 12/9/2024: removed this as /beam should not be a command, but it's already a chat mode, e.g. can't be headless executed.
+    // NOTE 12/9/2024: removed this as /prism should not be a command, but it's already a chat mode, e.g. can't be headless executed.
     //                 the following code is here for reference/historical reasons
-    // case 'cmd-mode-beam':
+    // case 'cmd-mode-prism':
     //   if (isErrorNoArgs || !userText)
     //     return false;
-    //   // remove '/beam ', as we want to be a user chat message
+    //   // remove '/prism ', as we want to be a user chat message
     //   cHandler.messageFragmentReplace(lastMessageId, lastMessageFirstFragment.fId, createTextContentFragment(userText), true);
-    //   cHandler.beamInvoke(cHandler.historyViewHead('cmd-mode-beam'), [], null);
+    //   cHandler.beamInvoke(cHandler.historyViewHead('cmd-mode-prism'), [], null);
     //   return true;
 
     case 'cmd-mode-react':

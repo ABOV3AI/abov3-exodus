@@ -4,7 +4,7 @@
  */
 export type ChatExecuteMode =
   | 'append-user'
-  | 'beam-content'
+  | 'prism-content'
   | 'generate-content'
   | 'generate-image'
   | 'react-content'

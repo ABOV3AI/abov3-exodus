@@ -20,7 +20,7 @@ import { autoConversationTitle } from '~/modules/aifn/autotitle/autoTitle';
 import type { DConversationId } from '~/common/stores/chat/chat.conversation';
 import type { DFolder } from '~/common/stores/folders/store-chat-folders';
 import { ANIM_BUSY_TYPING } from '~/common/util/dMessageUtils';
-import { ChatBeamIcon } from '~/common/components/icons/ChatBeamIcon';
+import { ChatPrismIcon } from '~/common/components/icons/ChatPrismIcon';
 import { InlineTextarea } from '~/common/components/InlineTextarea';
 import { isDeepEqual } from '~/common/util/hooks/useDeep';
 import { useChatStore } from '~/common/stores/chat/store-chats';
@@ -215,7 +215,7 @@ function ChatDrawerItem(props: {
     {(props.showSymbols || isIncognito) && (
       <ListItemDecorator>
         {hasBeamOpen ? (
-          <ChatBeamIcon sx={{ fontSize: 'xl' }} />
+          <ChatPrismIcon sx={{ fontSize: 'xl' }} />
         ) : isIncognito ? (
           <Avatar variant='soft' sx={{ backgroundColor: `#9C27B022`, width: '1.5rem', height: '1.5rem' }}>
             <VisibilityOffIcon sx={{ fontSize: 'md', color: `#9C27B0` }} />
