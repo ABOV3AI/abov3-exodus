@@ -22,7 +22,7 @@ Like light passing through a prism reveals its complete spectrum, Prism reveals 
 - **Risk Mitigation:** Cross-validate outputs across model architectures
 - **Accelerated Discovery:** Parallel processing reduces time-to-insight
 
-![ABOV3 PRISM Visualization](https://abov3.com/assets/prism-scatter-viz.svg)
+![ABOV3 PRISM Visualization](/assets/prism-scatter-viz.svg)
 `,
   },
   {
@@ -68,7 +68,7 @@ The Gather phase applies advanced fusion algorithms to synthesize multiple AI ou
 - **Comprehensive Coverage:** Captures nuances missed by single-model approaches
 - **Audit Trail:** Transparent view of contributing models and synthesis logic
 
-![ABOV3 PRISM Visualization](https://abov3.com/assets/prism-gather-viz.svg)
+![ABOV3 PRISM Visualization](/assets/prism-gather-viz.svg)
 
 **Optimization Strategy:** Iteratively refine through Scatter-Gather cycles until output meets enterprise quality standards.
 `,
