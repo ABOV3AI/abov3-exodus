@@ -142,8 +142,8 @@ export function makeMessageAvatarIcon(
         || messageGeneratorName === 'Prodia';
       const isReact = messageGeneratorName?.startsWith('react-');
 
-      // Pending animations - ABOV3 dual-logo with smooth fading and rolling border (Extra mode only)
-      if (uiComplexityMode === 'extra' && messageIncomplete)
+      // Pending animations - ABOV3 dual-logo with smooth fading and rolling border
+      if (messageIncomplete)
         return <Box sx={{
           ...avatarIconSx,
           display: 'flex',
