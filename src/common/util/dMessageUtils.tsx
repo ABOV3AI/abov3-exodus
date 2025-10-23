@@ -142,7 +142,7 @@ export function makeMessageAvatarIcon(
         || messageGeneratorName === 'Prodia';
       const isReact = messageGeneratorName?.startsWith('react-');
 
-      // Pending animations - ABOV3 dual-logo with fade/pulse animation (Extra mode only)
+      // Pending animations - ABOV3 dual-logo with smooth fading and rolling border (Extra mode only)
       if (uiComplexityMode === 'extra' && messageIncomplete)
         return <Box sx={{
           ...avatarIconSx,
@@ -150,101 +150,136 @@ export function makeMessageAvatarIcon(
           alignItems: 'center',
           justifyContent: 'center',
           position: 'relative',
-          borderRadius: 'sm',
-          overflow: 'hidden',
+          borderRadius: '50%',
+          overflow: 'visible',
         }}>
-          {/* Outer pulsing ring with rotation */}
-          <Box sx={{
-            position: 'absolute',
-            width: '100%',
-            height: '100%',
-            borderRadius: 'sm',
-            border: '2px solid',
-            borderColor: 'primary.solidBg',
-            animation: 'abov3-pulse-rotate 3s ease-in-out infinite',
-            '@keyframes abov3-pulse-rotate': {
-              '0%, 100%': {
-                opacity: 0.3,
-                transform: 'scale(1) rotate(0deg)',
-              },
-              '50%': {
-                opacity: 0.7,
-                transform: 'scale(1.15) rotate(180deg)',
-              },
-            },
-          }} />
-
-          {/* Background glow effect */}
+          {/* Rolling border with gradient effect */}
           <Box sx={{
             position: 'absolute',
             width: '120%',
             height: '120%',
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(0, 212, 255, 0.2) 0%, transparent 70%)',
-            animation: 'abov3-glow-pulse 2s ease-in-out infinite',
-            '@keyframes abov3-glow-pulse': {
-              '0%, 100%': {
-                opacity: 0.4,
-                transform: 'scale(0.8)',
+            background: 'conic-gradient(from 0deg, transparent 0deg, var(--joy-palette-primary-solidBg) 90deg, var(--joy-palette-primary-solidBg) 180deg, transparent 270deg)',
+            animation: 'abov3-border-roll 2s linear infinite',
+            '@keyframes abov3-border-roll': {
+              '0%': {
+                transform: 'rotate(0deg)',
               },
-              '50%': {
-                opacity: 0.8,
-                transform: 'scale(1.2)',
+              '100%': {
+                transform: 'rotate(360deg)',
               },
             },
           }} />
 
-          {/* First Logo - Black background version (fades in/out) */}
+          {/* Inner border ring */}
           <Box sx={{
             position: 'absolute',
-            animation: 'abov3-fade-1 4s ease-in-out infinite',
-            '@keyframes abov3-fade-1': {
+            width: '110%',
+            height: '110%',
+            borderRadius: '50%',
+            border: '2px solid',
+            borderColor: 'background.surface',
+            zIndex: 1,
+          }} />
+
+          {/* Background glow pulse */}
+          <Box sx={{
+            position: 'absolute',
+            width: '140%',
+            height: '140%',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(0, 212, 255, 0.15) 0%, transparent 70%)',
+            animation: 'abov3-glow-pulse 3s ease-in-out infinite',
+            zIndex: 0,
+            '@keyframes abov3-glow-pulse': {
               '0%, 100%': {
+                opacity: 0.3,
+                transform: 'scale(0.9)',
+              },
+              '50%': {
+                opacity: 0.7,
+                transform: 'scale(1.1)',
+              },
+            },
+          }} />
+
+          {/* Solid black ABOV3 logo (fades in/out) */}
+          <Box sx={{
+            position: 'absolute',
+            zIndex: 2,
+            animation: 'abov3-crossfade-1 3s ease-in-out infinite',
+            '@keyframes abov3-crossfade-1': {
+              '0%': {
+                opacity: 1,
+                transform: 'scale(1)',
+              },
+              '33%': {
                 opacity: 1,
                 transform: 'scale(1)',
               },
               '50%': {
                 opacity: 0,
-                transform: 'scale(0.9)',
+                transform: 'scale(0.85)',
+              },
+              '83%': {
+                opacity: 0,
+                transform: 'scale(0.85)',
+              },
+              '100%': {
+                opacity: 1,
+                transform: 'scale(1)',
               },
             },
           }}>
             <NextImage
               src="/icons/favicon-black.png"
-              alt="Processing"
-              width={larger ? 28 : 20}
-              height={larger ? 28 : 20}
+              alt="Loading"
+              width={larger ? 32 : 24}
+              height={larger ? 32 : 24}
               style={{
-                width: larger ? '28px' : '20px',
-                height: larger ? '28px' : '20px',
+                width: larger ? '32px' : '24px',
+                height: larger ? '32px' : '24px',
                 objectFit: 'contain',
               }}
             />
           </Box>
 
-          {/* Second Logo - Alternative version (fades opposite) */}
+          {/* Outline ABOV3 logo (fades opposite) */}
           <Box sx={{
             position: 'absolute',
-            animation: 'abov3-fade-2 4s ease-in-out infinite',
-            '@keyframes abov3-fade-2': {
-              '0%, 100%': {
+            zIndex: 2,
+            animation: 'abov3-crossfade-2 3s ease-in-out infinite',
+            '@keyframes abov3-crossfade-2': {
+              '0%': {
                 opacity: 0,
-                transform: 'scale(0.9)',
+                transform: 'scale(0.85)',
+              },
+              '33%': {
+                opacity: 0,
+                transform: 'scale(0.85)',
               },
               '50%': {
                 opacity: 1,
                 transform: 'scale(1)',
+              },
+              '83%': {
+                opacity: 1,
+                transform: 'scale(1)',
+              },
+              '100%': {
+                opacity: 0,
+                transform: 'scale(0.85)',
               },
             },
           }}>
             <NextImage
               src="/icons/favicon-alt.png"
               alt="Processing"
-              width={larger ? 28 : 20}
-              height={larger ? 28 : 20}
+              width={larger ? 32 : 24}
+              height={larger ? 32 : 24}
               style={{
-                width: larger ? '28px' : '20px',
-                height: larger ? '28px' : '20px',
+                width: larger ? '32px' : '24px',
+                height: larger ? '32px' : '24px',
                 objectFit: 'contain',
               }}
             />
