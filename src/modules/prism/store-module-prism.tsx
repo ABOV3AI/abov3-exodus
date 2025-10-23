@@ -51,8 +51,8 @@ interface ModuleBeamStore extends ModuleBeamState {
   toggleGatherAutoStartAfterScatter: () => void;
   toggleGatherShowAllPrompts: () => void;
 
-  setBeamOpenForConversation: (conversationId: DConversationId, isOpen: boolean) => void;
-  clearBeamOpenForConversation: (conversationId: DConversationId) => void;
+  setPrismOpenForConversation: (conversationId: DConversationId, isOpen: boolean) => void;
+  clearPrismOpenForConversation: (conversationId: DConversationId) => void;
 }
 
 
@@ -110,7 +110,7 @@ export const useModulePrismStore = create<ModuleBeamStore>()(persist(
 
     toggleGatherShowAllPrompts: () => _set(state => ({ gatherShowAllPrompts: !state.gatherShowAllPrompts })),
 
-    setBeamOpenForConversation: (conversationId, isOpen) => _set(state => {
+    setPrismOpenForConversation: (conversationId, isOpen) => _set(state => {
       const openBeams = { ...state.openBeamConversationIds };
       if (isOpen)
         openBeams[conversationId] = true;
@@ -119,7 +119,7 @@ export const useModulePrismStore = create<ModuleBeamStore>()(persist(
       return { openBeamConversationIds: openBeams };
     }),
 
-    clearBeamOpenForConversation: (conversationId) => _set(state => {
+    clearPrismOpenForConversation: (conversationId) => _set(state => {
       const openBeams = { ...state.openBeamConversationIds };
       delete openBeams[conversationId];
       return { openBeamConversationIds: openBeams };
@@ -157,7 +157,7 @@ export function useBeamScatterShowLettering() {
   return useModulePrismStore((state) => state.scatterShowLettering);
 }
 
-export function useIsBeamOpenForConversation(conversationId: DConversationId | null): boolean {
+export function useIsPrismOpenForConversation(conversationId: DConversationId | null): boolean {
   return useModulePrismStore(state => conversationId ? state.openBeamConversationIds[conversationId] ?? false : false);
 }
 

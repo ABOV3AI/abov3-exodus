@@ -4,8 +4,8 @@ import { bareBonesPromptMixer } from '~/modules/persona/pmix/pmix';
 
 import { SystemPurposes } from '../../data';
 
-import { BeamStore, createBeamVanillaStore } from '~/modules/prism/store-beam_vanilla';
-import { useModuleBeamStore } from '~/modules/prism/store-module-prism';
+import { PrismStore, createPrismVanillaStore } from '~/modules/prism/store-prism_vanilla';
+import { useModulePrismStore } from '~/modules/prism/store-module-prism';
 
 import type { DConversationId } from '~/common/stores/chat/chat.conversation';
 import type { DLLMId } from '~/common/stores/llms/llms.types';
@@ -33,17 +33,17 @@ const _chatStoreActions = useChatStore.getState() as ChatActions;
  */
 export class ConversationHandler {
 
-  private readonly beamStore: StoreApi<BeamStore>;
+  private readonly prismStore: StoreApi<PrismStore>;
   private readonly overlayStore: StoreApi<PerChatOverlayStore>;
 
   constructor(private readonly conversationId: DConversationId) {
-    this.beamStore = createBeamVanillaStore();
+    this.prismStore = createPrismVanillaStore();
     this.overlayStore = createPerChatVanillaStore();
 
-    // track the open status of beams - this is meant to be an accelerator for the UI
-    this.beamStore.subscribe((state, prevState) => {
+    // track the open status of prisms - this is meant to be an accelerator for the UI
+    this.prismStore.subscribe((state, prevState) => {
       if (state.isOpen === prevState.isOpen) return;
-      useModuleBeamStore.getState().setBeamOpenForConversation(this.conversationId, state.isOpen);
+      useModulePrismStore.getState().setPrismOpenForConversation(this.conversationId, state.isOpen);
     });
   }
 
@@ -238,7 +238,7 @@ export class ConversationHandler {
 
   // Prism
 
-  getBeamStore = () => this.beamStore;
+  getPrismStore = () => this.prismStore;
 
   /**
    * Opens a prism over the given history

@@ -30,7 +30,7 @@ export const usePrismStore = <T, >(beamStore: PrismStoreApi, selector: (store: B
   return open;
 };*/
 
-export function useAreBeamsOpen(beamStores: (PrismStoreApi | null)[]): boolean[] {
+export function useArePrismsOpen(beamStores: (PrismStoreApi | null)[]): boolean[] {
 
   // state
   const [_changeVersion, setChangeVersion] = React.useState(0);

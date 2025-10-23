@@ -11,7 +11,7 @@ import type { TradeConfig } from '~/modules/trade/TradeModal';
 import { downloadSingleChat, importConversationsFromFilesAtRest, openConversationsAtRestPicker } from '~/modules/trade/trade.client';
 import { imaginePromptFromTextOrThrow } from '~/modules/aifn/imagine/imaginePromptFromText';
 import { elevenLabsSpeakText } from '~/modules/elevenlabs/elevenlabs.client';
-import { useAreBeamsOpen } from '~/modules/prism/store-prism.hooks';
+import { useArePrismsOpen } from '~/modules/prism/store-prism.hooks';
 import { useCapabilityTextToImage } from '~/modules/t2i/t2i.client';
 
 import type { DConversation, DConversationId } from '~/common/stores/chat/chat.conversation';
@@ -170,22 +170,22 @@ export function AppChat() {
     setFocusedPaneIndex,
   } = usePanesManager();
 
-  const { paneUniqueConversationIds, paneHandlers, paneBeamStores } = React.useMemo(() => {
+  const { paneUniqueConversationIds, paneHandlers, panePrismStores } = React.useMemo(() => {
     const paneConversationIds: (DConversationId | null)[] = chatPanes.map(pane => pane.conversationId || null);
     const paneHandlers = paneConversationIds.map(cId => cId ? ConversationsManager.getHandler(cId) : null);
-    const paneBeamStores = paneHandlers.map(handler => handler?.getBeamStore() ?? null);
+    const panePrismStores = paneHandlers.map(handler => handler?.getPrismStore() ?? null);
     const paneUniqueConversationIds = Array.from(new Set(paneConversationIds.filter(Boolean))) as DConversationId[];
     return {
       paneHandlers: paneHandlers,
-      paneBeamStores: paneBeamStores,
+      panePrismStores: panePrismStores,
       paneUniqueConversationIds: paneUniqueConversationIds,
     };
   }, [chatPanes]);
 
-  const beamsOpens = useAreBeamsOpen(paneBeamStores);
-  const beamOpenStoreInFocusedPane = focusedPaneIndex === null ? null
-    : !beamsOpens?.[focusedPaneIndex] ? null
-      : paneBeamStores?.[focusedPaneIndex] ?? null;
+  const prismsOpens = useArePrismsOpen(panePrismStores);
+  const prismOpenStoreInFocusedPane = focusedPaneIndex === null ? null
+    : !prismsOpens?.[focusedPaneIndex] ? null
+      : panePrismStores?.[focusedPaneIndex] ?? null;
 
   const {
     // focused

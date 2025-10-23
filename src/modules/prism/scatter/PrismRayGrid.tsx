@@ -10,7 +10,7 @@ import type { PrismStoreApi } from '../store-prism.hooks';
 import { PrismCard } from '../PrismCard';
 import { SCATTER_RAY_MAX, SCATTER_RAY_MIN } from '../prism.config';
 
-import { BeamRay } from './PrismRay';
+import { PrismRay } from './PrismRay';
 
 
 const rayGridDesktopSx: SxProps = {
