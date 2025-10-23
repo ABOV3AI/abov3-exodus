@@ -75,12 +75,22 @@ export const NewsItems: NewsItem[] = [
   {
     versionCode: '0.0.1',
     versionName: 'Exodus',
-    versionDate: new Date(),
-    items: [],
+    versionDate: new Date('2025-01-22T00:00:00Z'),
+    items: [
+      { text: <><B wow>ABOV3 Exodus 0.0.1</B> - Initial production release</> },
+      { text: <>Complete UI rebrand with professional ABOV3 visual identity</> },
+      { text: <>Custom animated persona icon system</> },
+      { text: <>Built on the powerful Big-AGI foundation</> },
+      { text: <>Full support for 100+ AI models across 16+ providers</> },
+      { text: <><B>Beam</B> multi-model reasoning for better answers</> },
+      { text: <><B>Local-first</B> architecture - your data stays on your device</> },
+      { text: <>Professional personas: Developer, Scientist, Executive, and more</> },
+      { text: <>Visit <ExternalLink href='https://abov3.com'>abov3.com</ExternalLink> for more information</> },
+    ],
   },
 ] as const;
 
-// Legacy Big-AGI news items (archived)
+// Legacy Big-AGI news items (archived for reference)
 const _archivedNewsItems: NewsItem[] = [
   {
     versionCode: '2.0.0',
@@ -355,9 +365,10 @@ function B(props: {
   wow?: boolean,
   children: React.ReactNode
 }) {
+  const abov3Repo = 'https://github.com/ABOV3AI/abov3-exodus';
   const href =
-    props.issue ? `${Brand.URIs.OpenRepo}/issues/${props.issue}`
-      : props.code ? `${Brand.URIs.OpenRepo}/blob/main/${props.code}`
+    props.issue ? `${abov3Repo}/issues/${props.issue}`
+      : props.code ? `${abov3Repo}/blob/main/${props.code}`
         : props.href;
   const boldText = (
     <Typography component='span' color={!!href ? 'primary' : 'neutral'} sx={{ fontWeight: 'lg' }}>

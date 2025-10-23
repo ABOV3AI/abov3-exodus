@@ -8,19 +8,19 @@ import { Link } from '~/common/components/Link';
 import { clientUtmSource } from '~/common/util/pwaUtils';
 
 
-export const bigAgiProUrl = 'https://big-agi.com' + clientUtmSource('upgrade');
+export const abov3Url = 'https://abov3.com' + clientUtmSource('upgrade');
 
 export function BigAgiProNewsCallout() {
 
-  const bigAgiSupportUrl = 'https://form.typeform.com/to/nLf8gFmx?utm_source=big-agi-1&utm_medium=app&utm_campaign=support';
+  const abov3SupportUrl = 'https://abov3.com/support';
 
   return (
     <Card variant='solid' color='primary' invertedColors>
       <CardContent sx={{ gap: 2 }}>
-        <Typography level='title-lg'>Big-AGI Pro ✨ - Now Live</Typography>
+        <Typography level='title-lg'>ABOV3 Exodus ✨</Typography>
 
         <Typography level='title-sm' sx={{ lineHeight: 'xl' }}>
-          Experience the <b>next generation of Big-AGI</b> with <b>Beam 2</b>, <b>Personas</b>, and <b>Cloud Sync</b> to never lose data.
+          Professional AI workspace with <b>Beam</b> multi-model reasoning, <b>Personas</b>, and <b>local-first</b> architecture for complete data control.
         </Typography>
 
         <Grid container spacing={1}>
@@ -32,11 +32,11 @@ export function BigAgiProNewsCallout() {
               color='neutral'
               endDecorator={<RocketLaunchRounded />}
               component={Link}
-              href={bigAgiProUrl}
+              href={abov3Url}
               noLinkStyle
               target='_blank'
             >
-              Big-AGI Pro
+              Visit ABOV3.com
             </Button>
           </Grid>
 
@@ -47,10 +47,9 @@ export function BigAgiProNewsCallout() {
               color='primary'
               endDecorator={<SupportAgentIcon />}
               component={Link}
-              href={bigAgiSupportUrl}
+              href={abov3SupportUrl}
               noLinkStyle
               target='_blank'
-              disabled
             >
               Support
             </Button>
