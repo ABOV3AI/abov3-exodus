@@ -1,0 +1,154 @@
+ABOV3 EXODUS ENTERPRISE LICENSE
+Copyright (c) 2025 ABOV3, Inc.
+All Rights Reserved.
+
+IMPORTANT - READ CAREFULLY: This ABOV3 Exodus Enterprise License Agreement ("Agreement")
+is a legal agreement between you (either an individual or a single entity) and ABOV3, Inc.
+("ABOV3") for the ABOV3 Exodus software product, which includes computer software and may
+include associated media, printed materials, and online or electronic documentation
+("Software").
+
+By installing, copying, or otherwise using the Software, you agree to be bound by the
+terms of this Agreement. If you do not agree to the terms of this Agreement, do not
+install or use the Software.
+
+1. GRANT OF LICENSE
+
+Subject to the terms and conditions of this Agreement, ABOV3 grants you a limited,
+non-exclusive, non-transferable license to:
+
+   a) Install and use the Software on your own hardware or cloud infrastructure for
+      internal business purposes only.
+
+   b) Modify the Software source code for your internal use only.
+
+   c) Create derivative works based on the Software for your internal use only.
+
+2. RESTRICTIONS
+
+You may NOT:
+
+   a) Redistribute, sell, lease, rent, or sublicense the Software or any portion thereof
+      to any third party.
+
+   b) Remove or alter any proprietary notices, labels, or marks on the Software.
+
+   c) Use the Software to provide hosting, software-as-a-service (SaaS), or any other
+      service to third parties without a separate commercial agreement with ABOV3, Inc.
+
+   d) Reverse engineer, decompile, or disassemble the Software, except to the extent
+      such restriction is expressly prohibited by applicable law.
+
+   e) Use the ABOV3, ABOV3 Exodus, or related trademarks without prior written permission
+      from ABOV3, Inc.
+
+   f) Create derivative works for commercial distribution without a separate agreement
+      with ABOV3, Inc.
+
+   g) Use the Software in any manner that violates applicable laws or regulations.
+
+3. OWNERSHIP
+
+The Software is licensed, not sold. ABOV3, Inc. retains all right, title, and interest
+in and to the Software, including all intellectual property rights. This Agreement does
+not grant you any rights to patents, copyrights, trade secrets, trademarks, or any other
+rights in respect to the Software.
+
+4. ATTRIBUTION
+
+If you create derivative works or modifications of the Software for internal use, you
+must retain the following attribution in your source code and documentation:
+
+   "Based on ABOV3 Exodus - Copyright (c) 2025 ABOV3, Inc."
+
+5. SUPPORT AND UPDATES
+
+This license does not entitle you to receive from ABOV3, Inc. hard-copy documentation,
+support, telephone assistance, or enhancements or updates to the Software. Support and
+updates may be available under a separate support agreement.
+
+6. TERM AND TERMINATION
+
+   a) This Agreement is effective until terminated.
+
+   b) You may terminate this Agreement at any time by destroying all copies of the
+      Software in your possession.
+
+   c) ABOV3, Inc. may terminate this Agreement immediately if you fail to comply with
+      any term of this Agreement.
+
+   d) Upon termination, you must destroy all copies of the Software in your possession.
+
+7. WARRANTY DISCLAIMER
+
+THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE, AND NON-INFRINGEMENT. ABOV3, INC. DOES NOT WARRANT THAT THE SOFTWARE
+WILL MEET YOUR REQUIREMENTS OR THAT THE OPERATION OF THE SOFTWARE WILL BE UNINTERRUPTED
+OR ERROR-FREE.
+
+8. LIMITATION OF LIABILITY
+
+IN NO EVENT SHALL ABOV3, INC. BE LIABLE FOR ANY SPECIAL, INCIDENTAL, INDIRECT, OR
+CONSEQUENTIAL DAMAGES WHATSOEVER (INCLUDING, WITHOUT LIMITATION, DAMAGES FOR LOSS OF
+BUSINESS PROFITS, BUSINESS INTERRUPTION, LOSS OF BUSINESS INFORMATION, OR ANY OTHER
+PECUNIARY LOSS) ARISING OUT OF THE USE OF OR INABILITY TO USE THE SOFTWARE, EVEN IF
+ABOV3, INC. HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+IN ANY CASE, ABOV3, INC.'S ENTIRE LIABILITY UNDER ANY PROVISION OF THIS AGREEMENT SHALL
+BE LIMITED TO THE AMOUNT ACTUALLY PAID BY YOU FOR THE SOFTWARE.
+
+9. COMMERCIAL LICENSING
+
+For commercial use, redistribution, SaaS offerings, or any use case not covered by this
+license, please contact ABOV3, Inc. for a commercial license:
+
+   Email: licensing@abov3.com
+   Website: https://abov3.com/enterprise
+
+10. EXPORT RESTRICTIONS
+
+You agree to comply with all applicable international and national laws that apply to
+the Software, including U.S. Export Administration Regulations, as well as end-user,
+end-use, and destination restrictions issued by U.S. and other governments.
+
+11. GOVERNMENT END USERS
+
+If the Software is being acquired by or on behalf of the U.S. Government or by a U.S.
+Government prime contractor or subcontractor (at any tier), the Government's rights in
+the Software shall be as specified in this Agreement, in accordance with 48 C.F.R.
+227.7202-4 (for Department of Defense acquisitions) and 48 C.F.R. 2.101 and 12.212
+(for non-Department of Defense acquisitions).
+
+12. GOVERNING LAW
+
+This Agreement shall be governed by and construed in accordance with the laws of the
+State of Delaware, United States of America, without regard to its conflict of law
+provisions. Any legal action or proceeding arising under this Agreement will be brought
+exclusively in the federal or state courts located in Delaware, and the parties hereby
+irrevocably consent to the personal jurisdiction and venue therein.
+
+13. ENTIRE AGREEMENT
+
+This Agreement constitutes the entire agreement between you and ABOV3, Inc. regarding
+the Software and supersedes all prior or contemporaneous understandings and agreements,
+whether written or oral, regarding the Software.
+
+14. SEVERABILITY
+
+If any provision of this Agreement is held to be unenforceable, that provision will be
+removed and the remaining provisions will remain in full force and effect.
+
+15. CONTACT INFORMATION
+
+ABOV3, Inc.
+Email: legal@abov3.com
+Website: https://abov3.com
+Support: https://github.com/ABOV3AI/abov3-exodus/issues
+
+---
+
+END OF LICENSE
+
+Last Updated: January 2025
+Version: 1.0

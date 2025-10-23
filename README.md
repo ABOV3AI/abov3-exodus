@@ -125,7 +125,16 @@ abov3-exodus/
 
 ## 📝 License
 
-Copyright © 2025 ABOV3 Genesis. All rights reserved.
+ABOV3 Exodus Enterprise License - Copyright © 2025 ABOV3, Inc. All rights reserved.
+
+This software is provided under the ABOV3 Exodus Enterprise License. See [LICENSE](LICENSE) for full terms.
+
+**For Commercial Use:**
+- SaaS/Hosting services
+- Redistribution
+- Commercial derivatives
+
+Contact: licensing@abov3.com or visit https://abov3.com/enterprise
 
 ---
 
@@ -134,6 +143,8 @@ Copyright © 2025 ABOV3 Genesis. All rights reserved.
 - **ABOV3 Website**: https://abov3.com
 - **Repository**: https://github.com/ABOV3AI/abov3-exodus
 - **Issues**: https://github.com/ABOV3AI/abov3-exodus/issues
+- **Enterprise Licensing**: licensing@abov3.com
+- **Legal**: legal@abov3.com
 - **Privacy Policy**: https://abov3.com/privacy
 - **Terms of Service**: https://abov3.com/terms
 
