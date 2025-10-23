@@ -319,7 +319,7 @@ export function PersonaSelector(props: {
         {(editMode || !hidePersonaCreator) && (
           <Tile
             text='Persona Creator'
-            symbol='🎭'
+            imageUrl='/images/personas/abov3/creator-icon.svg'
             isActive={false}
             isEditMode={editMode}
             isHidden={hidePersonaCreator}

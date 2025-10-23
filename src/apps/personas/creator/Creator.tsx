@@ -1,9 +1,9 @@
 import * as React from 'react';
+import NextImage from 'next/image';
 
-import { Alert, Box, Button, Card, CardContent, CircularProgress, Divider, FormLabel, Grid, IconButton, LinearProgress, Tab, tabClasses, TabList, TabPanel, Tabs, Typography } from '@mui/joy';
+import { Alert, Avatar, Box, Button, Card, CardContent, CircularProgress, Divider, FormLabel, Grid, IconButton, LinearProgress, Tab, tabClasses, TabList, TabPanel, Tabs, Typography } from '@mui/joy';
 import AddIcon from '@mui/icons-material/Add';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import SettingsAccessibilityIcon from '@mui/icons-material/SettingsAccessibility';
 
 import { LLMChainStep, useLLMChain } from '~/modules/aifn/useLLMChain';
 import { ScaledTextBlockRenderer } from '~/modules/blocks/ScaledTextBlockRenderer';
@@ -73,7 +73,13 @@ export const PersonaPromptCard = (props: {
   <Card sx={{ boxShadow: 'md', mt: 3 }}>
 
     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <Typography level='title-lg' color='success' startDecorator={<SettingsAccessibilityIcon color='success' />}>
+      <Typography level='title-lg' color='success' startDecorator={
+        <Avatar
+          variant='plain'
+          src='/images/personas/abov3/creator-icon.svg'
+          sx={{ width: 28, height: 28 }}
+        />
+      }>
         Persona Prompt
       </Typography>
       <GoodTooltip title='Copy system prompt'>

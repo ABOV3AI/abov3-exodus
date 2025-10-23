@@ -125,28 +125,22 @@ export async function anthropicOAuthInterceptor(
   // Check if token needs refresh (refresh 1 minute before expiry)
   const needsRefresh = !access.oauthExpiresAt || access.oauthExpiresAt < Date.now() + 60000;
 
-  // Create new headers object - mimic Genesis CodeForger's approach EXACTLY
+  // Create new headers object
   const newHeaders: Record<string, string> = {};
 
-  // Copy all headers EXCEPT authorization/x-api-key (use lowercase keys to match Genesis CodeForger)
+  // Copy all headers EXCEPT authorization/x-api-key
   Object.entries(headers as Record<string, string>).forEach(([key, value]) => {
     const lowerKey = key.toLowerCase();
     if (lowerKey !== 'x-api-key' && lowerKey !== 'authorization') {
-      // Use lowercase key to match Genesis CodeForger's fetch Headers behavior
       newHeaders[lowerKey] = value;
     }
   });
 
-  // CRITICAL: Set OAuth headers EXACTLY like Genesis CodeForger (all lowercase keys)
+  // Set OAuth Bearer token
   newHeaders['authorization'] = `Bearer ${access.oauthAccessToken}`;
 
-  // CRITICAL: Match Genesis CodeForger beta header exactly (NO oauth-2025-04-20)
-  const oauthBetaFeatures = [
-    'claude-code-20250219',
-    'interleaved-thinking-2025-05-14',
-    'fine-grained-tool-streaming-2025-05-14',
-  ];
-  newHeaders['anthropic-beta'] = oauthBetaFeatures.join(',');
+  // Keep the standard beta features from the original headers (includes prompt-caching-2024-07-31, etc.)
+  // This ensures OAuth works with all standard models like Haiku, Sonnet, etc.
 
   return {
     headers: newHeaders,
@@ -222,15 +216,9 @@ export function anthropicAccess(access: AnthropicAccessSchema, antModelIdForBeta
     // Note: The actual Bearer token will be refreshed by the OAuth interceptor if needed
     authHeaders['Authorization'] = `Bearer ${access.oauthAccessToken}`;
 
-    // CRITICAL: Match Genesis CodeForger beta header exactly (NO oauth-2025-04-20)
-    const oauthBetaFeatures = [
-      'claude-code-20250219',
-      'interleaved-thinking-2025-05-14',
-      'fine-grained-tool-streaming-2025-05-14',
-    ];
-    authHeaders['anthropic-beta'] = oauthBetaFeatures.join(',');
-
-    // Note: x-app and User-Agent headers are set by the OAuth interceptor
+    // Use standard beta features for OAuth (same as API key users)
+    // This ensures OAuth works with all standard models like Haiku, Sonnet, etc.
+    authHeaders['anthropic-beta'] = baseHeaders['anthropic-beta'];
   } else if (anthropicKey) {
     // Standard API key authentication - only if we have a key and NOT using OAuth
     authHeaders['X-API-Key'] = anthropicKey;

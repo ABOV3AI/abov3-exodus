@@ -1,0 +1,74 @@
+<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark background -->
+  <rect width="120" height="120" fill="#0a0e27" rx="20"/>
+
+  <!-- Human silhouette with glow -->
+  <g>
+    <!-- Head -->
+    <circle cx="60" cy="40" r="12" fill="#00d4ff">
+      <animate attributeName="opacity" values="0.9;1;0.9" dur="3s" repeatCount="indefinite"/>
+    </circle>
+
+    <!-- Body/shoulders -->
+    <path d="M 38 95 Q 38 70 48 62 Q 60 58 72 62 Q 82 70 82 95" fill="#00d4ff" opacity="0.9">
+      <animate attributeName="opacity" values="0.85;1;0.85" dur="3s" repeatCount="indefinite"/>
+    </path>
+  </g>
+
+  <!-- AI augmentation rings -->
+  <circle cx="60" cy="60" r="35" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.6">
+    <animate attributeName="r" values="33;37;33" dur="2.5s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.4;0.8;0.4" dur="2.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="60" cy="60" r="42" fill="none" stroke="#00d4ff" stroke-width="2" opacity="0.4">
+    <animate attributeName="r" values="40;44;40" dur="3s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.2;0.6;0.2" dur="3s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Creative spark nodes -->
+  <g opacity="0.8">
+    <!-- Top node -->
+    <circle cx="60" cy="15" r="4" fill="#ffffff">
+      <animate attributeName="r" values="3;5;3" dur="1.5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.6;1;0.6" dur="1.5s" repeatCount="indefinite"/>
+    </circle>
+
+    <!-- Right node -->
+    <circle cx="95" cy="60" r="4" fill="#00d4ff">
+      <animate attributeName="r" values="3;5;3" dur="1.5s" begin="0.5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.6;1;0.6" dur="1.5s" begin="0.5s" repeatCount="indefinite"/>
+    </circle>
+
+    <!-- Bottom node -->
+    <circle cx="60" cy="105" r="4" fill="#ffffff">
+      <animate attributeName="r" values="3;5;3" dur="1.5s" begin="1s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.6;1;0.6" dur="1.5s" begin="1s" repeatCount="indefinite"/>
+    </circle>
+
+    <!-- Left node -->
+    <circle cx="25" cy="60" r="4" fill="#00d4ff">
+      <animate attributeName="r" values="3;5;3" dur="1.5s" begin="1.5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.6;1;0.6" dur="1.5s" begin="1.5s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- Connecting lines to nodes -->
+  <line x1="60" y1="25" x2="60" y2="15" stroke="#ffffff" stroke-width="1.5" opacity="0.5">
+    <animate attributeName="opacity" values="0.2;0.7;0.2" dur="1.5s" repeatCount="indefinite"/>
+  </line>
+  <line x1="82" y1="60" x2="95" y2="60" stroke="#00d4ff" stroke-width="1.5" opacity="0.5">
+    <animate attributeName="opacity" values="0.2;0.7;0.2" dur="1.5s" begin="0.5s" repeatCount="indefinite"/>
+  </line>
+  <line x1="60" y1="95" x2="60" y2="105" stroke="#ffffff" stroke-width="1.5" opacity="0.5">
+    <animate attributeName="opacity" values="0.2;0.7;0.2" dur="1.5s" begin="1s" repeatCount="indefinite"/>
+  </line>
+  <line x1="38" y1="60" x2="25" y2="60" stroke="#00d4ff" stroke-width="1.5" opacity="0.5">
+    <animate attributeName="opacity" values="0.2;0.7;0.2" dur="1.5s" begin="1.5s" repeatCount="indefinite"/>
+  </line>
+
+  <!-- Central glow effect -->
+  <circle cx="60" cy="60" r="25" fill="#00d4ff" opacity="0.1">
+    <animate attributeName="r" values="22;28;22" dur="3s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.05;0.2;0.05" dur="3s" repeatCount="indefinite"/>
+  </circle>
+</svg>

@@ -4,7 +4,7 @@ import TimeAgo from 'react-timeago';
 
 import type { SxProps } from '@mui/joy/styles/types';
 import { Avatar, Box, CircularProgress } from '@mui/joy';
-import Face6Icon from '@mui/icons-material/Face6';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActiveOutlined';
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
@@ -124,10 +124,15 @@ export function makeMessageAvatarIcon(
 
   switch (messageRole) {
     case 'system':
-      return <SettingsSuggestIcon sx={avatarIconSx} />;  // https://em-content.zobj.net/thumbs/120/apple/325/robot_1f916.png
+      return <SettingsSuggestIcon sx={avatarIconSx} />;
 
     case 'user':
-      return <Face6Icon sx={avatarIconSx} />;            // https://www.svgrepo.com/show/306500/openai.svg
+      return <Avatar
+        variant='plain'
+        alt={nameOfRole}
+        src='/images/personas/abov3/user.svg'
+        sx={avatarIconSx}
+      />;
 
     case 'assistant':
       const isDownload = messageGeneratorName === 'web';

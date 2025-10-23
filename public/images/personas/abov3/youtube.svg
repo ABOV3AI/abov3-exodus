@@ -3,44 +3,41 @@
   <rect width="120" height="120" fill="#0a0e27" rx="20"/>
 
   <!-- Video screen with glow -->
-  <rect x="30" y="35" width="60" height="40" rx="3" fill="none" stroke="#00d4ff" stroke-width="2.5">
+  <rect x="20" y="25" width="80" height="55" rx="4" fill="none" stroke="#00d4ff" stroke-width="3">
     <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite"/>
   </rect>
 
   <!-- Animated play button -->
   <g>
     <animateTransform attributeName="transform" type="scale" values="1;1.1;1" dur="1.5s" additive="sum" repeatCount="indefinite"/>
-    <polygon points="52,50 52,60 62,55" fill="#ffffff">
+    <polygon points="48,45 48,65 68,55" fill="#ffffff">
       <animate attributeName="opacity" values="0.8;1;0.8" dur="1.5s" repeatCount="indefinite"/>
     </polygon>
   </g>
 
   <!-- Subtitle lines with typewriter effect -->
-  <line x1="35" y1="80" x2="35" y2="80" stroke="#00d4ff" stroke-width="2" opacity="0.7">
-    <animate attributeName="x2" values="35;85" dur="1.5s" fill="freeze"/>
+  <line x1="25" y1="88" x2="25" y2="88" stroke="#00d4ff" stroke-width="2.5" opacity="0.7">
+    <animate attributeName="x2" values="25;95" dur="1.5s" fill="freeze"/>
     <animate attributeName="opacity" values="0;0.9" dur="0.3s" fill="freeze"/>
   </line>
-  <line x1="40" y1="86" x2="40" y2="86" stroke="#00d4ff" stroke-width="2" opacity="0.5">
-    <animate attributeName="x2" values="40;80" dur="1.5s" begin="0.5s" fill="freeze"/>
+  <line x1="30" y1="95" x2="30" y2="95" stroke="#00d4ff" stroke-width="2.5" opacity="0.5">
+    <animate attributeName="x2" values="30;90" dur="1.5s" begin="0.5s" fill="freeze"/>
     <animate attributeName="opacity" values="0;0.7" dur="0.3s" begin="0.5s" fill="freeze"/>
   </line>
 
   <!-- Corner brackets (framing) with pulse -->
   <g opacity="0.6">
     <animate attributeName="opacity" values="0.4;0.8;0.4" dur="2s" repeatCount="indefinite"/>
-    <path d="M 28 33 L 28 37 M 28 33 L 32 33" stroke="#ffffff" stroke-width="1.5"/>
-    <path d="M 92 33 L 88 33 M 92 33 L 92 37" stroke="#ffffff" stroke-width="1.5"/>
-    <path d="M 28 77 L 28 73 M 28 77 L 32 77" stroke="#ffffff" stroke-width="1.5"/>
-    <path d="M 92 77 L 88 77 M 92 77 L 92 73" stroke="#ffffff" stroke-width="1.5"/>
+    <path d="M 18 22 L 18 28 M 18 22 L 24 22" stroke="#ffffff" stroke-width="2"/>
+    <path d="M 102 22 L 96 22 M 102 22 L 102 28" stroke="#ffffff" stroke-width="2"/>
+    <path d="M 18 82 L 18 76 M 18 82 L 24 82" stroke="#ffffff" stroke-width="2"/>
+    <path d="M 102 82 L 96 82 M 102 82 L 102 76" stroke="#ffffff" stroke-width="2"/>
   </g>
 
   <!-- Scanning line effect -->
-  <line x1="30" y1="35" x2="90" y2="35" stroke="#00d4ff" stroke-width="1" opacity="0.3">
-    <animate attributeName="y1" values="35;75;35" dur="3s" repeatCount="indefinite"/>
-    <animate attributeName="y2" values="35;75;35" dur="3s" repeatCount="indefinite"/>
+  <line x1="20" y1="25" x2="100" y2="25" stroke="#00d4ff" stroke-width="1.5" opacity="0.3">
+    <animate attributeName="y1" values="25;80;25" dur="3s" repeatCount="indefinite"/>
+    <animate attributeName="y2" values="25;80;25" dur="3s" repeatCount="indefinite"/>
     <animate attributeName="opacity" values="0.1;0.5;0.1" dur="3s" repeatCount="indefinite"/>
   </line>
-
-  <!-- Label -->
-  <text x="60" y="100" font-family="Arial, sans-serif" font-size="10" font-weight="600" fill="#ffffff" text-anchor="middle" opacity="0.9">TRANSCRIBER</text>
 </svg>
