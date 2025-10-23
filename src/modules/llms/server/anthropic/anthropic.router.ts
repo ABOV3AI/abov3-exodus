@@ -195,8 +195,10 @@ export function anthropicAccess(access: AnthropicAccessSchema, antModelIdForBeta
   if (!hasOAuth && !anthropicKey && !(access.anthropicHost || env.ANTHROPIC_API_HOST))
     throw new Error('Missing Anthropic credentials. Either login with Pro/Max or add an API Key on the UI (Models Setup) or server side (your deployment).');
 
-  // API host
-  let anthropicHost = fixupHost(access.anthropicHost || env.ANTHROPIC_API_HOST || DEFAULT_ANTHROPIC_HOST, apiPath);
+  // API host - OAuth users MUST use console.anthropic.com, not api.anthropic.com
+  let anthropicHost = hasOAuth
+    ? 'https://console.anthropic.com'  // OAuth Pro/Max endpoint
+    : fixupHost(access.anthropicHost || env.ANTHROPIC_API_HOST || DEFAULT_ANTHROPIC_HOST, apiPath);
 
   // Helicone for Anthropic
   // https://docs.helicone.ai/getting-started/integration-method/anthropic
