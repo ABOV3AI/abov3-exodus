@@ -32,7 +32,7 @@ interface ModuleBeamState {
   gatherShowAllPrompts: boolean;
 
   // non-stored, temporary but useful for the UI
-  openBeamConversationIds: Record<string, boolean>;
+  openPrismConversationIds: Record<string, boolean>;
 
 }
 
@@ -67,7 +67,7 @@ export const useModulePrismStore = create<ModuleBeamStore>()(persist(
     scatterShowPrevMessages: false,
     gatherShowAllPrompts: false,
     gatherAutoStartAfterScatter: false,
-    openBeamConversationIds: {},
+    openPrismConversationIds: {},
 
 
     addPreset: (name, rayLlmIds, gatherLlmId, gatherFactoryId) => _set(state => ({
@@ -111,18 +111,18 @@ export const useModulePrismStore = create<ModuleBeamStore>()(persist(
     toggleGatherShowAllPrompts: () => _set(state => ({ gatherShowAllPrompts: !state.gatherShowAllPrompts })),
 
     setPrismOpenForConversation: (conversationId, isOpen) => _set(state => {
-      const openBeams = { ...state.openBeamConversationIds };
+      const openBeams = { ...state.openPrismConversationIds };
       if (isOpen)
         openBeams[conversationId] = true;
       else
         delete openBeams[conversationId];
-      return { openBeamConversationIds: openBeams };
+      return { openPrismConversationIds: openBeams };
     }),
 
     clearPrismOpenForConversation: (conversationId) => _set(state => {
-      const openBeams = { ...state.openBeamConversationIds };
+      const openBeams = { ...state.openPrismConversationIds };
       delete openBeams[conversationId];
-      return { openBeamConversationIds: openBeams };
+      return { openPrismConversationIds: openBeams };
     }),
 
   }), {
@@ -130,12 +130,12 @@ export const useModulePrismStore = create<ModuleBeamStore>()(persist(
     version: 1,
 
     partialize: (state) => {
-      // exclude openBeamConversationIds from persistence
-      const { openBeamConversationIds, ...persistedState } = state;
+      // exclude openPrismConversationIds from persistence
+      const { openPrismConversationIds, ...persistedState } = state;
       return persistedState;
     },
 
-    migrate: (state: any, fromVersion: number): Omit<ModuleBeamState, 'openBeamConversationIds'> => {
+    migrate: (state: any, fromVersion: number): Omit<ModuleBeamState, 'openPrismConversationIds'> => {
       // 0 -> 1: rename 'scatterPresets' to 'presets'
       if (state && fromVersion === 0 && !state.presets)
         return { ...state, presets: state.scatterPresets || [] };
@@ -158,7 +158,7 @@ export function useBeamScatterShowLettering() {
 }
 
 export function useIsPrismOpenForConversation(conversationId: DConversationId | null): boolean {
-  return useModulePrismStore(state => conversationId ? state.openBeamConversationIds[conversationId] ?? false : false);
+  return useModulePrismStore(state => conversationId ? state.openPrismConversationIds[conversationId] ?? false : false);
 }
 
 export function updateBeamLastConfig(update: Partial<BeamConfigSnapshot>) {

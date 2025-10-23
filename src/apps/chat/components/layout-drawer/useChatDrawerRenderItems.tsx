@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { useModuleBeamStore } from '~/modules/prism/store-module-prism';
+import { useModulePrismStore } from '~/modules/prism/store-module-prism';
 
 import type { DFolder } from '~/common/stores/folders/store-chat-folders';
 import { DMessage, DMessageUserFlag, MESSAGE_FLAG_STARRED, messageFragmentsReduceText, messageHasUserFlag, messageUserFlagToEmoji } from '~/common/stores/chat/chat.message';
@@ -100,7 +100,7 @@ export function useChatDrawerRenderItems(
   const [_, setJustAMinuteCounter] = React.useState(0);
 
   // external state
-  const openBeamConversationIds = useModuleBeamStore(state => state.openBeamConversationIds);
+  const openPrismConversationIds = useModulePrismStore(state => state.openPrismConversationIds);
 
 
   // [effect] Refresh every minute because the `getTimeBucketEn` function uses the current time
@@ -186,7 +186,7 @@ export function useChatDrawerRenderItems(
                 ? allFolders.find(folder => folder.conversationIds.includes(_c.id)) ?? null
                 : null,
             updatedAt: _c.updated || _c.created || 0,
-            hasBeamOpen: !!openBeamConversationIds?.[_c.id],
+            hasPrismOpen: !!openPrismConversationIds?.[_c.id],
             messageCount,
             beingGenerated: !!_c._abortController, // FIXME: when the AbortController is moved at the message level, derive the state in the conv
             systemPurposeId: _c.systemPurposeId,

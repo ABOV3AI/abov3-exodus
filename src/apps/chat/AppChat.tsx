@@ -215,7 +215,7 @@ export function AppChat() {
   });
 
   // Composer Auto-hiding
-  const forceComposerHide = !!beamOpenStoreInFocusedPane /* || !focusedPaneConversationId */; // auto-hide when no chat (the 'please select a conversation...' state) doesn't feel good
+  const forceComposerHide = !!prismOpenStoreInFocusedPane /* || !focusedPaneConversationId */; // auto-hide when no chat (the 'please select a conversation...' state) doesn't feel good
   const composerAutoHide = useComposerAutoHide(forceComposerHide, composerHasContent);
 
   // Window actions
@@ -470,12 +470,12 @@ export function AppChat() {
 
   const barAltTitle = showAltTitleBar ? focusedChatTitle ?? 'No Chat' : null;
 
-  const focusedBarContent = React.useMemo(() => beamOpenStoreInFocusedPane
-      ? <ChatBarPrism conversationTitle={focusedChatTitle ?? 'No Chat'} beamStore={beamOpenStoreInFocusedPane} isMobile={isMobile} />
+  const focusedBarContent = React.useMemo(() => prismOpenStoreInFocusedPane
+      ? <ChatBarPrism conversationTitle={focusedChatTitle ?? 'No Chat'} beamStore={prismOpenStoreInFocusedPane} isMobile={isMobile} />
       : (barAltTitle === null)
         ? <ChatBarChat conversationId={focusedPaneConversationId} llmDropdownRef={llmDropdownRef} personaDropdownRef={personaDropdownRef} />
         : <ChatBarAltTitle conversationId={focusedPaneConversationId} conversationTitle={barAltTitle} />
-    , [barAltTitle, beamOpenStoreInFocusedPane, focusedChatTitle, focusedPaneConversationId, isMobile],
+    , [barAltTitle, prismOpenStoreInFocusedPane, focusedChatTitle, focusedPaneConversationId, isMobile],
   );
 
 
