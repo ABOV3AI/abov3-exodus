@@ -159,11 +159,11 @@ export function AnthropicServiceSetup(props: { serviceId: DModelsServiceId }) {
         <ModalClose />
         <Typography level='h4'>Anthropic OAuth Authorization</Typography>
         <Typography level='body-sm' sx={{ mt: 1 }}>
-          1. A new window has opened to Anthropic's authorization page
+          1. A new window has opened to Anthropic&apos;s authorization page
           <br />
           2. Log in with your Claude Pro/Max account and authorize
           <br />
-          3. After authorization, you'll be redirected to a page with a code in the URL
+          3. After authorization, you&apos;ll be redirected to a page with a code in the URL
           <br />
           4. Copy the <b>entire URL</b> or just the code portion and paste it below
         </Typography>

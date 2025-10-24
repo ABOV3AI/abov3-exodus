@@ -6,7 +6,7 @@ import type { DMessage } from '~/common/stores/chat/chat.message';
 import { agiUuid } from '~/common/util/idUtils';
 
 import { CUSTOM_FACTORY_ID, FFactoryId, findFusionFactory, FUSION_FACTORIES, FUSION_FACTORY_DEFAULT } from './instructions/prism.gather.factories';
-import { RootStoreSlice } from '../store-beam_vanilla';
+import { RootStoreSlice } from '../store-prism_vanilla';
 import { ScatterStoreSlice } from '../scatter/prism.scatter';
 import { gatherStartFusion, gatherStopFusion, Instruction } from './instructions/prism.gather.execution';
 import { updateBeamLastConfig } from '../store-module-prism';

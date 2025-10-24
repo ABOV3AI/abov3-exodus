@@ -67,6 +67,7 @@ export interface ChatNavigationItemData {
   folder: DFolder | null | undefined; // null: 'All', undefined: do not show folder select
   updatedAt: number;
   hasBeamOpen: boolean;
+  hasPrismOpen: boolean;
   messageCount: number;
   beingGenerated: boolean;
   systemPurposeId: SystemPurposeId;

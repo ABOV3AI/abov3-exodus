@@ -1,9 +1,10 @@
 import * as React from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { Box, IconButton, Typography } from '@mui/joy';
+import { Box, IconButton, Typography, Chip } from '@mui/joy';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import MinimizeIcon from '@mui/icons-material/Minimize';
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 
 // import { isMacUser } from '~/common/util/pwaUtils';
 import { ShortcutKey, ShortcutObject } from '~/common/components/shortcuts/useGlobalShortcuts';
@@ -12,6 +13,7 @@ import { GoodTooltip } from '~/common/components/GoodTooltip';
 import { useGlobalShortcutsStore } from '~/common/components/shortcuts/store-global-shortcuts';
 import { useOverlayComponents } from '~/common/layout/overlays/useOverlayComponents';
 import { useUXLabsStore } from '~/common/stores/store-ux-labs';
+import { useProjectsStore } from '~/apps/projects/store-projects';
 
 
 // configuration
@@ -176,6 +178,19 @@ export function StatusBar(props: { toggleMinimized?: () => void, isMinimized?: b
 
   // external state
   const labsShowShortcutBar = useUXLabsStore(state => state.labsShowShortcutBar);
+  const activeProjectId = useProjectsStore(state => state.activeProjectId);
+  const getActiveProject = useProjectsStore(state => state.getActiveProject);
+
+  // Get active project safely (client-side only)
+  const [activeProject, setActiveProject] = React.useState<ReturnType<typeof getActiveProject> | null>(null);
+  React.useEffect(() => {
+    if (activeProjectId) {
+      setActiveProject(getActiveProject());
+    } else {
+      setActiveProject(null);
+    }
+  }, [activeProjectId, getActiveProject]);
+
   const shortcuts = useGlobalShortcutsStore(useShallow(state => {
     // get visible shortcuts
     let visibleShortcuts = !labsShowShortcutBar ? [] : state.getAllShortcuts().filter(shortcut => !!shortcut.description);
@@ -264,6 +279,25 @@ export function StatusBar(props: { toggleMinimized?: () => void, isMinimized?: b
         <IconButton size='sm' onClick={props.toggleMinimized} sx={_styles.hideButton}>
           {props.isMinimized ? <ExpandLessIcon /> : <MinimizeIcon />}
         </IconButton>
+      )}
+
+      {/* Project Mode Indicator */}
+      {activeProject && activeProject.handle && (
+        <GoodTooltip title={`File operations enabled for project: ${activeProject.name}\n\nAvailable tools: read_file, write_file, list_files, create_directory`}>
+          <Chip
+            variant='soft'
+            color='success'
+            size='sm'
+            startDecorator={<FolderOpenIcon />}
+            sx={{
+              fontSize: 'xs',
+              marginBlock: '0.25rem',
+              cursor: 'help',
+            }}
+          >
+            {activeProject.name}
+          </Chip>
+        </GoodTooltip>
       )}
 
       {/* Show all shortcuts */}

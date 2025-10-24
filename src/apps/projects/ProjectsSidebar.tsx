@@ -152,7 +152,7 @@ export function ProjectsSidebar() {
             <Typography level="body-sm" color="neutral">
               No projects added yet.
               <br />
-              Click "Add" to select a local folder.
+              Click &quot;Add&quot; to select a local folder.
             </Typography>
           </Box>
         ) : (

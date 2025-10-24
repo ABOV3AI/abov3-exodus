@@ -186,6 +186,7 @@ export function useChatDrawerRenderItems(
                 ? allFolders.find(folder => folder.conversationIds.includes(_c.id)) ?? null
                 : null,
             updatedAt: _c.updated || _c.created || 0,
+            hasBeamOpen: false, // Beam feature removed, always false
             hasPrismOpen: !!openPrismConversationIds?.[_c.id],
             messageCount,
             beingGenerated: !!_c._abortController, // FIXME: when the AbortController is moved at the message level, derive the state in the conv

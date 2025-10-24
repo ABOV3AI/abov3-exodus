@@ -6,7 +6,7 @@ import type { FileWithHandle } from 'browser-fs-access';
  * This is as defined in https://fs.spec.whatwg.org/#filesystemdirectoryhandle (File System Standard, Last Updated 28 June 2024).
  */
 interface ExplorableFileSystemDirectoryHandle extends FileSystemDirectoryHandle {
-  values?: () => AsyncIterable<FileSystemFileHandle | FileSystemDirectoryHandle | null>;
+  values: () => AsyncIterableIterator<FileSystemHandle>;
 }
 
 interface FileWithHandleAndPath {
@@ -30,8 +30,9 @@ export async function getAllFilesFromDirectoryRecursively(directoryHandle: FileS
 
         if (handle.kind === 'file') {
           try {
-            const fileWithHandle = await handle.getFile() as FileWithHandle;
-            fileWithHandle.handle = handle;
+            const fileHandle = handle as FileSystemFileHandle;
+            const fileWithHandle = await fileHandle.getFile() as FileWithHandle;
+            fileWithHandle.handle = fileHandle;
             list.push({
               fileWithHandle: fileWithHandle,
               relativeName: relativePath,
@@ -42,7 +43,7 @@ export async function getAllFilesFromDirectoryRecursively(directoryHandle: FileS
             // #845 - Skip this file and continue directory traversal
           }
         } else if (handle.kind === 'directory') {
-          await traverseDirectory(handle, relativePath);
+          await traverseDirectory(handle as ExplorableFileSystemDirectoryHandle, relativePath);
         }
       }
     }

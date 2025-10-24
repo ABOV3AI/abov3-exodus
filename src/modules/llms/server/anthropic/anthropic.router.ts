@@ -293,40 +293,12 @@ export const llmAnthropicRouter = createTRPCRouter({
     .output(ListModelsResponse_schema)
     .query(async ({ input: { access }, ctx }) => {
 
-      // Handle OAuth token refresh if needed
-      let finalAccess = { ...access };
-      if (access.oauthAccessToken && access.oauthRefreshToken && access.oauthExpiresAt) {
-        // Check if token needs refresh
-        if (access.oauthExpiresAt < Date.now() + 60000) {
-          try {
-            // Import apiAsync for refresh
-            const { apiAsync } = await import('~/common/util/trpc.client');
-            const refreshResult = await apiAsync.backend.refreshAnthropicToken.mutate({
-              refreshToken: access.oauthRefreshToken
-            });
-
-            // Update access with new tokens
-            finalAccess = {
-              ...access,
-              oauthAccessToken: refreshResult.access_token,
-              oauthRefreshToken: refreshResult.refresh_token,
-              oauthExpiresAt: Date.now() + (refreshResult.expires_in * 1000),
-            };
-
-            // Update stored tokens (caller should handle this)
-            // This would normally be done in the UI layer
-          } catch (error) {
-            console.error('Failed to refresh OAuth token:', error);
-            // Continue with existing token, might still work
-          }
-        }
-      }
-
       // For OAuth users: /v1/models endpoint doesn't support OAuth authentication
       // Instead, return all hardcoded models directly
+      // NOTE: Token refresh must be handled client-side, not in Edge Runtime
       let models: ModelDescriptionSchema[];
 
-      if (finalAccess.oauthAccessToken) {
+      if (access.oauthAccessToken) {
         // OAuth users: return all hardcoded models with variants
         models = hardcodedAnthropicModels.reduce((acc, hardcodedModel) => {
           // add FIRST a thinking variant, if defined
@@ -344,7 +316,7 @@ export const llmAnthropicRouter = createTRPCRouter({
 
       } else {
         // API Key users: fetch from Anthropic API
-        const wireModels = await anthropicGETOrThrow(finalAccess, undefined, '/v1/models?limit=1000');
+        const wireModels = await anthropicGETOrThrow(access, undefined, '/v1/models?limit=1000');
         const { data: availableModels } = AnthropicWire_API_Models_List.Response_schema.parse(wireModels);
 
         // cast the models to the common schema

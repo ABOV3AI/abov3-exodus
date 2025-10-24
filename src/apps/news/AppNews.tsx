@@ -17,7 +17,7 @@ import { Release } from '~/common/app.release';
 import { animationColorBlues, animationColorRainbow } from '~/common/util/animUtils';
 import { useIsMobile } from '~/common/components/useMatchMedia';
 
-import { BigAgiProNewsCallout, bigAgiProUrl } from './bigAgiPro.data';
+import { BigAgiProNewsCallout, abov3Url } from './bigAgiPro.data';
 import { DevNewsItem, newsFrontendTimestamp, NewsItems } from './news.data';
 import { prismNewsCallout } from './prism.data';
 
@@ -200,7 +200,7 @@ export function AppNews() {
         <Container disableGutters maxWidth='sm'>
 
           {/* Development Notices */}
-          {Release.TenantSlug === 'open' && <NewsCard variant='soft' color='warning' newsItem={DevNewsItem} idx={0} addPadding={false} />}
+          {Release.TenantSlug === 'abov3' && <NewsCard variant='soft' color='warning' newsItem={DevNewsItem} idx={0} addPadding={false} />}
 
           {news?.map((ni, idx) => {
             // const firstCard = idx === 0;

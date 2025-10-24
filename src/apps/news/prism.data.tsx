@@ -16,7 +16,7 @@ export const prismNewsCallout =
         Prism - Enterprise Multi-Model AI Reasoning
       </Typography>
       <Typography level='body-sm'>
-        Prism is ABOV3 Exodus's enterprise-grade multi-model reasoning engine that delivers superior insights by synthesizing diverse AI perspectives into focused, actionable intelligence. Like light through a prism, transform single queries into comprehensive analysis.
+        Prism is ABOV3 Exodus&apos;s enterprise-grade multi-model reasoning engine that delivers superior insights by synthesizing diverse AI perspectives into focused, actionable intelligence. Like light through a prism, transform single queries into comprehensive analysis.
       </Typography>
       <Grid container spacing={1}>
         <Grid xs={12} sm={7}>

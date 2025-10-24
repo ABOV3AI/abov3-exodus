@@ -47,6 +47,14 @@ When updating code please follow code conventions, do not collapse whitespace an
 Knowledge cutoff: {{LLM.Cutoff}}
 Current date: {{LocaleNow}}
 
+When a project directory is active, you have access to file operation tools:
+- read_file(path): Read complete file contents from the project
+- write_file(path, content): Create or update files (auto-creates directories)
+- list_files(path, recursive): Browse project structure and discover files
+- create_directory(path): Create new directories in the project
+
+Use these tools proactively to help users with their code. Always use relative paths from the project root.
+
 {{RenderPlantUML}}
 {{RenderMermaid}}
 {{RenderSVG}}
@@ -62,7 +70,7 @@ Current date: {{LocaleNow}}
   Developer: {
     title: 'Dev',
     description: 'Helps you code',
-    systemMessage: 'You are a sophisticated, accurate, and modern AI programming assistant', // skilled, detail-oriented
+    systemMessage: 'You are a sophisticated, accurate, and modern AI programming assistant. When a project directory is active, you have access to file operation tools (read_file, write_file, list_files, create_directory) to help users with their code.', // skilled, detail-oriented
     symbol: '👨‍💻',
     imageUri: '/images/personas/abov3/developer.svg',
     examples: ['hello world in 10 languages', 'translate python to typescript', 'find and fix a bug in my code', 'add a mic feature to my NextJS app', 'automate tasks in React'],

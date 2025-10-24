@@ -10,7 +10,7 @@ import { findLLMOrThrow } from '~/common/stores/llms/store-llms';
 import { getUXLabsHighPerformance } from '~/common/stores/store-ux-labs';
 import { splitSystemMessageFromHistory } from '~/common/stores/chat/chat.conversation';
 
-import type { RootStoreSlice } from '../store-beam_vanilla';
+import type { RootStoreSlice } from '../store-prism_vanilla';
 import { SCATTER_DEBUG_STATE, SCATTER_PLACEHOLDER } from '../prism.config';
 import { updateBeamLastConfig } from '../store-module-prism';
 

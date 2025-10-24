@@ -131,10 +131,8 @@ export function OptimaBar(props: { component: React.ElementType, currentApp?: Na
       {/* ABOV3 Logo */}
       <Box sx={{
         mr: 1,
-        display: 'flex',
-        alignItems: 'center',
-        // Hide on very small screens if needed
-        display: { xs: 'none', sm: 'flex' }
+        display: { xs: 'none', sm: 'flex' },
+        alignItems: 'center'
       }}>
         <NextImage
           src="/images/abov3-logo-white.png"

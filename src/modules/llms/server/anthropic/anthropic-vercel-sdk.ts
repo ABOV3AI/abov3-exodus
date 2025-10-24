@@ -3,7 +3,7 @@
  */
 
 import { createAnthropic } from '@ai-sdk/anthropic';
-import { streamText } from 'ai';
+import { streamText, generateText } from 'ai';
 import type { AnthropicAccessSchema } from './anthropic.router';
 
 
@@ -60,7 +60,7 @@ export async function streamChatWithVercelSDK(
     model,
     messages: requestBody.messages,
     system: systemPrompt,
-    maxTokens: requestBody.max_tokens,
+    ...(requestBody.max_tokens && { maxSteps: requestBody.max_tokens }),
     temperature: requestBody.temperature,
     topP: requestBody.top_p,
     topK: requestBody.top_k,
@@ -115,14 +115,53 @@ export async function generateChatWithVercelSDK(
   modelId: string,
   requestBody: any,
 ): Promise<any> {
-  const anthropic = createAnthropicSDK(access);
+  if (!access.oauthAccessToken) {
+    throw new Error('OAuth access token required');
+  }
+
+  const anthropic = createAnthropic({
+    apiKey: "",
+    headers: {
+      "anthropic-beta": "oauth-2025-04-20,claude-code-20250219,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14",
+    },
+    async fetch(input: any, init: any = {}) {
+      const headers = new Headers(init.headers || {});
+      headers.set("authorization", `Bearer ${access.oauthAccessToken}`);
+      headers.set(
+        "anthropic-beta",
+        "oauth-2025-04-20,claude-code-20250219,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14"
+      );
+      headers.delete("x-api-key");
+
+      return fetch(input, {
+        ...init,
+        headers,
+      });
+    },
+  });
+
   const model = anthropic(modelId);
 
-  const params = convertToVercelSDKFormat(requestBody);
+  // Convert system prompt to string if it's an array
+  let systemPrompt = requestBody.system;
+  if (Array.isArray(systemPrompt)) {
+    systemPrompt = systemPrompt.map((item: any) => {
+      if (typeof item === 'string') return item;
+      if (item?.type === 'text' && item?.text) return item.text;
+      return '';
+    }).join('\n');
+  }
 
   const result = await generateText({
     model,
-    ...params,
+    messages: requestBody.messages,
+    system: systemPrompt,
+    ...(requestBody.max_tokens && { maxSteps: requestBody.max_tokens }),
+    temperature: requestBody.temperature,
+    topP: requestBody.top_p,
+    topK: requestBody.top_k,
+    tools: requestBody.tools,
+    toolChoice: requestBody.tool_choice,
   });
 
   // Convert Vercel AI SDK response to Anthropic format
@@ -140,8 +179,8 @@ export async function generateChatWithVercelSDK(
     stop_reason: result.finishReason || 'end_turn',
     stop_sequence: null,
     usage: {
-      input_tokens: result.usage?.promptTokens || 0,
-      output_tokens: result.usage?.completionTokens || 0,
+      input_tokens: (result.usage as any)?.promptTokens || 0,
+      output_tokens: (result.usage as any)?.completionTokens || 0,
     },
   };
 }
