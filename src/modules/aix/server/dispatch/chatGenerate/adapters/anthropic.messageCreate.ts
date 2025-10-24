@@ -130,6 +130,19 @@ export function aixToAnthropicMessageCreate(model: AixAPI_Model, _chatGenerate: 
       systemMessage = undefined;
   }
 
+  // CRITICAL: OAuth requires Claude Code system message identification
+  // This must be prepended to match OpenCode and llm-orc implementations
+  if (isOAuth) {
+    const claudeCodeMessage = AnthropicWire_Blocks.TextBlock('You are Claude Code, Anthropic\'s official CLI for Claude.');
+    if (systemMessage && systemMessage.length) {
+      // Prepend to existing system message
+      systemMessage = [claudeCodeMessage, ...systemMessage];
+    } else {
+      // Create new system message
+      systemMessage = [claudeCodeMessage];
+    }
+  }
+
   // Transform the chat messages into Anthropic's format
   const chatMessages: TRequest['messages'] = [];
   let currentMessage: TRequest['messages'][number] | null = null;
