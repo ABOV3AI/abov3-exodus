@@ -18,6 +18,8 @@ interface ProjectsState {
   activeProjectId: string | null;
   mode: ProjectMode;
   lastActiveProjectId: string | null; // Remember last project when switching modes
+  lastCodingProjectId: string | null; // Remember project for coding mode
+  lastResearchProjectId: string | null; // Remember project for research mode
 
   // FileSystemDirectoryHandle storage (in-memory only, not persisted)
   projectHandles: Map<string, FileSystemDirectoryHandle>;
@@ -64,6 +66,8 @@ export const useProjectsStore = create<ProjectsStore>()(
       activeProjectId: null,
       mode: 'chat' as ProjectMode,
       lastActiveProjectId: null,
+      lastCodingProjectId: null,
+      lastResearchProjectId: null,
       projectHandles: new Map(),
 
       // Actions
@@ -114,7 +118,20 @@ export const useProjectsStore = create<ProjectsStore>()(
       },
 
       setActiveProject: (id: string | null) => {
-        set({ activeProjectId: id });
+        const state = get();
+        const updates: Partial<ProjectsState> = { activeProjectId: id };
+
+        // Also save to mode-specific memory
+        if (state.mode === 'coding') {
+          updates.lastCodingProjectId = id;
+        } else if (state.mode === 'research') {
+          updates.lastResearchProjectId = id;
+        }
+
+        // Save to general lastActiveProjectId for backward compatibility
+        updates.lastActiveProjectId = id;
+
+        set(updates);
       },
 
       getProjectHandle: (id: string) => {
@@ -145,26 +162,35 @@ export const useProjectsStore = create<ProjectsStore>()(
       setMode: (mode: ProjectMode) => {
         const state = get();
 
-        if (mode === 'chat') {
-          // Switching to chat mode: save current project and deactivate
-          set({
-            mode,
-            lastActiveProjectId: state.activeProjectId,
-            activeProjectId: null,
-          });
-        } else if (mode === 'coding' || mode === 'research') {
-          // Switching to coding or research mode: restore last project if it exists
-          // Both modes keep the project selected, just different intent
-          const projectToRestore = state.lastActiveProjectId
-            && state.projects.find(p => p.id === state.lastActiveProjectId)
-            ? state.lastActiveProjectId
-            : null;
+        // Save current project to the current mode's memory before switching
+        const updates: Partial<ProjectsState> = { mode };
 
-          set({
-            mode,
-            activeProjectId: projectToRestore,
-          });
+        if (state.mode === 'coding') {
+          updates.lastCodingProjectId = state.activeProjectId;
+        } else if (state.mode === 'research') {
+          updates.lastResearchProjectId = state.activeProjectId;
         }
+
+        if (mode === 'chat') {
+          // Switching to chat mode: deactivate project
+          updates.activeProjectId = null;
+        } else if (mode === 'coding') {
+          // Switching to coding mode: restore last coding project
+          const projectToRestore = state.lastCodingProjectId
+            && state.projects.find(p => p.id === state.lastCodingProjectId)
+            ? state.lastCodingProjectId
+            : null;
+          updates.activeProjectId = projectToRestore;
+        } else if (mode === 'research') {
+          // Switching to research mode: restore last research project
+          const projectToRestore = state.lastResearchProjectId
+            && state.projects.find(p => p.id === state.lastResearchProjectId)
+            ? state.lastResearchProjectId
+            : null;
+          updates.activeProjectId = projectToRestore;
+        }
+
+        set(updates);
       },
 
       toggleMode: () => {
@@ -178,13 +204,15 @@ export const useProjectsStore = create<ProjectsStore>()(
     }),
     {
       name: 'app-projects',
-      version: 1,
+      version: 2, // Incremented version for new fields
       // Only persist projects metadata, not the handles (they can't be serialized)
       partialize: (state) => ({
         projects: state.projects,
         activeProjectId: state.activeProjectId,
         mode: state.mode,
         lastActiveProjectId: state.lastActiveProjectId,
+        lastCodingProjectId: state.lastCodingProjectId,
+        lastResearchProjectId: state.lastResearchProjectId,
       }),
     }
   )
