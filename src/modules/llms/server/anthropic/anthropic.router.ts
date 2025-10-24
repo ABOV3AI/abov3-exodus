@@ -78,10 +78,21 @@ const PER_MODEL_BETA_FEATURES: { [modelId: string]: string[] } = {
   ] as const,
 } as const;
 
-function _anthropicHeaders(modelId?: string): HeadersInit {
+function _anthropicHeaders(modelId?: string, isOAuth?: boolean): HeadersInit {
 
   // accumulate the beta features
-  const betaFeatures = [...DEFAULT_ANTHROPIC_BETA_FEATURES];
+  const betaFeatures: string[] = [];
+
+  // CRITICAL: OAuth Pro/Max requires oauth-2025-04-20 beta feature
+  // This enables Pro/Max subscription access via OAuth tokens
+  if (isOAuth) {
+    betaFeatures.push('oauth-2025-04-20');
+  }
+
+  // Add default beta features
+  betaFeatures.push(...DEFAULT_ANTHROPIC_BETA_FEATURES);
+
+  // Add model-specific beta features
   if (modelId) {
     // string search (.includes) within the keys, to be more resilient to modelId changes/prefixing
     for (const [key, value] of Object.entries(PER_MODEL_BETA_FEATURES))
@@ -132,15 +143,15 @@ export async function anthropicOAuthInterceptor(
   Object.entries(headers as Record<string, string>).forEach(([key, value]) => {
     const lowerKey = key.toLowerCase();
     if (lowerKey !== 'x-api-key' && lowerKey !== 'authorization') {
-      newHeaders[lowerKey] = value;
+      newHeaders[key] = value; // Keep original casing for headers like 'anthropic-beta'
     }
   });
 
   // Set OAuth Bearer token
   newHeaders['authorization'] = `Bearer ${access.oauthAccessToken}`;
 
-  // Keep the standard beta features from the original headers (includes prompt-caching-2024-07-31, etc.)
-  // This ensures OAuth works with all standard models like Haiku, Sonnet, etc.
+  // CRITICAL: The anthropic-beta header from anthropicAccess() already includes
+  // oauth-2025-04-20 when OAuth is active, so we preserve it above
 
   return {
     headers: newHeaders,
@@ -195,10 +206,9 @@ export function anthropicAccess(access: AnthropicAccessSchema, antModelIdForBeta
   if (!hasOAuth && !anthropicKey && !(access.anthropicHost || env.ANTHROPIC_API_HOST))
     throw new Error('Missing Anthropic credentials. Either login with Pro/Max or add an API Key on the UI (Models Setup) or server side (your deployment).');
 
-  // API host - OAuth users MUST use console.anthropic.com, not api.anthropic.com
-  let anthropicHost = hasOAuth
-    ? 'https://console.anthropic.com'  // OAuth Pro/Max endpoint
-    : fixupHost(access.anthropicHost || env.ANTHROPIC_API_HOST || DEFAULT_ANTHROPIC_HOST, apiPath);
+  // API host - Use standard api.anthropic.com for both OAuth and API key
+  // OAuth works on the standard endpoint when oauth-2025-04-20 beta header is included
+  let anthropicHost = fixupHost(access.anthropicHost || env.ANTHROPIC_API_HOST || DEFAULT_ANTHROPIC_HOST, apiPath);
 
   // Helicone for Anthropic
   // https://docs.helicone.ai/getting-started/integration-method/anthropic
@@ -211,23 +221,22 @@ export function anthropicAccess(access: AnthropicAccessSchema, antModelIdForBeta
 
   // Build headers - OAuth takes precedence over API key
   const authHeaders: Record<string, string> = {};
-  const baseHeaders = _anthropicHeaders(antModelIdForBetaFeatures) as Record<string, string>;
 
   if (hasOAuth) {
     // OAuth Pro/Max authentication - DO NOT include API key
-    // Note: The actual Bearer token will be refreshed by the OAuth interceptor if needed
+    // CRITICAL: Include oauth-2025-04-20 beta header for Pro/Max subscription access
+    const oauthHeaders = _anthropicHeaders(antModelIdForBetaFeatures, true) as Record<string, string>;
     authHeaders['Authorization'] = `Bearer ${access.oauthAccessToken}`;
-
-    // Use standard beta features for OAuth (same as API key users)
-    // This ensures OAuth works with all standard models like Haiku, Sonnet, etc.
-    authHeaders['anthropic-beta'] = baseHeaders['anthropic-beta'];
+    authHeaders['anthropic-beta'] = oauthHeaders['anthropic-beta'];
   } else if (anthropicKey) {
     // Standard API key authentication - only if we have a key and NOT using OAuth
+    const apiKeyHeaders = _anthropicHeaders(antModelIdForBetaFeatures, false) as Record<string, string>;
     authHeaders['X-API-Key'] = anthropicKey;
-    authHeaders['anthropic-beta'] = baseHeaders['anthropic-beta'];
+    authHeaders['anthropic-beta'] = apiKeyHeaders['anthropic-beta'];
   } else {
     // No authentication provided (may work with custom host)
-    authHeaders['anthropic-beta'] = baseHeaders['anthropic-beta'];
+    const defaultHeaders = _anthropicHeaders(antModelIdForBetaFeatures, false) as Record<string, string>;
+    authHeaders['anthropic-beta'] = defaultHeaders['anthropic-beta'];
   }
 
   const headers: HeadersInit = {
