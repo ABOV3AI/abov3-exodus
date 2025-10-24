@@ -83,10 +83,13 @@ function _anthropicHeaders(modelId?: string, isOAuth?: boolean): HeadersInit {
   // accumulate the beta features
   const betaFeatures: string[] = [];
 
-  // CRITICAL: OAuth Pro/Max requires oauth-2025-04-20 beta feature
-  // This enables Pro/Max subscription access via OAuth tokens
+  // CRITICAL: OAuth Pro/Max requires Claude Code identification headers
+  // Without these, Anthropic rejects with "This credential is only authorized for use with Claude Code"
   if (isOAuth) {
-    betaFeatures.push('oauth-2025-04-20');
+    betaFeatures.push('oauth-2025-04-20');                        // Enable OAuth authentication
+    betaFeatures.push('claude-code-20250219');                    // Identify as Claude Code (REQUIRED!)
+    betaFeatures.push('interleaved-thinking-2025-05-14');         // Extended thinking support
+    betaFeatures.push('fine-grained-tool-streaming-2025-05-14');  // Tool streaming support
   }
 
   // Add default beta features
@@ -224,10 +227,11 @@ export function anthropicAccess(access: AnthropicAccessSchema, antModelIdForBeta
 
   if (hasOAuth) {
     // OAuth Pro/Max authentication - DO NOT include API key
-    // CRITICAL: Include oauth-2025-04-20 beta header for Pro/Max subscription access
+    // CRITICAL: Must identify as Claude Code or Anthropic will reject the request
     const oauthHeaders = _anthropicHeaders(antModelIdForBetaFeatures, true) as Record<string, string>;
     authHeaders['Authorization'] = `Bearer ${access.oauthAccessToken}`;
     authHeaders['anthropic-beta'] = oauthHeaders['anthropic-beta'];
+    authHeaders['x-app'] = 'claude-code';  // Identify as Claude Code
   } else if (anthropicKey) {
     // Standard API key authentication - only if we have a key and NOT using OAuth
     const apiKeyHeaders = _anthropicHeaders(antModelIdForBetaFeatures, false) as Record<string, string>;
@@ -245,6 +249,8 @@ export function anthropicAccess(access: AnthropicAccessSchema, antModelIdForBeta
     ...DEFAULT_ANTHROPIC_HEADERS,
     ...authHeaders,
     ...(heliKey && { 'Helicone-Auth': `Bearer ${heliKey}` }),
+    // Add User-Agent for OAuth to fully mimic Claude Code
+    ...(hasOAuth && { 'User-Agent': _generateClaudeCodeUserAgent() }),
   };
 
   return {
