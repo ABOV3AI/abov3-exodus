@@ -12,29 +12,75 @@ Built for engineers, founders, researchers, self-hosters, and IT departments who
 
 ---
 
-## 🚀 Get Started
+## 🚀 Installation
 
-**Self-Host & Develop:**
-Full control over your AI workspace. Deploy locally or on your infrastructure.
+### Prerequisites
+
+- **Node.js**: Version 18.17 or later
+- **npm**: Version 9 or later (comes with Node.js)
+- **Git**: For cloning the repository
+
+### Quick Start (Development)
+
+Full control over your AI workspace. Deploy locally for development:
 
 ```bash
-# Clone the repository
+# 1. Clone the repository
 git clone https://github.com/ABOV3AI/abov3-exodus.git
 cd abov3-exodus
 
-# Install dependencies
+# 2. Install dependencies
 npm install
 
-# Run development server
+# 3. Run development server
 npm run dev
 ```
 
-Visit http://localhost:3000 to start using ABOV3 Exodus.
+Visit **http://localhost:3000** to start using ABOV3 Exodus.
 
-**Deploy with Docker:**
+### Production Deployment
+
+For production use, build and run the optimized version:
+
 ```bash
-docker-compose up -d
+# 1. Build production version
+npm run build
+
+# 2. Start production server
+npm start
 ```
+
+The production server will run on **http://localhost:3000** with optimized performance.
+
+### Deploy with Docker
+
+```bash
+# Using Docker Compose
+docker-compose up -d
+
+# Or using Docker directly
+docker build -t abov3-exodus .
+docker run -p 3000:3000 abov3-exodus
+```
+
+### Environment Configuration
+
+Create a `.env.local` file in the root directory for API keys (optional):
+
+```env
+# OpenAI
+OPENAI_API_KEY=sk-...
+
+# Anthropic
+ANTHROPIC_API_KEY=sk-ant-...
+
+# Google (Gemini)
+GOOGLE_API_KEY=AI...
+
+# Other providers as needed
+```
+
+**Note**: API keys can also be configured through the UI in Settings → Services.
 
 ---
 
@@ -67,6 +113,19 @@ docker-compose up -d
 - Real-time web search with citations
 - Page content extraction and analysis
 - YouTube transcript integration
+
+### 📁 File Operations (New!)
+- **Read/Write Files**: AI can read and modify files in your project
+- **Directory Management**: Create directories and organize files
+- **Project Integration**: Select any local directory for AI assistance
+- **Browser-Native**: Uses File System Access API (Chrome, Edge, Safari)
+- **Visual Indicator**: Green chip shows when file tools are active
+
+**How to use:**
+1. Go to Projects in the sidebar
+2. Click "Add Project" and select a directory
+3. Green project indicator appears in status bar
+4. AI can now use `read_file`, `write_file`, `list_files`, `create_directory` tools
 
 ### 💾 Data Ownership & Privacy
 - **Local-First Architecture**: Your data stays on your device
