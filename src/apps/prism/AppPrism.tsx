@@ -5,7 +5,7 @@ import { Box, Button, Typography } from '@mui/joy';
 
 import { PrismStoreApi, usePrismStore } from '~/modules/prism/store-prism.hooks';
 import { PrismView } from '~/modules/prism/PrismView';
-import { createBeamVanillaStore } from '~/modules/prism/store-beam_vanilla';
+import { createPrismVanillaStore } from '~/modules/prism/store-prism_vanilla';
 
 import { OptimaToolbarIn } from '~/common/layout/optima/portals/OptimaPortalsIn';
 import { createDConversation, DConversation } from '~/common/stores/chat/chat.conversation';
@@ -20,7 +20,7 @@ function initTestConversation(): DConversation {
   return conversation;
 }
 
-function initTestBeamStore(messages: DMessage[], beamStore: PrismStoreApi = createBeamVanillaStore()): PrismStoreApi {
+function initTestBeamStore(messages: DMessage[], beamStore: PrismStoreApi = createPrismVanillaStore()): PrismStoreApi {
   beamStore.getState().open(messages, null, false, (content) => alert(content));
   return beamStore;
 }
@@ -32,7 +32,7 @@ export function AppBeam() {
   const [showDebug, setShowDebug] = React.useState(false);
 
   const [conversation, setConversation] = React.useState<DConversation>(() => initTestConversation());
-  const [beamStoreApi] = React.useState(() => createBeamVanillaStore());
+  const [beamStoreApi] = React.useState(() => createPrismVanillaStore());
 
 
   // reinit the prism store if the conversation changes

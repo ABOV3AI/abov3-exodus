@@ -17,7 +17,7 @@ process.env.NEXT_PUBLIC_BUILD_HASH = (buildHash || '').slice(0, 10);
 process.env.NEXT_PUBLIC_BUILD_PKGVER = JSON.parse('' + readFileSync(new URL('./package.json', import.meta.url))).version;
 process.env.NEXT_PUBLIC_BUILD_TIMESTAMP = new Date().toISOString();
 process.env.NEXT_PUBLIC_DEPLOYMENT_TYPE = process.env.NEXT_PUBLIC_DEPLOYMENT_TYPE || (process.env.VERCEL_ENV ? `vercel-${process.env.VERCEL_ENV}` : 'local'); // Docker or custom, Vercel
-console.log(` 🧠 \x1b[1mbig-AGI\x1b[0m v${process.env.NEXT_PUBLIC_BUILD_PKGVER} (@${process.env.NEXT_PUBLIC_BUILD_HASH})`);
+console.log(` 🚀 \x1b[1mABOV3 Exodus\x1b[0m v${process.env.NEXT_PUBLIC_BUILD_PKGVER} (@${process.env.NEXT_PUBLIC_BUILD_HASH})`);
 
 // Non-default build types
 const buildType =
@@ -25,7 +25,7 @@ const buildType =
     : process.env.BIG_AGI_BUILD === 'static' ? 'export' as const
       : undefined;
 
-buildType && console.log(` 🧠 big-AGI: building for ${buildType}...\n`);
+buildType && console.log(` 🚀 ABOV3 Exodus: building for ${buildType}...\n`);
 
 /** @type {import('next').NextConfig} */
 let nextConfig: NextConfig = {
@@ -115,7 +115,7 @@ verifyBuildTimeVars();
 // PostHog error reporting with source maps for production builds
 import { withPostHogConfig } from '@posthog/nextjs-config';
 if (process.env.POSTHOG_API_KEY && process.env.POSTHOG_ENV_ID) {
-  console.log(' 🧠 \x1b[1mbig-AGI\x1b[0m: building with PostHog issue reporting and source maps...');
+  console.log(' 🚀 \x1b[1mABOV3 Exodus\x1b[0m: building with PostHog issue reporting and source maps...');
   nextConfig = withPostHogConfig(nextConfig, {
     personalApiKey: process.env.POSTHOG_API_KEY,
     envId: process.env.POSTHOG_ENV_ID,
@@ -123,7 +123,7 @@ if (process.env.POSTHOG_API_KEY && process.env.POSTHOG_ENV_ID) {
     verbose: false,
     sourcemaps: {
       enabled: process.env.NODE_ENV === 'production',
-      project: 'big-agi',
+      project: 'abov3-exodus',
       version: process.env.NEXT_PUBLIC_BUILD_HASH,
       deleteAfterUpload: true,
     },
