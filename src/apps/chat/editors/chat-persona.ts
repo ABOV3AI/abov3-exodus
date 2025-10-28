@@ -4,6 +4,7 @@ import { autoConversationTitle } from '~/modules/aifn/autotitle/autoTitle';
 
 import { DConversationId, splitSystemMessageFromHistory } from '~/common/stores/chat/chat.conversation';
 import type { DLLMId } from '~/common/stores/llms/llms.types';
+import { findLLMOrThrow } from '~/common/stores/llms/store-llms';
 import { AudioGenerator } from '~/common/util/audio/AudioGenerator';
 import { ConversationsManager } from '~/common/chat-overlay/ConversationsManager';
 import { createDMessageFromFragments, DMessage, MESSAGE_FLAG_NOTIFY_COMPLETE, messageWasInterruptedAtStart } from '~/common/stores/chat/chat.message';
@@ -13,12 +14,15 @@ import { PersonaChatMessageSpeak } from './persona/PersonaChatMessageSpeak';
 import { getChatAutoAI, getIsNotificationEnabledForModel } from '../store-app-chat';
 import { getInstantAppChatPanesCount } from '../components/panes/store-panes-manager';
 
-// File operations integration
+// Tools integration - unified system
 import { useProjectsStore } from '~/apps/projects/store-projects';
-import { FILE_OPERATIONS_TOOLS } from '~/modules/fileops/fileops.tools';
-import { executeFileOperation } from '~/modules/fileops/fileops.executor';
+import { getEnabledAIXTools } from '~/modules/tools/tools.registry';
+import { executeToolCall } from '~/modules/tools/tools.executor';
 import type { AixTools_ToolDefinition } from '~/modules/aix/server/api/aix.wiretypes';
-import { create_FunctionCallResponse_ContentFragment, isToolInvocationPart } from '~/common/stores/chat/chat.fragments';
+import { create_FunctionCallResponse_ContentFragment, createTextContentFragment } from '~/common/stores/chat/chat.fragments';
+
+// OAuth token refresh for Anthropic
+import { ensureAnthropicOAuthFresh } from '~/modules/llms/vendors/anthropic/anthropic.token-refresh';
 
 
 // configuration
@@ -71,9 +75,30 @@ export async function runPersonaOnConversationHead(
   const abortController = new AbortController();
   cHandler.setAbortController(abortController, 'chat-persona');
 
-  // Check if there's an active project - if so, add file operation tools
+  // Get all enabled tools from the registry
+  // This includes file ops (if project active), web tools, and any other enabled categories
   const activeProject = useProjectsStore.getState().getActiveProject();
-  const tools: AixTools_ToolDefinition[] | undefined = activeProject?.handle ? FILE_OPERATIONS_TOOLS : undefined;
+
+  // TEMPORARY: Disable tools for Anthropic models to prevent errors from old conversations
+  // Tools work correctly in fresh conversations, but old conversations have malformed tool history in IndexedDB
+  // Users should start fresh conversations to use tools with Anthropic
+  const llm = findLLMOrThrow(assistantLlmId);
+  const isAnthropicModel = llm.vId === 'anthropic';
+  const tools: AixTools_ToolDefinition[] | undefined = isAnthropicModel ? undefined : getEnabledAIXTools();
+
+  // Ensure Anthropic OAuth token is fresh before making API call
+  try {
+    await ensureAnthropicOAuthFresh();
+  } catch (error: any) {
+    // If token refresh fails, show error and abort
+    const errorMessage = error.message || 'OAuth token refresh failed';
+    cHandler.messageEdit(assistantMessageId, {
+      fragments: [createTextContentFragment(`❌ ${errorMessage}`)],
+      pendingIncomplete: false,
+    }, true, false);
+    cHandler.clearAbortController('chat-persona');
+    return false;
+  }
 
   // stream the assistant's messages directly to the state store
   const messageStatus = await aixChatGenerateContent_DMessage_FromConversation(
@@ -126,10 +151,8 @@ export async function runPersonaOnConversationHead(
     AudioGenerator.chatNotifyResponse();
   }
 
-  // Handle file operation tool invocations if present
-  if (activeProject?.handle && lastDeepCopy.fragments) {
-    const fileOperationTools = ['read_file', 'write_file', 'list_files', 'create_directory'];
-
+  // Handle tool invocations if present (unified system for all tools)
+  if (lastDeepCopy.fragments) {
     // Execute tool invocations and create tool response message
     const toolResponseFragments = await Promise.all(
       lastDeepCopy.fragments.map(async (frag) => {
@@ -137,27 +160,32 @@ export async function runPersonaOnConversationHead(
         const part = frag.part;
         if (part.pt !== 'tool_invocation') return null;
         if (part.invocation.type !== 'function_call') return null;
-        if (!fileOperationTools.includes(part.invocation.name)) return null;
 
         const invocation = part.invocation;
         try {
-          const result = await executeFileOperation(
+          // Execute using unified tool system
+          const result = await executeToolCall(
             invocation.name,
             invocation.args,
-            activeProject.handle!
+            {
+              projectHandle: activeProject?.handle || undefined,
+              conversationId,
+              messageId: assistantMessageId,
+              abortSignal: abortController.signal,
+            }
           );
 
           return create_FunctionCallResponse_ContentFragment(
             part.id,
             result.error || false,
             invocation.name,
-            result.result,
+            result.result || '',
             'client'
           );
         } catch (error: any) {
           return create_FunctionCallResponse_ContentFragment(
             part.id,
-            error.message || 'File operation failed',
+            error.message || 'Tool execution failed',
             invocation.name,
             '',
             'client'

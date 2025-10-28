@@ -9,6 +9,8 @@ import { navigateToNews, ROUTE_APP_CHAT } from '~/common/app.routes';
 import { preloadTiktokenLibrary } from '~/common/tokens/tokens.text';
 import { useClientLoggerInterception } from '~/common/logger/hooks/useClientLoggerInterception';
 import { useNextLoadProgress } from '~/common/components/useNextLoadProgress';
+import { initializeToolRegistry } from '~/modules/tools/tools.registry';
+import { initializeAnthropicOAuthRefresh } from '~/modules/llms/vendors/anthropic/anthropic.token-refresh';
 
 
 export function ProviderBootstrapLogic(props: { children: React.ReactNode }) {
@@ -75,6 +77,16 @@ export function ProviderBootstrapLogic(props: { children: React.ReactNode }) {
     return () => clearTimeout(timeout);
 
   }, [launchStorageGC]);
+
+  // [tools] initialize the tools registry (one-time on mount)
+  React.useEffect(() => {
+    initializeToolRegistry(); // fire once to register all available tools
+  }, []);
+
+  // [oauth] initialize Anthropic OAuth token refresh (one-time on mount)
+  React.useEffect(() => {
+    initializeAnthropicOAuthRefresh(); // check token every 4 minutes
+  }, []);
 
   //
   // Render Gates

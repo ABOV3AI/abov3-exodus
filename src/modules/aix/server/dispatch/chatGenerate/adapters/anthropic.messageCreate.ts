@@ -54,24 +54,35 @@ function validateAndFixToolSequencing(messages: TRequest['messages']): void {
   if (pendingToolUses.size > 0) {
     console.warn(`Anthropic: Auto-fixing ${pendingToolUses.size} missing tool_result blocks`);
 
-    // Sort by message index to insert in the correct order
-    const sortedToolUses = Array.from(pendingToolUses.entries()).sort((a, b) => a[1] - b[1]);
+    // Group tool_uses by message index to batch tool_results together
+    const toolUsesByMessage = new Map<number, string[]>();
+    for (const [toolId, messageIndex] of pendingToolUses.entries()) {
+      if (!toolUsesByMessage.has(messageIndex)) {
+        toolUsesByMessage.set(messageIndex, []);
+      }
+      toolUsesByMessage.get(messageIndex)!.push(toolId);
+    }
 
-    for (const [toolId, messageIndex] of sortedToolUses) {
-      // Find where to insert the tool_result
+    // Sort by message index and insert in reverse order to maintain correct positions
+    const sortedMessages = Array.from(toolUsesByMessage.entries()).sort((a, b) => b[0] - a[0]);
+
+    for (const [messageIndex, toolIds] of sortedMessages) {
+      // Find where to insert the tool_results (right after the tool_use message)
       const insertIndex = messageIndex + 1;
 
-      // Create a placeholder tool_result
-      const placeholderResult = AnthropicWire_Blocks.ToolResultBlock(
-        toolId,
-        [AnthropicWire_Blocks.TextBlock('Auto-generated placeholder for missing tool result')],
-        false
+      // Create placeholder tool_results for all tools in this message
+      const placeholderResults = toolIds.map(toolId =>
+        AnthropicWire_Blocks.ToolResultBlock(
+          toolId,
+          [AnthropicWire_Blocks.TextBlock('Auto-generated placeholder for missing tool result')],
+          false
+        )
       );
 
-      // Insert a new user message with the tool_result
+      // Insert a SINGLE user message with ALL tool_results
       const newMessage: TRequest['messages'][number] = {
         role: 'user',
-        content: [placeholderResult]
+        content: placeholderResults
       };
 
       // Insert the message at the correct position
@@ -81,7 +92,7 @@ function validateAndFixToolSequencing(messages: TRequest['messages']): void {
         messages.splice(insertIndex, 0, newMessage);
       }
 
-      console.log(`Anthropic: Inserted tool_result for tool_use ${toolId} at position ${insertIndex}`);
+      console.log(`Anthropic: Inserted ${toolIds.length} tool_result(s) for tool_use(s) ${toolIds.join(', ')} at position ${insertIndex}`);
     }
   }
 }
@@ -186,21 +197,23 @@ export function aixToAnthropicMessageCreate(model: AixAPI_Model, _chatGenerate: 
       const isToolUse = content.type === 'tool_use';
       const isToolResult = content.type === 'tool_result';
 
-      // Force message boundary for tool blocks to ensure proper sequencing
+      // Handle tool blocks: keep multiple tool_use/tool_result in same message
       if (isToolUse || isToolResult) {
-        // If we have a current message, flush it before starting a new one
-        if (currentMessage) {
+        // If we have a current message with a different role, flush it
+        if (currentMessage && currentMessage.role !== role) {
           chatMessages.push(currentMessage);
           currentMessage = null;
           hasToolUse = false;
         }
-        // Start a new message for this tool block
-        currentMessage = { role, content: [content] };
-        hasToolUse = isToolUse;
-        // Immediately flush tool messages to maintain strict sequencing
-        chatMessages.push(currentMessage);
-        currentMessage = null;
-        hasToolUse = false;
+
+        // Start a new message if we don't have one, or add to existing message
+        if (!currentMessage) {
+          currentMessage = { role, content: [content] };
+          hasToolUse = isToolUse;
+        } else {
+          // Add to current message (allows multiple tool blocks in one message)
+          currentMessage.content.push(content);
+        }
         continue;
       }
 

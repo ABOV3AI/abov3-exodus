@@ -15,6 +15,7 @@ import { DallESettings } from '~/modules/t2i/dalle/DallESettings';
 import { ElevenlabsSettings } from '~/modules/elevenlabs/ElevenlabsSettings';
 import { GoogleSearchSettings } from '~/modules/google/GoogleSearchSettings';
 import { T2ISettings } from '~/modules/t2i/T2ISettings';
+import { ToolsSettings } from './ToolsSettings';
 
 import type { PreferencesTabId } from '~/common/layout/optima/store-layout-optima';
 import { AppBreadcrumbs } from '~/common/components/AppBreadcrumbs';
@@ -292,13 +293,15 @@ export function SettingsModal(props: {
 
         <TabPanel value='tools' variant='outlined' sx={_styles.tabPanel}>
           <Topics>
-            <Topic icon={<LanguageRoundedIcon />} title='Browse Web Pages'>
+            <Topic>
+              <ToolsSettings />
+            </Topic>
+            <Topic icon={<LanguageRoundedIcon />} title='Browse Web Pages' startCollapsed>
               <BrowseSettings />
             </Topic>
-            <Topic icon={<SearchIcon />} title='Web Search · Google API' startCollapsed>
+            <Topic icon={<SearchIcon />} title='Web Search · Google API (Optional)' startCollapsed>
               <GoogleSearchSettings />
             </Topic>
-            {/*<Topic icon='🛠' title='Other tools...' />*/}
           </Topics>
         </TabPanel>
       </Tabs>
