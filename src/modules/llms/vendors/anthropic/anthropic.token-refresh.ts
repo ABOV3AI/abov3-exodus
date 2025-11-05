@@ -15,9 +15,10 @@ let refreshPromise: Promise<void> | null = null;
  * Check if OAuth token needs refresh and refresh it if necessary
  * This should be called before making Anthropic API calls
  *
- * @returns Promise that resolves when token is fresh (or throws if refresh fails)
+ * @param throwOnFailure - If true, throws error on refresh failure. If false, fails silently.
+ * @returns Promise that resolves when token is fresh (or throws if refresh fails and throwOnFailure is true)
  */
-export async function ensureAnthropicOAuthFresh(): Promise<void> {
+export async function ensureAnthropicOAuthFresh(throwOnFailure: boolean = false): Promise<void> {
   const store = useModelsStore.getState();
 
   // Find first Anthropic service
@@ -69,9 +70,12 @@ export async function ensureAnthropicOAuthFresh(): Promise<void> {
       // Clear OAuth tokens from store on refresh failure
       store.clearAnthropicOAuth();
 
-      throw new Error(
-        'Your Claude Pro/Max session has expired. Please login again in Settings → Models → Anthropic.'
-      );
+      // Only throw if caller wants to handle the error (e.g., from chat-persona)
+      if (throwOnFailure) {
+        throw new Error(
+          'Your Claude Pro/Max session has expired. Please login again in Settings → Models → Anthropic.'
+        );
+      }
     } finally {
       refreshPromise = null;
     }
@@ -89,12 +93,14 @@ export function initializeAnthropicOAuthRefresh(): void {
   // Check every 4 minutes
   setInterval(() => {
     ensureAnthropicOAuthFresh().catch(err => {
-      console.error('[Anthropic OAuth] Background refresh failed:', err);
+      // Silent fail - don't crash the app for background refresh failures
+      console.warn('[Anthropic OAuth] Background refresh failed (this is normal if not logged in):', err.message);
     });
   }, 4 * 60 * 1000); // 4 minutes
 
-  // Initial check
+  // Initial check - silent, don't throw errors that would crash the app
   ensureAnthropicOAuthFresh().catch(err => {
-    console.error('[Anthropic OAuth] Initial refresh check failed:', err);
+    // Silent fail on startup - user may not be logged in or token may be expired
+    console.warn('[Anthropic OAuth] Initial refresh check failed (this is normal if not logged in):', err.message);
   });
 }

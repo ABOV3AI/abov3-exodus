@@ -88,7 +88,7 @@ export async function runPersonaOnConversationHead(
 
   // Ensure Anthropic OAuth token is fresh before making API call
   try {
-    await ensureAnthropicOAuthFresh();
+    await ensureAnthropicOAuthFresh(true); // throwOnFailure = true to show user the error
   } catch (error: any) {
     // If token refresh fails, show error and abort
     const errorMessage = error.message || 'OAuth token refresh failed';
