@@ -9,6 +9,9 @@
 //
 // The database is used for:
 //  - the 'sharing' function, to let users share the chats with each other
+//  - user authentication and account management
+//  - cloud backup of conversations
+//  - multi-device synchronization
 
 generator client {
   provider = "prisma-client-js"
@@ -60,4 +63,160 @@ enum LinkStorageVisibility {
 
 enum LinkStorageDataType {
   CHAT_V1
+}
+
+//
+// User Authentication & Management (NextAuth.js compatible)
+//
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  password      String? // For email+password auth (hashed with bcrypt)
+
+  // Storage mode preference
+  storageMode   UserStorageMode @default(LOCAL_ONLY)
+
+  // User preferences
+  isAdmin       Boolean   @default(false)
+
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  conversations DConversation[]
+  settings      UserSettings?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+enum UserStorageMode {
+  LOCAL_ONLY
+  CLOUD_BACKUP
+  CLOUD_FIRST
+}
+
+//
+// User Conversations (Cloud Backup)
+//
+model DConversation {
+  id String @id @default(uuid())
+
+  // User ownership
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Conversation metadata
+  userTitle  String?
+  autoTitle  String?
+  isArchived Boolean @default(false)
+  userSymbol String?
+
+  // Conversation data (stored as JSON for flexibility)
+  messages Json // Array of DMessage objects
+
+  // System purpose (deprecated but kept for compatibility)
+  systemPurposeId String?
+
+  // Sync metadata
+  cloudBackupAt DateTime?
+
+  // Timestamps
+  created DateTime @default(now())
+  updated DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, updated])
+  @@index([userId, isArchived])
+}
+
+//
+// User Settings & Preferences
+//
+model UserSettings {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // LLM configurations (stored as JSON)
+  llmSettings Json? // DLLMId configs, model preferences, etc.
+
+  // UI preferences
+  uiSettings Json? // Theme, scaling, drawer states, etc.
+
+  // Sync settings
+  autoBackup      Boolean @default(false)
+  backupFrequency Int?    // Minutes between auto-backups
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//
+// Admin Settings (SMTP Configuration, etc.)
+//
+model AdminSettings {
+  id String @id @default(cuid())
+
+  // SMTP Configuration
+  smtpHost     String?
+  smtpPort     Int?
+  smtpUser     String?
+  smtpPassword String?
+  smtpFrom     String?
+  smtpSecure   Boolean @default(true)
+
+  // Email templates
+  emailTemplates Json? // Welcome email, verification email, etc.
+
+  // General settings
+  allowSignups             Boolean @default(true)
+  requireEmailVerification Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

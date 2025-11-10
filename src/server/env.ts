@@ -99,6 +99,19 @@ export const env = createEnv({
     HTTP_BASIC_AUTH_USERNAME: z.string().optional(),
     HTTP_BASIC_AUTH_PASSWORD: z.string().optional(),
 
+
+    // NextAuth.js Authentication
+    NEXTAUTH_SECRET: z.string().optional(),
+    NEXTAUTH_URL: z.string().url().optional(),
+
+    // Email Service (for magic links and notifications)
+    EMAIL_SERVER_HOST: z.string().optional(),
+    EMAIL_SERVER_PORT: z.string().optional(),
+    EMAIL_SERVER_USER: z.string().optional(),
+    EMAIL_SERVER_PASSWORD: z.string().optional(),
+    EMAIL_FROM: z.string().email().optional(),
+
+
     // Build-time configuration (ignore)
     BIG_AGI_BUILD: z.enum(['standalone', 'static']).optional(),
 
