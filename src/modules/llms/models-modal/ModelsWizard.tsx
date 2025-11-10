@@ -10,6 +10,7 @@ import { useShallowStabilizer } from '~/common/util/hooks/useShallowObject';
 
 import type { IModelVendor } from '../vendors/IModelVendor';
 import { LLMVendorIcon } from '../components/LLMVendorIcon';
+import { ModelVendorABOV3 } from '../vendors/abov3/abov3.vendor';
 import { ModelVendorAnthropic } from '../vendors/anthropic/anthropic.vendor';
 import { ModelVendorGemini } from '../vendors/gemini/gemini.vendor';
 import { ModelVendorLMStudio } from '../vendors/lmstudio/lmstudio.vendor';
@@ -21,6 +22,7 @@ import { llmsUpdateModelsForServiceOrThrow } from '../llm.client';
 
 // configuration
 const WizardProviders: ReadonlyArray<WizardProvider> = [
+  { cat: 'popular', vendor: ModelVendorABOV3, settingsKey: 'abov3Key' } as const,
   { cat: 'popular', vendor: ModelVendorOpenAI, settingsKey: 'oaiKey' } as const,
   { cat: 'popular', vendor: ModelVendorAnthropic, settingsKey: 'anthropicKey' } as const,
   { cat: 'popular', vendor: ModelVendorGemini, settingsKey: 'geminiKey' } as const,

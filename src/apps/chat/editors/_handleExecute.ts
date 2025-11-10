@@ -1,4 +1,4 @@
-import { getChatLLMId } from '~/common/stores/llms/store-llms';
+import { getChatLLMId, findLLMOrThrow } from '~/common/stores/llms/store-llms';
 
 import type { DConversationId } from '~/common/stores/chat/chat.conversation';
 import type { DMessage } from '~/common/stores/chat/chat.message';
@@ -6,6 +6,10 @@ import { ConversationHandler } from '~/common/chat-overlay/ConversationHandler';
 import { ConversationsManager } from '~/common/chat-overlay/ConversationsManager';
 import { createTextContentFragment, isContentOrAttachmentFragment, isImageRefPart, isTextContentFragment, isZyncAssetImageReferencePart } from '~/common/stores/chat/chat.fragments';
 import { getConversationSystemPurposeId } from '~/common/stores/chat/store-chats';
+import { addSnackbar } from '~/common/components/snackbar/useSnackbarsStore';
+import { getNetworkMode } from '~/common/stores/store-network-mode';
+import { findModelVendor } from '~/modules/llms/vendors/vendors.registry';
+import { isVendorAllowedInAirGapped } from '~/modules/llms/vendors/vendor.network';
 
 import type { ChatExecuteMode } from '../execute-mode/execute-mode.types';
 import { textToDrawCommand } from '../commands/CommandsDraw';
@@ -44,6 +48,38 @@ export async function _handleExecute(chatExecuteMode: ChatExecuteMode, conversat
   // Handle unconfigured
   if (!chatLLMId || !chatExecuteMode)
     return !chatLLMId ? 'err-no-chatllm' : 'err-no-chatmode';
+
+  // [Network Mode Check] Block cloud models in air-gapped mode (except ABOV3)
+  const networkMode = getNetworkMode();
+  if (networkMode === 'air-gapped') {
+    try {
+      const llm = findLLMOrThrow(chatLLMId);
+      const vendorId = llm.vId;
+
+      if (!isVendorAllowedInAirGapped(vendorId)) {
+        const vendor = findModelVendor(vendorId);
+        const vendorName = vendor?.name || 'This model';
+
+        addSnackbar({
+          key: 'air-gapped-blocked',
+          message: `🚫 Network Mode: Air-Gapped - ${vendorName} requires internet access. Only local models are available. Switch to Online mode to use cloud models.`,
+          type: 'issue',
+          closeButton: true,
+          overrides: {
+            anchorOrigin: { vertical: 'bottom', horizontal: 'center' },
+            sx: {
+              bottom: '192px !important', // 2 inches higher (96 DPI * 2 = 192px)
+            },
+          },
+        });
+
+        return 'err-network-air-gapped';
+      }
+    } catch (error) {
+      // If we can't find the LLM, let it fail naturally downstream
+      console.warn('[Network Mode Check] Could not verify LLM vendor:', error);
+    }
+  }
 
   // handle missing last user message (or fragment)
   // note that we use the initial history, as the user message could have been displaced on the edited versions

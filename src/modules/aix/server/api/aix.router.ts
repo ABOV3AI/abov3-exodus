@@ -104,8 +104,19 @@ export async function* chatGenerateContentImpl(
   let dispatchResponse: Response;
   try {
 
-    // Apply OAuth interceptor for Anthropic requests
+    // Apply OAuth interceptor for ABOV3 and Anthropic requests
     let finalHeaders = dispatch.request.headers;
+
+    if (access.dialect === 'abov3') {
+      const { abov3OAuthInterceptor } = await import('~/modules/llms/server/abov3/abov3.router');
+      const interceptResult = await abov3OAuthInterceptor(
+        access as any, // ABOV3AccessSchema
+        dispatch.request.url,
+        dispatch.request.headers,
+        dispatch.request.body
+      );
+      finalHeaders = interceptResult.headers;
+    }
 
     if (access.dialect === 'anthropic') {
       const { anthropicOAuthInterceptor } = await import('~/modules/llms/server/anthropic/anthropic.router');

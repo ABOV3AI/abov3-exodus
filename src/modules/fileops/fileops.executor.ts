@@ -43,6 +43,7 @@ export const FILE_OPERATION_TOOLS: ToolDefinition[] = [
     aixDefinition: FILE_OPERATIONS_TOOLS[0],
     executor: createFileOpExecutor('read_file'),
     requiresProject: true,
+    readOnly: true, // Read-only tool - available in research mode
     browserAPIs: ['FileSystem'],
   },
   {
@@ -53,6 +54,7 @@ export const FILE_OPERATION_TOOLS: ToolDefinition[] = [
     aixDefinition: FILE_OPERATIONS_TOOLS[1],
     executor: createFileOpExecutor('write_file'),
     requiresProject: true,
+    // No readOnly flag - write tool, only available in coding mode
     browserAPIs: ['FileSystem'],
   },
   {
@@ -63,6 +65,7 @@ export const FILE_OPERATION_TOOLS: ToolDefinition[] = [
     aixDefinition: FILE_OPERATIONS_TOOLS[2],
     executor: createFileOpExecutor('list_files'),
     requiresProject: true,
+    readOnly: true, // Read-only tool - available in research mode
     browserAPIs: ['FileSystem'],
   },
   {
@@ -73,6 +76,7 @@ export const FILE_OPERATION_TOOLS: ToolDefinition[] = [
     aixDefinition: FILE_OPERATIONS_TOOLS[3],
     executor: createFileOpExecutor('create_directory'),
     requiresProject: true,
+    // No readOnly flag - write tool, only available in coding mode
     browserAPIs: ['FileSystem'],
   },
 ];

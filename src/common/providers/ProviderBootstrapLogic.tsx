@@ -11,6 +11,9 @@ import { useClientLoggerInterception } from '~/common/logger/hooks/useClientLogg
 import { useNextLoadProgress } from '~/common/components/useNextLoadProgress';
 import { initializeToolRegistry } from '~/modules/tools/tools.registry';
 import { initializeAnthropicOAuthRefresh } from '~/modules/llms/vendors/anthropic/anthropic.token-refresh';
+import { initializeABOV3OAuthRefresh } from '~/modules/llms/vendors/abov3/abov3.token-refresh';
+import { useMCPServersStore } from '~/common/stores/store-mcp-servers';
+import { useProjectsStore } from '~/apps/projects/store-projects';
 
 
 export function ProviderBootstrapLogic(props: { children: React.ReactNode }) {
@@ -86,6 +89,35 @@ export function ProviderBootstrapLogic(props: { children: React.ReactNode }) {
   // [oauth] initialize Anthropic OAuth token refresh (one-time on mount)
   React.useEffect(() => {
     initializeAnthropicOAuthRefresh(); // check token every 4 minutes
+  }, []);
+
+  // [oauth] initialize ABOV3 OAuth token refresh (one-time on mount)
+  React.useEffect(() => {
+    initializeABOV3OAuthRefresh(); // check token every 4 minutes
+  }, []);
+
+  // [mcp] initialize MCP runtime and register servers (one-time on mount)
+  React.useEffect(() => {
+    const initializeMCP = async () => {
+      try {
+        await useMCPServersStore.getState().initializeRuntime();
+      } catch (error) {
+        console.error('Failed to initialize MCP runtime:', error);
+      }
+    };
+    void initializeMCP();
+  }, []);
+
+  // [projects] load persisted FileSystem handles from IndexedDB (one-time on mount)
+  React.useEffect(() => {
+    const loadProjectHandles = async () => {
+      try {
+        await useProjectsStore.getState().loadPersistedHandles();
+      } catch (error) {
+        console.error('Failed to load persisted project handles:', error);
+      }
+    };
+    void loadProjectHandles();
   }, []);
 
   //

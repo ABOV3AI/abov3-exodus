@@ -50,6 +50,7 @@ export const backendRouter = createTRPCRouter({
         // llms
         hasLlmAlibaba: !!env.ALIBABA_API_KEY || !!env.ALIBABA_API_HOST,
         hasLlmAnthropic: !!env.ANTHROPIC_API_KEY,
+        hasLlmAbov3: !!env.ABOV3_API_KEY,
         hasLlmAzureOpenAI: !!env.AZURE_OPENAI_API_KEY && !!env.AZURE_OPENAI_API_ENDPOINT,
         hasLlmDeepseek: !!env.DEEPSEEK_API_KEY,
         hasLlmGemini: !!env.GEMINI_API_KEY,
@@ -148,6 +149,78 @@ export const backendRouter = createTRPCRouter({
           client_id: '9d1c250a-e61b-44d9-88ed-5944d1962f5e',
         },
         name: 'Backend.refreshAnthropicToken',
+      });
+    }),
+
+  /**
+   * Exchange the ABOV3 OAuth authorization code for access tokens
+   * Uses PKCE flow for ABOV3 unlimited API access
+   */
+  exchangeABOV3Token: publicProcedure
+    .input(z.object({ code: z.string(), verifier: z.string() }))
+    .mutation(async ({ input }) => {
+      // Split code into authCode and state (format: "code#state")
+      const [authCode, state] = input.code.split('#');
+
+      // Exchange authorization code for access token using PKCE
+      return await fetchJsonOrTRPCThrow<{
+        access_token: string;
+        refresh_token: string;
+        expires_in: number;
+        token_type: string;
+      }, {
+        code: string;
+        state: string;
+        grant_type: string;
+        client_id: string;
+        redirect_uri: string;
+        code_verifier: string;
+      }>({
+        url: 'https://console.anthropic.com/v1/oauth/token',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: {
+          code: authCode,
+          state: state,
+          grant_type: 'authorization_code',
+          client_id: '9d1c250a-e61b-44d9-88ed-5944d1962f5e',
+          redirect_uri: 'https://console.anthropic.com/oauth/code/callback',
+          code_verifier: input.verifier,
+        },
+        name: 'Backend.exchangeABOV3Token',
+      });
+    }),
+
+  /**
+   * Refresh ABOV3 OAuth access token
+   * Called when the access token is expired or about to expire
+   */
+  refreshABOV3Token: publicProcedure
+    .input(z.object({ refreshToken: z.string() }))
+    .mutation(async ({ input }) => {
+      return await fetchJsonOrTRPCThrow<{
+        access_token: string;
+        refresh_token: string;
+        expires_in: number;
+        token_type: string;
+      }, {
+        grant_type: string;
+        refresh_token: string;
+        client_id: string;
+      }>({
+        url: 'https://console.anthropic.com/v1/oauth/token',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: {
+          grant_type: 'refresh_token',
+          refresh_token: input.refreshToken,
+          client_id: '9d1c250a-e61b-44d9-88ed-5944d1962f5e',
+        },
+        name: 'Backend.refreshABOV3Token',
       });
     }),
 

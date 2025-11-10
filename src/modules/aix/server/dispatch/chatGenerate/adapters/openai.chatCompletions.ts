@@ -2,6 +2,7 @@ import type { OpenAIDialects } from '~/modules/llms/server/openai/openai.router'
 
 import { AixAPI_Model, AixAPIChatGenerate_Request, AixMessages_ChatMessage, AixMessages_SystemMessage, AixParts_DocPart, AixParts_InlineAudioPart, AixParts_MetaInReferenceToPart, AixTools_ToolDefinition, AixTools_ToolsPolicy } from '../../../api/aix.wiretypes';
 import { OpenAIWire_API_Chat_Completions, OpenAIWire_ContentParts, OpenAIWire_Messages } from '../../wiretypes/openai.wiretypes';
+import { LLM_IF_OAI_Fn } from '~/common/stores/llms/llms.types';
 
 import { aixSpillShallFlush, aixSpillSystemToUser, approxDocPart_To_String } from './adapters.common';
 
@@ -32,7 +33,19 @@ type TRequestMessages = TRequest['messages'];
 export function aixToOpenAIChatCompletions(openAIDialect: OpenAIDialects, model: AixAPI_Model, _chatGenerate: AixAPIChatGenerate_Request, jsonOutput: boolean, streaming: boolean): TRequest {
 
   // Pre-process CGR - approximate spill of System to User message
-  const chatGenerate = aixSpillSystemToUser(_chatGenerate);
+  let chatGenerate = aixSpillSystemToUser(_chatGenerate);
+
+  // [OpenRouter] Check if model supports function calling
+  // If tools are requested but model doesn't support them, gracefully skip tools
+  const modelSupportsFunctionCalling = model.interfaces?.includes(LLM_IF_OAI_Fn);
+  if (openAIDialect === 'openrouter' && chatGenerate.tools?.length && !modelSupportsFunctionCalling) {
+    // Graceful degradation: remove tools to prevent 404 error
+    chatGenerate = {
+      ...chatGenerate,
+      tools: undefined,
+      toolsPolicy: undefined,
+    };
+  }
 
   // Dialect incompatibilities -> Hotfixes
   const hotFixAlternateUserAssistantRoles = openAIDialect === 'deepseek' || openAIDialect === 'perplexity';

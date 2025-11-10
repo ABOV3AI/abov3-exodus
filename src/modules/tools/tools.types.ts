@@ -57,6 +57,7 @@ export interface ToolDefinition {
   requiresNetwork?: boolean;
   requiresAPI?: string; // e.g., 'GOOGLE_API_KEY' (optional)
   dangerous?: boolean;
+  readOnly?: boolean; // Tool only reads data, doesn't modify (e.g., read_file, list_files)
 
   // Browser compatibility
   browserAPIs?: string[]; // e.g., ['FileSystem', 'WebWorker']

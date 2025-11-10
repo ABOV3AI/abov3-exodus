@@ -6,6 +6,7 @@ import type { OptimaBarControlMethods } from '~/common/layout/optima/bar/OptimaB
 import { useChatLLMDropdown } from './useLLMDropdown';
 import { usePersonaIdDropdown } from './usePersonaDropdown';
 import { useFolderDropdown } from './useFolderDropdown';
+import { NetworkModeToggle } from './NetworkModeToggle';
 
 
 export function ChatBarChat(props: {
@@ -26,6 +27,9 @@ export function ChatBarChat(props: {
 
     {/* Model selector */}
     {chatLLMDropdown}
+
+    {/* Network Mode Toggle */}
+    <NetworkModeToggle />
 
     {/* Folder selector */}
     {folderDropdown}

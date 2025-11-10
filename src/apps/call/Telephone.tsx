@@ -49,7 +49,7 @@ function CallMenu(props: {
 
   // external state
   const { grayUI, toggleGrayUI } = useAppCallStore();
-  const { voicesDropdown } = useElevenLabsVoiceDropdown(false, !props.override);
+  const { voicesDropdown } = useElevenLabsVoiceDropdown(false, props.override);
 
   const handlePushToTalkToggle = () => props.setPushToTalk(!props.pushToTalk);
 
@@ -65,7 +65,7 @@ function CallMenu(props: {
 
     <MenuItem onClick={handleChangeVoiceToggle}>
       <ListItemDecorator><RecordVoiceOverTwoToneIcon /></ListItemDecorator>
-      Change Voice
+      Use Persona Voice
       <Switch checked={props.override} onChange={handleChangeVoiceToggle} sx={{ ml: 'auto' }} />
     </MenuItem>
 
@@ -114,7 +114,7 @@ export function Telephone(props: {
   }));
   const persona = SystemPurposes[props.callIntent.personaId as SystemPurposeId] ?? undefined;
   const personaCallStarters = persona?.call?.starters ?? undefined;
-  const personaVoiceId = overridePersonaVoice ? undefined : (persona?.voices?.elevenLabs?.voiceId ?? undefined);
+  const personaVoiceId = overridePersonaVoice ? (persona?.voices?.elevenLabs?.voiceId ?? undefined) : undefined;
   const personaSystemMessage = persona?.systemMessage ?? undefined;
 
   // hooks and speech

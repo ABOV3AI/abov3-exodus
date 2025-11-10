@@ -77,12 +77,68 @@ export function DesktopDrawer(props: { component: React.ElementType, currentApp?
 
   // state
   const drawerPortalRef = useOptimaPortalOutRef('optima-portal-drawer', 'DesktopDrawer');
+  const [drawerWidth, setDrawerWidth] = React.useState(() => {
+    // Load saved width from localStorage
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('agi-drawer-width');
+      if (saved) {
+        const width = parseInt(saved, 10);
+        if (!isNaN(width) && width >= 250 && width <= 1200) {
+          return width;
+        }
+      }
+    }
+    return 300; // default
+  });
+  const [isResizingDrawer, setIsResizingDrawer] = React.useState(false);
 
   // external state
   const _isDrawerOpen = useOptimaDrawerOpen();
   const isDrawerPeeking = useOptimaDrawerPeeking();
   const isDrawerOpen = _isDrawerOpen || isDrawerPeeking;
   // const hasDrawerContent = useOptimaPortalHasInputs('optima-portal-drawer');
+
+  // Handle horizontal resize
+  const handleDrawerResizeStart = React.useCallback(() => {
+    setIsResizingDrawer(true);
+  }, []);
+
+  React.useEffect(() => {
+    if (!isResizingDrawer) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const newWidth = e.clientX;
+
+      // Constrain between 250px and 1200px (increased from 600px)
+      if (newWidth >= 250 && newWidth <= 1200) {
+        setDrawerWidth(newWidth);
+        // Update CSS variable
+        document.documentElement.style.setProperty('--AGI-Desktop-Drawer-width', `${newWidth}px`);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizingDrawer(false);
+      // Save to localStorage when resize is complete
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('agi-drawer-width', drawerWidth.toString());
+      }
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizingDrawer]);
+
+  // Initialize drawer width from saved preference or CSS variable on mount
+  React.useEffect(() => {
+    // Apply the saved/default width to CSS variable
+    document.documentElement.style.setProperty('--AGI-Desktop-Drawer-width', `${drawerWidth}px`);
+  }, [drawerWidth]);
 
 
   // Desktop-only?: close the drawer if the current app doesn't use it
@@ -104,6 +160,7 @@ export function DesktopDrawer(props: { component: React.ElementType, currentApp?
     <DesktopDrawerFixRoot
       data-closed={!isDrawerOpen}
       className={isDrawerPeeking ? 'drawer-peeking' : undefined}
+      sx={{ position: 'relative' }}
     >
 
       <DesktopDrawerTranslatingSheet
@@ -120,6 +177,27 @@ export function DesktopDrawer(props: { component: React.ElementType, currentApp?
         {/*}*/}
 
       </DesktopDrawerTranslatingSheet>
+
+      {/* Horizontal Resize Handle */}
+      {isDrawerOpen && (
+        <Box
+          onMouseDown={handleDrawerResizeStart}
+          sx={{
+            position: 'absolute',
+            top: 0,
+            right: -3,
+            bottom: 0,
+            width: '6px',
+            cursor: 'ew-resize',
+            bgcolor: isResizingDrawer ? 'primary.500' : 'transparent',
+            '&:hover': {
+              bgcolor: 'primary.300',
+            },
+            transition: 'background-color 0.2s',
+            zIndex: themeZIndexDesktopDrawer + 2,
+          }}
+        />
+      )}
 
     </DesktopDrawerFixRoot>
   );

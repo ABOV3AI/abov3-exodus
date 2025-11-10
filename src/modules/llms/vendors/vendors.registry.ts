@@ -1,3 +1,4 @@
+import { ModelVendorABOV3 } from './abov3/abov3.vendor';
 import { ModelVendorAlibaba } from './alibaba/alibaba.vendor';
 import { ModelVendorAnthropic } from './anthropic/anthropic.vendor';
 import { ModelVendorAzure } from './azure/azure.vendor';
@@ -19,6 +20,7 @@ import type { IModelVendor } from './IModelVendor';
 
 
 export type ModelVendorId =
+  | 'abov3'
   | 'alibaba'
   | 'anthropic'
   | 'azure'
@@ -39,6 +41,7 @@ export type ModelVendorId =
 
 /** Global: Vendor Instances Registry **/
 const MODEL_VENDOR_REGISTRY: Record<ModelVendorId, IModelVendor> = {
+  abov3: ModelVendorABOV3,
   alibaba: ModelVendorAlibaba,
   anthropic: ModelVendorAnthropic,
   azure: ModelVendorAzure,

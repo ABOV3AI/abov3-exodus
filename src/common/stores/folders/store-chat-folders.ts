@@ -37,7 +37,7 @@ export const useFolderStore = create<FolderStore>()(/*devtools(*/
 
       // Initial state
       folders: [],
-      enableFolders: false,
+      enableFolders: true, // Changed to true - folders enabled by default
 
       // Actions
       importFoldersAppend: (folders: DFolder[], enableFolders: boolean) =>

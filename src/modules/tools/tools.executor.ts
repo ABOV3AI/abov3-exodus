@@ -5,6 +5,7 @@
 import type { ToolExecutionContext, ToolExecutionResult } from './tools.types';
 import { getTool, trackToolExecution, isToolEnabled } from './tools.registry';
 import { useToolsStore } from './store-tools';
+import { getMCPRuntime } from '~/modules/mcp/mcp.runtime';
 
 
 // Rate limiting: Track executions per minute
@@ -68,7 +69,34 @@ export async function executeToolCall(
   const settings = useToolsStore.getState();
 
   try {
-    // 1. Get tool definition
+    // 1. Check if this is an MCP tool
+    const mcpRuntime = getMCPRuntime();
+    const isMCPTool = mcpRuntime.isMCPTool(toolId);
+
+    if (isMCPTool) {
+      // MCP tool execution path
+      const args = JSON.parse(argsJson);
+
+      if (settings.logToolCalls) {
+        console.log(`[Tools] Executing MCP tool: ${toolId}`, args);
+      }
+
+      const result = await mcpRuntime.executeTool(toolId, args);
+
+      trackToolExecution(toolId);
+
+      return {
+        result,
+        metadata: {
+          executionTime: Date.now() - startTime,
+          toolId,
+          toolName: toolId,
+          source: 'mcp',
+        },
+      };
+    }
+
+    // 2. Get tool definition (for native tools)
     const tool = getTool(toolId);
     if (!tool) {
       return {
@@ -77,7 +105,28 @@ export async function executeToolCall(
       };
     }
 
-    // 2. Check if enabled
+    // 3. Check mode-based access control
+    // Import at call time to avoid circular dependencies
+    const { useProjectsStore } = await import('~/apps/projects/store-projects');
+    const projectMode = useProjectsStore.getState().mode;
+
+    // In research mode, only allow read-only tools
+    if (projectMode === 'research' && !tool.readOnly) {
+      return {
+        error: `Tool "${tool.name}" is not available in Research mode. Switch to Coding mode to use write operations.`,
+        metadata: { executionTime: Date.now() - startTime },
+      };
+    }
+
+    // In chat mode, no tools should be executed (but this is already handled by not passing tools to AI)
+    if (projectMode === 'chat') {
+      return {
+        error: `Tools are not available in Chat mode. Switch to Research or Coding mode to use tools.`,
+        metadata: { executionTime: Date.now() - startTime },
+      };
+    }
+
+    // 4. Check if enabled
     if (!isToolEnabled(toolId)) {
       return {
         error: `Tool "${tool.name}" is disabled in settings. Enable it in Settings → Tools.`,
@@ -85,7 +134,7 @@ export async function executeToolCall(
       };
     }
 
-    // 3. Check browser support
+    // 5. Check browser support
     if (!checkBrowserSupport(toolId)) {
       return {
         error: `Your browser doesn't support ${tool.name}. Required APIs: ${tool.browserAPIs?.join(', ')}`,
@@ -93,7 +142,7 @@ export async function executeToolCall(
       };
     }
 
-    // 4. Check rate limit
+    // 6. Check rate limit
     if (!checkRateLimit(toolId)) {
       return {
         error: `Rate limit exceeded for ${tool.name}. Maximum ${settings.rateLimit} calls per minute.`,
@@ -101,7 +150,7 @@ export async function executeToolCall(
       };
     }
 
-    // 5. Check project requirement
+    // 7. Check project requirement
     if (tool.requiresProject && !context.projectHandle) {
       return {
         error: `Tool "${tool.name}" requires an active project. Please select a project first.`,
@@ -109,7 +158,7 @@ export async function executeToolCall(
       };
     }
 
-    // 6. Parse arguments
+    // 8. Parse arguments
     let args: Record<string, any>;
     try {
       args = JSON.parse(argsJson);
@@ -120,13 +169,13 @@ export async function executeToolCall(
       };
     }
 
-    // 7. Set up timeout
+    // 9. Set up timeout
     const timeout = tool.defaultTimeout || settings.executionTimeout;
     const timeoutPromise = new Promise<ToolExecutionResult>((_, reject) =>
       setTimeout(() => reject(new Error(`Tool execution timeout (${timeout}ms)`)), timeout)
     );
 
-    // 8. Execute with timeout
+    // 10. Execute with timeout
     if (settings.logToolCalls) {
       console.log(`[Tools] Executing: ${toolId}`, args);
     }
@@ -134,10 +183,10 @@ export async function executeToolCall(
     const executionPromise = tool.executor(args, context);
     const result = await Promise.race([executionPromise, timeoutPromise]);
 
-    // 9. Track execution
+    // 11. Track execution
     trackToolExecution(toolId);
 
-    // 10. Add metadata
+    // 12. Add metadata
     const executionTime = Date.now() - startTime;
     return {
       ...result,

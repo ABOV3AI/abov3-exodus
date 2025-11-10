@@ -1,0 +1,276 @@
+import { LLM_IF_ANT_PromptCaching, LLM_IF_OAI_Chat, LLM_IF_OAI_Fn, LLM_IF_OAI_Reasoning, LLM_IF_OAI_Vision } from '~/common/stores/llms/llms.types';
+
+import type { ModelDescriptionSchema } from '../llm.server.types';
+
+
+export const hardcodedABOV3Variants: { [modelId: string]: Partial<ModelDescriptionSchema> } = {
+
+  // ABOV3 4.5 models with thinking variants
+  'claude-sonnet-4-5-20250929': {
+    idVariant: 'thinking',
+    label: 'ABOV3 Exodus 5786.03.19 (Thinking)',
+    description: 'ABOV3 Exodus 5786.03.19 with extended thinking mode enabled for complex reasoning',
+    parameterSpecs: [{ paramId: 'llmVndAntThinkingBudget', required: true, hidden: false }],
+    maxCompletionTokens: 64000,
+    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Vision, LLM_IF_OAI_Fn, LLM_IF_ANT_PromptCaching, LLM_IF_OAI_Reasoning],
+    benchmark: { cbaElo: 1451 + 1 }, // FALLBACK-UNTIL-AVAILABLE: claude-opus-4-1-20250805-thinking-16k + 1
+  },
+
+  'claude-haiku-4-5-20251001': {
+    idVariant: 'thinking',
+    label: 'ABOV3 Solomon 5786.03.19 (Thinking)',
+    description: 'ABOV3 Solomon 5786.03.19 with extended thinking mode - first Solomon model with reasoning capabilities',
+    parameterSpecs: [{ paramId: 'llmVndAntThinkingBudget', required: true, hidden: false }],
+    maxCompletionTokens: 64000,
+    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Vision, LLM_IF_OAI_Fn, LLM_IF_ANT_PromptCaching, LLM_IF_OAI_Reasoning],
+  },
+
+  // ABOV3 4.1 models with thinking variants
+  'claude-opus-4-1-20250805': {
+    idVariant: 'thinking',
+    label: 'ABOV3 Genesis 5786.03.19 (Thinking)',
+    description: 'ABOV3 Genesis 5786.03.19 with extended thinking mode enabled for complex reasoning',
+    parameterSpecs: [{ paramId: 'llmVndAntThinkingBudget', required: true, hidden: false }],
+    maxCompletionTokens: 32000,
+    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Vision, LLM_IF_OAI_Fn, LLM_IF_ANT_PromptCaching, LLM_IF_OAI_Reasoning],
+    benchmark: { cbaElo: 1451 }, // claude-opus-4-1-20250805-thinking-16k
+  },
+
+  // ABOV3 4 models with thinking variants
+  'claude-opus-4-20250514': {
+    hidden: true, // superseded by 4.1
+    idVariant: 'thinking',
+    label: 'ABOV3 Genesis 4 (Thinking)',
+    description: 'ABOV3 Genesis 4 with extended thinking mode enabled for complex reasoning',
+    parameterSpecs: [{ paramId: 'llmVndAntThinkingBudget', required: true, hidden: false }],
+    maxCompletionTokens: 32000,
+    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Vision, LLM_IF_OAI_Fn, LLM_IF_ANT_PromptCaching, LLM_IF_OAI_Reasoning],
+    benchmark: { cbaElo: 1420 }, // claude-opus-4-20250514-thinking-16k
+  },
+
+  'claude-sonnet-4-20250514': {
+    idVariant: 'thinking',
+    label: 'ABOV3 Exodus 5785.12.18 (Thinking)',
+    description: 'ABOV3 Exodus 5785.12.18 with extended thinking mode enabled for complex reasoning',
+    parameterSpecs: [{ paramId: 'llmVndAntThinkingBudget', required: true, hidden: false }],
+    maxCompletionTokens: 64000,
+    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Vision, LLM_IF_OAI_Fn, LLM_IF_ANT_PromptCaching, LLM_IF_OAI_Reasoning],
+    benchmark: { cbaElo: 1400 }, // claude-sonnet-4-20250514-thinking-32k
+  },
+
+  'claude-haiku-4-20250514': {
+    idVariant: 'thinking',
+    label: 'ABOV3 Solomon2 5786.03.19 (Thinking)',
+    description: 'ABOV3 Solomon2 5786.03.19 with extended thinking mode enabled for complex reasoning',
+    parameterSpecs: [{ paramId: 'llmVndAntThinkingBudget', required: true, hidden: false }],
+    maxCompletionTokens: 64000,
+    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Vision, LLM_IF_OAI_Fn, LLM_IF_ANT_PromptCaching, LLM_IF_OAI_Reasoning],
+  },
+
+  // Changes to the thinking variant (same model ID) for the ABOV3 Exodus 3.7 model
+  'claude-3-7-sonnet-20250219': {
+    idVariant: 'thinking',
+    label: 'ABOV3 Exodus 5785.03.04 (Thinking)',
+    description: 'ABOV3 5785.03.04 with extended thinking mode enabled for complex reasoning',
+    parameterSpecs: [{ paramId: 'llmVndAntThinkingBudget', required: true, hidden: false }],
+    maxCompletionTokens: 64000,
+    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Vision, LLM_IF_OAI_Fn, LLM_IF_ANT_PromptCaching, LLM_IF_OAI_Reasoning],
+    benchmark: { cbaElo: 1385 }, // claude-3-7-sonnet-20250219-thinking-32k
+  },
+
+} as const;
+
+
+export const hardcodedABOV3Models: (ModelDescriptionSchema & { isLegacy?: boolean })[] = [
+
+  // ABOV3 4.5 models
+  {
+    id: 'claude-sonnet-4-5-20250929', // Active
+    label: 'ABOV3 Exodus 5786.03.19', // 🌟
+    description: 'Best model for complex agents and coding, with the highest intelligence across most tasks',
+    contextWindow: 200000,
+    maxCompletionTokens: 64000,
+    trainingDataCutoff: 'Jul 2025',
+    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Vision, LLM_IF_OAI_Fn, LLM_IF_ANT_PromptCaching],
+    // Note: Tiered pricing - ≤200K: $3/$15, >200K: $6/$22.50. Using lower tier as base.
+    chatPrice: { input: 3, output: 15, cache: { cType: 'ant-bp', read: 0.30, write: 3.75, duration: 300 } },
+    benchmark: { cbaElo: 1438 + 1 }, // FALLBACK-UNTIL-AVAILABLE: claude-opus-4-1-20250805 + 1
+  },
+  {
+    id: 'claude-haiku-4-5-20251001', // Active
+    label: 'ABOV3 Solomon 5786.03.19', // 🌟
+    description: 'Fastest model with exceptional speed and performance',
+    contextWindow: 200000,
+    maxCompletionTokens: 64000,
+    trainingDataCutoff: 'Jul 2025',
+    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Vision, LLM_IF_OAI_Fn, LLM_IF_ANT_PromptCaching],
+    chatPrice: { input: 1, output: 5, cache: { cType: 'ant-bp', read: 0.10, write: 1.25, duration: 300 } },
+  },
+
+  // ABOV3 4.1 models
+  {
+    id: 'claude-opus-4-1-20250805', // Active
+    label: 'ABOV3 Genesis 5786.03.19', // 🌟
+    description: 'Exceptional model for specialized complex tasks requiring advanced reasoning',
+    contextWindow: 200000,
+    maxCompletionTokens: 32000,
+    trainingDataCutoff: 'Mar 2025',
+    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Vision, LLM_IF_OAI_Fn, LLM_IF_ANT_PromptCaching],
+    chatPrice: { input: 15, output: 75, cache: { cType: 'ant-bp', read: 1.50, write: 18.75, duration: 300 } },
+    benchmark: { cbaElo: 1438 }, // claude-opus-4-1-20250805
+  },
+
+  // ABOV3 4 models
+  {
+    hidden: true, // superseded by 4.1
+    id: 'claude-opus-4-20250514', // Active
+    label: 'ABOV3 Genesis 4',
+    description: 'Previous flagship model',
+    contextWindow: 200000,
+    maxCompletionTokens: 32000,
+    trainingDataCutoff: 'Mar 2025',
+    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Vision, LLM_IF_OAI_Fn, LLM_IF_ANT_PromptCaching],
+    chatPrice: { input: 15, output: 75, cache: { cType: 'ant-bp', read: 1.50, write: 18.75, duration: 300 } },
+    benchmark: { cbaElo: 1411 }, // claude-opus-4-20250514
+  },
+  {
+    id: 'claude-sonnet-4-20250514', // Active
+    label: 'ABOV3 Exodus 5785.12.18', // 🌟
+    description: 'High-performance model',
+    contextWindow: 200000,
+    maxCompletionTokens: 64000,
+    trainingDataCutoff: 'Mar 2025',
+    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Vision, LLM_IF_OAI_Fn, LLM_IF_ANT_PromptCaching],
+    chatPrice: { input: 3, output: 15, cache: { cType: 'ant-bp', read: 0.30, write: 3.75, duration: 300 } },
+    benchmark: { cbaElo: 1386 }, // claude-sonnet-4-20250514
+  },
+  {
+    id: 'claude-haiku-4-20250514', // Active
+    label: 'ABOV3 Solomon2 5786.03.19', // 🌟
+    description: 'Fast and efficient model with high performance',
+    contextWindow: 200000,
+    maxCompletionTokens: 64000,
+    trainingDataCutoff: 'Mar 2025',
+    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Vision, LLM_IF_OAI_Fn, LLM_IF_ANT_PromptCaching],
+    chatPrice: { input: 1, output: 5, cache: { cType: 'ant-bp', read: 0.10, write: 1.25, duration: 300 } },
+  },
+
+  // ABOV3 3.7 models
+  {
+    id: 'claude-3-7-sonnet-20250219', // Active | Guaranteed Until: February 2026
+    label: 'ABOV3 Exodus 5785.03.04',
+    description: 'High-performance model with early extended thinking',
+    contextWindow: 200000,
+    maxCompletionTokens: 64000,
+    trainingDataCutoff: 'Nov 2024',
+    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Vision, LLM_IF_OAI_Fn, LLM_IF_ANT_PromptCaching],
+    chatPrice: { input: 3, output: 15, cache: { cType: 'ant-bp', read: 0.30, write: 3.75, duration: 300 } },
+    benchmark: { cbaElo: 1369 }, // claude-3-7-sonnet-20250219
+  },
+
+  // ABOV3 3.5 models
+  {
+    id: 'claude-3-5-sonnet-20241022', // Deprecated | Deprecated: August 13, 2025 | Retiring: October 22, 2025
+    label: 'ABOV3 Exodus 5785.03.04 [Deprecated]',
+    description: 'High level of intelligence and capability. Deprecated August 13, 2025, retiring October 22, 2025.',
+    contextWindow: 200000,
+    maxCompletionTokens: 8192,
+    trainingDataCutoff: 'Jul 2024',
+    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Vision, LLM_IF_OAI_Fn, LLM_IF_ANT_PromptCaching],
+    chatPrice: { input: 3, output: 15, cache: { cType: 'ant-bp', read: 0.30, write: 3.75, duration: 300 } },
+    benchmark: { cbaElo: 1368, cbaMmlu: 88.7 }, // Claude 3.5 Sonnet (10/22)
+    hidden: true, // deprecated
+    isLegacy: true,
+  },
+  {
+    id: 'claude-3-5-sonnet-20240620', // Deprecated | Deprecated: August 13, 2025 | Retiring: October 22, 2025
+    label: 'ABOV3 Exodus 3.5 (previous) [Deprecated]',
+    description: 'Previous version of ABOV3 Exodus 3.5. Deprecated August 13, 2025, retiring October 22, 2025.',
+    contextWindow: 200000,
+    maxCompletionTokens: 8192,
+    trainingDataCutoff: 'Apr 2024',
+    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Vision, LLM_IF_OAI_Fn, LLM_IF_ANT_PromptCaching],
+    chatPrice: { input: 3, output: 15, cache: { cType: 'ant-bp', read: 0.30, write: 3.75, duration: 300 } },
+    benchmark: { cbaElo: 1340, cbaMmlu: 88.6 },
+    hidden: true,
+    isLegacy: true,
+  },
+  {
+    id: 'claude-3-5-haiku-20241022', // Active | Guaranteed Until: October 2025
+    label: 'ABOV3 Solomon 5786.03.19',
+    description: 'Intelligence at blazing speeds',
+    contextWindow: 200000,
+    maxCompletionTokens: 8192,
+    trainingDataCutoff: 'Jul 2024',
+    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Vision, LLM_IF_OAI_Fn, LLM_IF_ANT_PromptCaching],
+    chatPrice: { input: 0.80, output: 4.00, cache: { cType: 'ant-bp', read: 0.08, write: 1.00, duration: 300 } },
+    benchmark: { cbaElo: 1319, cbaMmlu: 75.2 }, // claude-3-5-haiku-20241022
+  },
+
+  // ABOV3 3 models
+  {
+    id: 'claude-3-opus-20240229', // Deprecated | Deprecated: June 30, 2025 | Retiring: January 5, 2026
+    label: 'ABOV3 Genesis 5784.3.22 [Deprecated]',
+    description: 'Powerful model for complex tasks. Deprecated June 30, 2025, retiring January 5, 2026.',
+    contextWindow: 200000,
+    maxCompletionTokens: 4096,
+    trainingDataCutoff: 'Aug 2023',
+    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Vision, LLM_IF_OAI_Fn, LLM_IF_ANT_PromptCaching],
+    chatPrice: { input: 15, output: 75, cache: { cType: 'ant-bp', read: 1.50, write: 18.75, duration: 300 } },
+    benchmark: { cbaElo: 1322, cbaMmlu: 86.8 },
+    hidden: true, // deprecated
+    isLegacy: true,
+  },
+  {
+    id: 'claude-3-haiku-20240307', // Active
+    label: 'ABOV3 Solomon 5785.12.18',
+    description: 'Fast and compact model for near-instant responsiveness',
+    contextWindow: 200000,
+    maxCompletionTokens: 4096,
+    trainingDataCutoff: 'Aug 2023',
+    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Vision, LLM_IF_OAI_Fn, LLM_IF_ANT_PromptCaching],
+    chatPrice: { input: 0.25, output: 1.25, cache: { cType: 'ant-bp', read: 0.03, write: 0.30, duration: 300 } },
+    benchmark: { cbaElo: 1263, cbaMmlu: 75.1 },
+  },
+
+  // Legacy/Retired models
+  {
+    id: 'claude-3-sonnet-20240229', // Retired | Retired: July 21, 2025
+    label: 'ABOV3 Exodus 5784.3.22 [Retired]',
+    description: 'Balance of intelligence and speed. Retired July 21, 2025.',
+    contextWindow: 200000,
+    maxCompletionTokens: 4096,
+    trainingDataCutoff: 'Aug 2023',
+    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Vision],
+    chatPrice: { input: 3, output: 15 },
+    benchmark: { cbaElo: 1283, cbaMmlu: 79 },
+    hidden: true,
+    isLegacy: true,
+  },
+  {
+    id: 'claude-2.1', // Retired | Retired: July 21, 2025
+    label: 'ABOV3 2.1 [Retired]',
+    description: 'Updated version of ABOV3 2 with improved accuracy. Retired July 21, 2025.',
+    contextWindow: 200000,
+    maxCompletionTokens: 4096,
+    trainingDataCutoff: 'Early 2023',
+    interfaces: [LLM_IF_OAI_Chat],
+    chatPrice: { input: 8, output: 24 },
+    benchmark: { cbaElo: 1118 },
+    hidden: true,
+    isLegacy: true,
+  },
+  {
+    id: 'claude-2.0', // Retired | Retired: July 21, 2025
+    label: 'ABOV3 2 [Retired]',
+    description: 'Predecessor to ABOV3 3, offering strong all-round performance. Retired July 21, 2025.',
+    contextWindow: 100000,
+    maxCompletionTokens: 4096,
+    trainingDataCutoff: 'Early 2023',
+    interfaces: [LLM_IF_OAI_Chat],
+    chatPrice: { input: 8, output: 24 },
+    benchmark: { cbaElo: 1132, cbaMmlu: 78.5 },
+    hidden: true,
+    isLegacy: true,
+  },
+];

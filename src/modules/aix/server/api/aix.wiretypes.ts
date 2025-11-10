@@ -3,6 +3,7 @@ import * as z from 'zod/v4';
 // Used to align Particles to the Typescript definitions from the frontend-side, on 'chat.fragments.ts'
 import type { DMessageToolResponsePart } from '~/common/stores/chat/chat.fragments';
 
+import { abov3AccessSchema } from '~/modules/llms/server/abov3/abov3.router';
 import { anthropicAccessSchema } from '~/modules/llms/server/anthropic/anthropic.router';
 import { geminiAccessSchema } from '~/modules/llms/server/gemini/gemini.router';
 import { ollamaAccessSchema } from '~/modules/llms/server/ollama/ollama.router';
@@ -259,6 +260,7 @@ export namespace AixWire_Content {
       // AixWire_Parts.InlineAudioPart_schema,
       AixWire_Parts.InlineImagePart_schema,
       AixWire_Parts.DocPart_schema,
+      AixWire_Parts.ToolResponsePart_schema, // Added: tool responses are sent as user messages
       AixWire_Parts.MetaCacheControl_schema,
       AixWire_Parts.MetaInReferenceToPart_schema,
     ])),
@@ -389,6 +391,7 @@ export namespace AixWire_API {
   /// Access
 
   export const Access_schema = z.discriminatedUnion('dialect', [
+    abov3AccessSchema,
     anthropicAccessSchema,
     geminiAccessSchema,
     ollamaAccessSchema,

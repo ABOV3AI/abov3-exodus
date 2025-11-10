@@ -358,10 +358,14 @@ export async function aixCGR_ChatSequence_FromDMessagesOrThrow(
             uMsg.parts.push(uFragment.part);
             break;
 
+          // Tool response - this should be included for user messages containing tool results
+          case 'tool_response':
+            uMsg.parts.push(uFragment.part);
+            break;
+
           // skipped (non-user)
           case 'error':
           case 'tool_invocation':
-          case 'tool_response':
             console.warn('aixCGR_FromDMessages: unexpected Non-User fragment part type', (uFragment.part as any).pt);
             break;
 

@@ -9,6 +9,8 @@ import ChatIcon from '@mui/icons-material/Chat';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 
 import { useProjectsStore } from './store-projects';
+import { ProjectFileTree, type FileEntry } from './components/ProjectFileTree';
+import { FilePreviewPanel } from './components/FilePreviewPanel';
 
 
 /**
@@ -26,7 +28,56 @@ export function ProjectsSidebar() {
     getProjectHandle,
     setProjectHandle,
     setMode,
+    getActiveProject,
   } = useProjectsStore();
+
+  const [selectedFile, setSelectedFile] = React.useState<FileEntry | null>(null);
+  const [fileTreeWidth, setFileTreeWidth] = React.useState(70); // percentage
+  const [isResizing, setIsResizing] = React.useState(false);
+  const [editingFile, setEditingFile] = React.useState<FileEntry | null>(null);
+
+  const activeProject = getActiveProject();
+  const isReadOnly = mode === 'research'; // Research mode is read-only
+
+  // Handle edit file - opens file in preview panel and triggers edit mode
+  const handleEditFile = React.useCallback((file: FileEntry) => {
+    setSelectedFile(file);
+    setEditingFile(file);
+  }, []);
+
+  // Handle mouse resize
+  const handleMouseDown = React.useCallback(() => {
+    setIsResizing(true);
+  }, []);
+
+  React.useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const sidebar = document.getElementById('projects-file-container');
+      if (!sidebar) return;
+
+      const rect = sidebar.getBoundingClientRect();
+      const newWidth = ((e.clientX - rect.left) / rect.width) * 100;
+
+      // Constrain between 30% and 85%
+      if (newWidth >= 30 && newWidth <= 85) {
+        setFileTreeWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
 
   const handleAddProject = async () => {
     try {
@@ -146,7 +197,7 @@ export function ProjectsSidebar() {
       </Box>
 
       {/* Projects List */}
-      <List sx={{ flexGrow: 1, overflow: 'auto' }}>
+      <Box sx={{ flexGrow: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
         {projects.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 4 }}>
             <Typography level="body-sm" color="neutral">
@@ -156,68 +207,142 @@ export function ProjectsSidebar() {
             </Typography>
           </Box>
         ) : (
-          projects.map((project) => {
-            const isActive = project.id === activeProjectId;
-            const hasHandle = !!getProjectHandle(project.id);
+          <>
+            <List sx={{ flexShrink: 0 }}>
+              {projects.map((project) => {
+                const isActive = project.id === activeProjectId;
+                const hasHandle = !!getProjectHandle(project.id);
 
-            return (
-              <ListItem
-                key={project.id}
-                endAction={
-                  <IconButton
-                    size="sm"
-                    color="danger"
-                    onClick={() => handleRemoveProject(project.id)}
+                return (
+                  <ListItem
+                    key={project.id}
+                    endAction={
+                      <IconButton
+                        size="sm"
+                        color="danger"
+                        onClick={() => handleRemoveProject(project.id)}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    }
                   >
-                    <DeleteIcon />
-                  </IconButton>
-                }
+                    <ListItemButton
+                      selected={isActive}
+                      onClick={() => {
+                        // If no handle, request permission first
+                        if (!hasHandle) {
+                          handleRequestPermission(project.id, project.name);
+                        }
+                        // If has handle and in coding/research mode, select it
+                        else if (mode === 'coding' || mode === 'research') {
+                          handleSelectProject(project.id);
+                        }
+                        // If in chat mode, inform user
+                        else {
+                          alert('Switch to Coding or Research mode to activate projects');
+                        }
+                      }}
+                      sx={{
+                        borderRadius: 'sm',
+                        ...(isActive && {
+                          bgcolor: 'primary.softBg',
+                          '&:hover': { bgcolor: 'primary.softHoverBg' },
+                        }),
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, width: '100%' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <FolderOpenIcon fontSize="small" />
+                          <Typography level="title-sm">{project.name}</Typography>
+                          {isActive && <CheckCircleIcon fontSize="small" color="success" />}
+                        </Box>
+                        <Typography level="body-xs" sx={{ pl: 3 }}>
+                          {project.path}
+                        </Typography>
+                        {!hasHandle && (
+                          <Typography level="body-xs" color="warning" sx={{ pl: 3 }}>
+                            ⚠️ Permission needed - click to select folder again
+                          </Typography>
+                        )}
+                      </Box>
+                    </ListItemButton>
+                  </ListItem>
+                );
+              })}
+            </List>
+
+            {/* File Tree for Active Project */}
+            {activeProject && activeProject.handle && (
+              <Box
+                id="projects-file-container"
+                sx={{
+                  flexGrow: 1,
+                  overflow: 'hidden',
+                  display: 'flex',
+                  gap: 0,
+                  position: 'relative',
+                }}
               >
-                <ListItemButton
-                  selected={isActive}
-                  onClick={() => {
-                    // If no handle, request permission first
-                    if (!hasHandle) {
-                      handleRequestPermission(project.id, project.name);
-                    }
-                    // If has handle and in coding/research mode, select it
-                    else if (mode === 'coding' || mode === 'research') {
-                      handleSelectProject(project.id);
-                    }
-                    // If in chat mode, inform user
-                    else {
-                      alert('Switch to Coding or Research mode to activate projects');
-                    }
-                  }}
+                {/* File Tree */}
+                <Box
                   sx={{
-                    borderRadius: 'sm',
-                    ...(isActive && {
-                      bgcolor: 'primary.softBg',
-                      '&:hover': { bgcolor: 'primary.softHoverBg' },
-                    }),
+                    width: selectedFile ? `${fileTreeWidth}%` : '100%',
+                    overflow: 'auto',
+                    borderRight: selectedFile ? '1px solid' : 'none',
+                    borderColor: 'divider',
+                    transition: isResizing ? 'none' : 'width 0.2s ease',
                   }}
                 >
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, width: '100%' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <FolderOpenIcon fontSize="small" />
-                      <Typography level="title-sm">{project.name}</Typography>
-                      {isActive && <CheckCircleIcon fontSize="small" color="success" />}
-                    </Box>
-                    <Typography level="body-xs" sx={{ pl: 3 }}>
-                      {project.path}
-                    </Typography>
-                    {!hasHandle && (
-                      <Typography level="body-xs" color="warning" sx={{ pl: 3 }}>
-                        ⚠️ Permission needed - click to select folder again
-                      </Typography>
-                    )}
+                  <ProjectFileTree
+                    projectHandle={activeProject.handle}
+                    onFileClick={(file) => setSelectedFile(file)}
+                    onFileEdit={!isReadOnly ? handleEditFile : undefined}
+                    readOnly={isReadOnly}
+                  />
+                </Box>
+
+                {/* Resize Handle */}
+                {selectedFile && (
+                  <Box
+                    onMouseDown={handleMouseDown}
+                    sx={{
+                      width: '4px',
+                      cursor: 'col-resize',
+                      bgcolor: isResizing ? 'primary.500' : 'transparent',
+                      '&:hover': {
+                        bgcolor: 'primary.300',
+                      },
+                      transition: 'background-color 0.2s',
+                      zIndex: 10,
+                      position: 'relative',
+                    }}
+                  />
+                )}
+
+                {/* File Preview Panel */}
+                {selectedFile && (
+                  <Box
+                    sx={{
+                      flex: 1,
+                      overflow: 'hidden',
+                      minWidth: 0, // Allow flex shrinking
+                    }}
+                  >
+                    <FilePreviewPanel
+                      file={selectedFile}
+                      onClose={() => {
+                        setSelectedFile(null);
+                        setEditingFile(null);
+                      }}
+                      readOnly={isReadOnly}
+                    />
                   </Box>
-                </ListItemButton>
-              </ListItem>
-            );
-          })
+                )}
+              </Box>
+            )}
+          </>
         )}
-      </List>
+      </Box>
 
       {/* Info */}
       <Box sx={{ borderTop: '1px solid', borderColor: 'divider', pt: 2, display: 'flex', flexDirection: 'column', gap: 0.5 }}>

@@ -666,6 +666,27 @@ async function _aixChatGenerateContent_LL(
 
   try {
 
+    // [Network Mode Check] Block cloud vendors in air-gapped mode
+    const { getNetworkMode } = await import('~/common/stores/store-network-mode');
+    const { dialectToVendorId, isVendorAllowedInAirGapped, getAirGappedBlockedMessage } = await import('~/modules/llms/vendors/vendor.network');
+
+    const networkMode = getNetworkMode();
+    if (networkMode === 'air-gapped') {
+      const vendorId = dialectToVendorId(aixAccess.dialect);
+      if (!isVendorAllowedInAirGapped(vendorId)) {
+        // Short-circuit with error fragment
+        const errorMessage = getAirGappedBlockedMessage(vendorId);
+        accumulator_LL.fragments.push({
+          part: { pt: 'text', text: errorMessage },
+          part_metadata: { pmt: 'blocked-air-gapped' } as any,
+        });
+        accumulator_LL.genFinishReason = 'client-stop-blocked';
+        if (onGenerateContentUpdate)
+          await onGenerateContentUpdate(accumulator_LL, true);
+        return accumulator_LL;
+      }
+    }
+
     // tRPC Aix Chat Generation (streaming) API - inside the try block for deployment path errors
     const particleStream = await apiStream.aix.chatGenerateContent.mutate({
       access: aixAccess,

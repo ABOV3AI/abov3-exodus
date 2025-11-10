@@ -327,7 +327,7 @@ export const llmOpenAIRouter = createTRPCRouter({
         requestBody = {
           ...restConfig, // includes response_format for dall-e-3 and dall-e-2 models
           n: count,
-          user: config.user || 'Big-AGI',
+          user: config.user || 'ABOV3-Exodus',
         };
 
         // [LocalAI] Fix: LocalAI does not want the 'response_format' field
@@ -351,7 +351,7 @@ export const llmOpenAIRouter = createTRPCRouter({
         if (quality && (quality as string) !== 'auto') requestBody.append('quality', quality);
         if (size && (size as string) !== 'auto') requestBody.append('size', size);
         // if (model === 'dall-e-2') requestBody.append('response_format', 'b64_json');
-        requestBody.append('user', user || 'Big-AGI');
+        requestBody.append('user', user || 'ABOV3-Exodus');
 
         // append input images
         const imagesCount = editConfig.inputImages.length;

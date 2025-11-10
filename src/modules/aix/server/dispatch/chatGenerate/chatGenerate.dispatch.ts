@@ -1,3 +1,4 @@
+import { abov3Access } from '~/modules/llms/server/abov3/abov3.router';
 import { anthropicAccess } from '~/modules/llms/server/anthropic/anthropic.router';
 import { geminiAccess } from '~/modules/llms/server/gemini/gemini.router';
 import { ollamaAccess } from '~/modules/llms/server/ollama/ollama.router';
@@ -8,12 +9,14 @@ import type { AixDemuxers } from '../stream.demuxers';
 
 import { GeminiWire_API_Generate_Content } from '../wiretypes/gemini.wiretypes';
 
+import { aixToABOV3MessageCreate } from './adapters/abov3.messageCreate';
 import { aixToAnthropicMessageCreate } from './adapters/anthropic.messageCreate';
 import { aixToGeminiGenerateContent } from './adapters/gemini.generateContent';
 import { aixToOpenAIChatCompletions } from './adapters/openai.chatCompletions';
 import { aixToOpenAIResponses } from './adapters/openai.responsesCreate';
 
 import type { IParticleTransmitter } from './IParticleTransmitter';
+import { createABOV3MessageParser, createABOV3MessageParserNS } from './parsers/abov3.parser';
 import { createAnthropicMessageParser, createAnthropicMessageParserNS } from './parsers/anthropic.parser';
 import { createGeminiGenerateContentResponseParser } from './parsers/gemini.parser';
 import { createOpenAIChatCompletionsChunkParser, createOpenAIChatCompletionsParserNS } from './parsers/openai.parser';
@@ -36,6 +39,18 @@ export function createChatGenerateDispatch(access: AixAPI_Access, model: AixAPI_
 } {
 
   switch (access.dialect) {
+    case 'abov3':
+      // Check if OAuth is being used (thinking is not supported with OAuth)
+      const isABOV3OAuth = !!(access as any).oauthAccessToken && !!(access as any).oauthRefreshToken;
+      return {
+        request: {
+          ...abov3Access(access, model.id, '/v1/messages'),
+          body: aixToABOV3MessageCreate(model, chatGenerate, streaming, isABOV3OAuth),
+        },
+        demuxerFormat: streaming ? 'fast-sse' : null,
+        chatGenerateParse: streaming ? createABOV3MessageParser() : createABOV3MessageParserNS(),
+      };
+
     case 'anthropic':
       // Check if OAuth is being used (thinking is not supported with OAuth)
       const isOAuth = !!(access as any).oauthAccessToken && !!(access as any).oauthRefreshToken;

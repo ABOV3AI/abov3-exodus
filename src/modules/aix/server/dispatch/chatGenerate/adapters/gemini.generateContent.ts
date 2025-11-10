@@ -1,5 +1,6 @@
 import type { AixAPI_Model, AixAPIChatGenerate_Request, AixMessages_ChatMessage, AixParts_DocPart, AixTools_ToolDefinition, AixTools_ToolsPolicy } from '../../../api/aix.wiretypes';
 import { GeminiWire_API_Generate_Content, GeminiWire_ContentParts, GeminiWire_Messages, GeminiWire_Safety, GeminiWire_ToolDeclarations } from '../../wiretypes/gemini.wiretypes';
+import { LLM_IF_OAI_Fn } from '~/common/stores/llms/llms.types';
 
 import { aixSpillSystemToUser, approxDocPart_To_String, approxInReferenceTo_To_XMLString } from './adapters.common';
 import { OPS } from 'pdfjs-dist';
@@ -138,8 +139,9 @@ export function aixToGeminiGenerateContent(model: AixAPI_Model, _chatGenerate: A
   const hasRestrictivePolicy = chatGenerate.toolsPolicy?.type === 'any' || chatGenerate.toolsPolicy?.type === 'function_call';
   const skipHostedToolsDueToCustomTools = hasCustomTools && hasRestrictivePolicy;
 
-  // Custom tools
-  if (chatGenerate.tools) {
+  // Custom tools - only if model supports function calling
+  const modelSupportsFunctionCalling = model.interfaces?.includes(LLM_IF_OAI_Fn);
+  if (chatGenerate.tools && modelSupportsFunctionCalling) {
     payload.tools = _toGeminiTools(chatGenerate.tools);
     if (chatGenerate.toolsPolicy)
       payload.toolConfig = _toGeminiToolConfig(chatGenerate.toolsPolicy);

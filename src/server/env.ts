@@ -38,6 +38,10 @@ export const env = createEnv({
     ANTHROPIC_API_KEY: z.string().optional(),
     ANTHROPIC_API_HOST: z.url().optional(),
 
+    // LLM: ABOV3
+    ABOV3_API_KEY: z.string().optional(),
+    ABOV3_API_HOST: z.url().optional(),
+
     // LLM: Deepseek AI
     DEEPSEEK_API_KEY: z.string().optional(),
 

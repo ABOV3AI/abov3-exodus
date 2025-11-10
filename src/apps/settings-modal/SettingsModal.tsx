@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Accordion, AccordionDetails, accordionDetailsClasses, AccordionGroup, AccordionSummary, accordionSummaryClasses, Avatar, Box, Button, ListItemContent, styled, Tab, TabList, TabPanel, Tabs } from '@mui/joy';
 import AddIcon from '@mui/icons-material/Add';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import CloudIcon from '@mui/icons-material/Cloud';
 import KeyboardCommandKeyOutlinedIcon from '@mui/icons-material/KeyboardCommandKeyOutlined';
 import LanguageRoundedIcon from '@mui/icons-material/LanguageRounded';
 import MicIcon from '@mui/icons-material/Mic';
@@ -14,6 +15,7 @@ import { BrowseSettings } from '~/modules/browse/BrowseSettings';
 import { DallESettings } from '~/modules/t2i/dalle/DallESettings';
 import { ElevenlabsSettings } from '~/modules/elevenlabs/ElevenlabsSettings';
 import { GoogleSearchSettings } from '~/modules/google/GoogleSearchSettings';
+import { MCPServersSettings } from '~/modules/mcp/MCPServersSettings';
 import { T2ISettings } from '~/modules/t2i/T2ISettings';
 import { ToolsSettings } from './ToolsSettings';
 
@@ -295,6 +297,9 @@ export function SettingsModal(props: {
           <Topics>
             <Topic>
               <ToolsSettings />
+            </Topic>
+            <Topic icon={<CloudIcon />} title='MCP Servers · Universal Tool Protocol' startCollapsed>
+              <MCPServersSettings />
             </Topic>
             <Topic icon={<LanguageRoundedIcon />} title='Browse Web Pages' startCollapsed>
               <BrowseSettings />

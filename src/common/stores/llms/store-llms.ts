@@ -51,6 +51,8 @@ interface LlmsRootActions {
   setOpenRouterKey: (key: string) => void;
   setAnthropicOAuth: (tokens: { accessToken: string; refreshToken: string; expiresAt: number }) => void;
   clearAnthropicOAuth: () => void;
+  setABOV3OAuth: (tokens: { accessToken: string; refreshToken: string; expiresAt: number }) => void;
+  clearABOV3OAuth: () => void;
 
 }
 
@@ -261,12 +263,52 @@ export const useModelsStore = create<LlmsStore>()(persist(
         };
       }),
 
+    setABOV3OAuth: (tokens) =>
+      set(state => {
+        const firstABOV3Service = state.sources.find(s => s.vId === 'abov3');
+        return !firstABOV3Service ? state : {
+          sources: state.sources.map((s: DModelsService): DModelsService =>
+            s.id === firstABOV3Service.id
+              ? {
+                  ...s,
+                  setup: {
+                    ...s.setup,
+                    oauthAccessToken: tokens.accessToken,
+                    oauthRefreshToken: tokens.refreshToken,
+                    oauthExpiresAt: tokens.expiresAt,
+                  },
+                }
+              : s,
+          ),
+        };
+      }),
+
     clearAnthropicOAuth: () =>
       set(state => {
         const firstAnthropicService = state.sources.find(s => s.vId === 'anthropic');
         return !firstAnthropicService ? state : {
           sources: state.sources.map((s: DModelsService): DModelsService =>
             s.id === firstAnthropicService.id
+              ? {
+                  ...s,
+                  setup: {
+                    ...s.setup,
+                    oauthAccessToken: null,
+                    oauthRefreshToken: null,
+                    oauthExpiresAt: null,
+                  },
+                }
+              : s,
+          ),
+        };
+      }),
+
+    clearABOV3OAuth: () =>
+      set(state => {
+        const firstABOV3Service = state.sources.find(s => s.vId === 'abov3');
+        return !firstABOV3Service ? state : {
+          sources: state.sources.map((s: DModelsService): DModelsService =>
+            s.id === firstABOV3Service.id
               ? {
                   ...s,
                   setup: {

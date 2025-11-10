@@ -6,6 +6,7 @@
 import type { AixTools_ToolDefinition } from '../aix/server/api/aix.wiretypes';
 import type { ToolCategory, ToolDefinition, ToolRegistryEntry } from './tools.types';
 import { useToolsStore } from './store-tools';
+import { getMCPRuntime } from '~/modules/mcp/mcp.runtime';
 
 
 // Global registry
@@ -105,6 +106,7 @@ export function isToolEnabled(toolId: string): boolean {
 export function getEnabledAIXTools(options?: {
   category?: ToolCategory;
   requiresProject?: boolean;
+  readOnly?: boolean; // If true, only return read-only tools (research mode)
 }): AixTools_ToolDefinition[] {
   let tools = getAllTools();
 
@@ -118,10 +120,21 @@ export function getEnabledAIXTools(options?: {
     tools = tools.filter(t => t.requiresProject === options.requiresProject);
   }
 
+  // Filter by readOnly flag if specified
+  if (options?.readOnly !== undefined) {
+    tools = tools.filter(t => t.readOnly === options.readOnly);
+  }
+
   // Filter by enabled status
   tools = tools.filter(t => isToolEnabled(t.id));
 
-  return tools.map(t => t.aixDefinition);
+  const aixTools = tools.map(t => t.aixDefinition);
+
+  // Add MCP tools (they don't have enable/disable toggles - controlled by server enabled state)
+  const mcpRuntime = getMCPRuntime();
+  const mcpTools = mcpRuntime.getAvailableTools();
+
+  return [...aixTools, ...mcpTools];
 }
 
 

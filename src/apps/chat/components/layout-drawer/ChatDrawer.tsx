@@ -19,8 +19,6 @@ import type { DConversationId } from '~/common/stores/chat/chat.conversation';
 import { CloseablePopup } from '~/common/components/CloseablePopup';
 import { DFolder, useFolderStore } from '~/common/stores/folders/store-chat-folders';
 import { DebouncedInputMemo } from '~/common/components/DebouncedInput';
-import { FoldersToggleOff } from '~/common/components/icons/FoldersToggleOff';
-import { FoldersToggleOn } from '~/common/components/icons/FoldersToggleOn';
 import { OPTIMA_DRAWER_BACKGROUND } from '~/common/layout/optima/optima.config';
 import { OptimaDrawerHeader } from '~/common/layout/optima/drawer/OptimaDrawerHeader';
 import { OptimaDrawerList } from '~/common/layout/optima/drawer/OptimaDrawerList';
@@ -38,24 +36,19 @@ import { useChatDrawerFilters } from '../../store-app-chat';
 import { ProjectsSidebar } from '~/apps/projects/ProjectsSidebar';
 
 
-// this is here to make shallow comparisons work on the next hook
-const noFolders: DFolder[] = [];
-
 /*
  * Lists folders and returns the active folder
  */
-export const useFolders = (activeFolderId: string | null) => useFolderStore(useShallow(({ enableFolders, folders, toggleEnableFolders }) => {
+export const useFolders = (activeFolderId: string | null) => useFolderStore(useShallow(({ folders }) => {
 
   // finds the active folder if any
-  const activeFolder = (enableFolders && activeFolderId)
+  const activeFolder = activeFolderId
     ? folders.find(folder => folder.id === activeFolderId) ?? null
     : null;
 
   return {
     activeFolder,
-    allFolders: enableFolders ? folders : noFolders,
-    enableFolders,
-    toggleEnableFolders,
+    allFolders: folders,
   };
 }));
 
@@ -85,6 +78,20 @@ function ChatDrawer(props: {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = React.useState('');
   const [folderChangeRequest, setFolderChangeRequest] = React.useState<FolderChangeRequest | null>(null);
   const [renderLimit, setRenderLimit] = React.useState(200); // progressive loading limit
+  const [projectsPanelHeight, setProjectsPanelHeight] = React.useState(() => {
+    // Load saved height from localStorage
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('agi-projects-panel-height');
+      if (saved) {
+        const height = parseInt(saved, 10);
+        if (!isNaN(height) && height >= 15 && height <= 70) {
+          return height;
+        }
+      }
+    }
+    return 30; // default (vh units)
+  });
+  const [isResizingProjects, setIsResizingProjects] = React.useState(false);
 
   // external state
   const {
@@ -96,7 +103,44 @@ function ChatDrawer(props: {
     showPersonaIcons, toggleShowPersonaIcons,
     showRelativeSize, toggleShowRelativeSize,
   } = useChatDrawerFilters();
-  const { activeFolder, allFolders, enableFolders, toggleEnableFolders } = useFolders(props.activeFolderId);
+  const { activeFolder, allFolders } = useFolders(props.activeFolderId);
+
+  // Handle vertical resize for projects panel
+  const handleProjectsResizeStart = React.useCallback(() => {
+    setIsResizingProjects(true);
+  }, []);
+
+  React.useEffect(() => {
+    if (!isResizingProjects) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const viewportHeight = window.innerHeight;
+      const mouseY = e.clientY;
+      const newHeightVh = (mouseY / viewportHeight) * 100;
+
+      // Constrain between 15vh and 70vh
+      if (newHeightVh >= 15 && newHeightVh <= 70) {
+        setProjectsPanelHeight(newHeightVh);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizingProjects(false);
+      // Save to localStorage when resize is complete
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('agi-projects-panel-height', projectsPanelHeight.toString());
+      }
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizingProjects]);
+
   const { filteredChatsCount, filteredChatIDs, filteredChatsAreEmpty, filteredChatsBarBasis, filteredChatsIncludeActive, renderNavItems } = useChatDrawerRenderItems(
     props.activeConversationId, props.chatPanesConversationIds, debouncedSearchQuery, activeFolder, allFolders, filterHasStars, filterHasImageAssets, filterHasDocFragments, filterIsArchived, navGrouping, searchSorting, showRelativeSize, searchDepth,
   );
@@ -296,23 +340,39 @@ function ChatDrawer(props: {
   return <>
 
     {/* Drawer Header */}
-    <OptimaDrawerHeader title='Chats' onClose={optimaCloseDrawer}>
-      <Tooltip title={enableFolders ? 'Hide Folders' : 'Use Folders'}>
-        <IconButton size='sm' onClick={toggleEnableFolders}>
-          {enableFolders ? <FoldersToggleOn /> : <FoldersToggleOff />}
-        </IconButton>
-      </Tooltip>
-    </OptimaDrawerHeader>
+    <OptimaDrawerHeader title='Chats' onClose={optimaCloseDrawer} />
 
-    {/* Projects Sidebar */}
-    <Box sx={{
-      flexShrink: 0,
-      maxHeight: '30vh',
-      overflow: 'hidden',
-      borderBottom: '1px solid',
-      borderColor: 'divider',
-    }}>
-      <ProjectsSidebar />
+    {/* Projects Sidebar - Resizable */}
+    <Box sx={{ position: 'relative' }}>
+      <Box sx={{
+        flexShrink: 0,
+        height: `${projectsPanelHeight}vh`,
+        overflow: 'hidden',
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+        transition: isResizingProjects ? 'none' : 'height 0.1s ease',
+      }}>
+        <ProjectsSidebar />
+      </Box>
+
+      {/* Vertical Resize Handle */}
+      <Box
+        onMouseDown={handleProjectsResizeStart}
+        sx={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: '6px',
+          cursor: 'ns-resize',
+          bgcolor: isResizingProjects ? 'primary.500' : 'transparent',
+          '&:hover': {
+            bgcolor: 'primary.300',
+          },
+          transition: 'background-color 0.2s',
+          zIndex: 100,
+        }}
+      />
     </Box>
 
     {/* Folders List (shrink at twice the rate as the Titles) */}
@@ -326,28 +386,26 @@ function ChatDrawer(props: {
     {/*    overflow: 'hidden',*/}
     {/*  },*/}
     {/*}}>*/}
-    {enableFolders && (
-      <ChatFolderList
-        folders={allFolders}
-        // folderChatCounts={folderChatCounts}
-        contentScaling={contentScaling}
-        activeFolderId={props.activeFolderId}
-        onFolderSelect={props.setActiveFolderId}
-        sx={{
-          // shrink this at twice the rate as the Titles list
-          flexGrow: 0, flexShrink: 2, overflow: 'hidden',
-          minHeight: '7.5rem',
-          p: 2,
-          backgroundColor: 'background.level1',
-        }}
-      />
-    )}
+    <ChatFolderList
+      folders={allFolders}
+      // folderChatCounts={folderChatCounts}
+      contentScaling={contentScaling}
+      activeFolderId={props.activeFolderId}
+      onFolderSelect={props.setActiveFolderId}
+      sx={{
+        // shrink this at twice the rate as the Titles list
+        flexGrow: 0, flexShrink: 2, overflow: 'hidden',
+        minHeight: '7.5rem',
+        p: 2,
+        backgroundColor: 'background.level1',
+      }}
+    />
     {/*</Box>*/}
 
     {/* Chats List */}
     <OptimaDrawerList variant='plain' noTopPadding noBottomPadding tallRows>
 
-      {enableFolders && <ListDivider sx={{ mb: 0 }} />}
+      <ListDivider sx={{ mb: 0 }} />
 
       {/* Search / New Chat */}
       <Box sx={{ display: 'flex', flexDirection: 'column', m: 2, gap: 2 }}>

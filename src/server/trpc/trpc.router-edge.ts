@@ -4,6 +4,7 @@ import { aixRouter } from '~/modules/aix/server/api/aix.router';
 import { backendRouter } from '~/modules/backend/backend.router';
 import { elevenlabsRouter } from '~/modules/elevenlabs/elevenlabs.router';
 import { googleSearchRouter } from '~/modules/google/search.router';
+import { llmABOV3Router } from '~/modules/llms/server/abov3/abov3.router';
 import { llmAnthropicRouter } from '~/modules/llms/server/anthropic/anthropic.router';
 import { llmGeminiRouter } from '~/modules/llms/server/gemini/gemini.router';
 import { llmOllamaRouter } from '~/modules/llms/server/ollama/ollama.router';
@@ -19,6 +20,7 @@ export const appRouterEdge = createTRPCRouter({
   backend: backendRouter,
   elevenlabs: elevenlabsRouter,
   googleSearch: googleSearchRouter,
+  llmAbov3: llmABOV3Router,
   llmAnthropic: llmAnthropicRouter,
   llmGemini: llmGeminiRouter,
   llmOllama: llmOllamaRouter,

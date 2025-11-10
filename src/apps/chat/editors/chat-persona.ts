@@ -77,14 +77,32 @@ export async function runPersonaOnConversationHead(
 
   // Get all enabled tools from the registry
   // This includes file ops (if project active), web tools, and any other enabled categories
-  const activeProject = useProjectsStore.getState().getActiveProject();
+  const projectsState = useProjectsStore.getState();
+  const activeProject = projectsState.getActiveProject();
+  const projectMode = projectsState.mode || 'chat';
+
+  // Mode-based tool access control (applies to ALL models):
+  // - Chat mode: Tools sent to API but blocked at execution
+  // - Research mode: Tools sent to API but only read-only allowed at execution
+  // - Coding mode: All tools sent and allowed at execution
+  //
+  // NOTE: We ALWAYS send all tools to the API regardless of mode to maintain
+  // consistent tool definitions throughout the conversation. Mode restrictions
+  // are enforced at the execution layer (tools.executor.ts), not at the API layer.
+  // This allows seamless mode switching without breaking conversation history.
+  const llm = findLLMOrThrow(assistantLlmId);
+  const isAnthropicModel = llm.vId === 'anthropic'; // ABOV3 excluded - tools enabled
+
+  let tools: AixTools_ToolDefinition[] | undefined;
 
   // TEMPORARY: Disable tools for Anthropic models to prevent errors from old conversations
-  // Tools work correctly in fresh conversations, but old conversations have malformed tool history in IndexedDB
-  // Users should start fresh conversations to use tools with Anthropic
-  const llm = findLLMOrThrow(assistantLlmId);
-  const isAnthropicModel = llm.vId === 'anthropic';
-  const tools: AixTools_ToolDefinition[] | undefined = isAnthropicModel ? undefined : getEnabledAIXTools();
+  if (isAnthropicModel) {
+    tools = undefined;
+  } else {
+    // Send all available tools regardless of mode
+    // Mode enforcement happens at execution time in tools.executor.ts
+    tools = getEnabledAIXTools();
+  }
 
   // Ensure Anthropic OAuth token is fresh before making API call
   try {
@@ -153,60 +171,93 @@ export async function runPersonaOnConversationHead(
 
   // Handle tool invocations if present (unified system for all tools)
   if (lastDeepCopy.fragments) {
-    // Execute tool invocations and create tool response message
-    const toolResponseFragments = await Promise.all(
-      lastDeepCopy.fragments.map(async (frag) => {
-        // Type guard to check if this is a tool invocation fragment
-        const part = frag.part;
-        if (part.pt !== 'tool_invocation') return null;
-        if (part.invocation.type !== 'function_call') return null;
+    // Count how many tool invocations we have
+    const toolInvocations = lastDeepCopy.fragments.filter(frag => {
+      const part = frag.part;
+      return part.pt === 'tool_invocation' && part.invocation.type === 'function_call';
+    });
 
-        const invocation = part.invocation;
-        try {
-          // Execute using unified tool system
-          const result = await executeToolCall(
-            invocation.name,
-            invocation.args,
-            {
-              projectHandle: activeProject?.handle || undefined,
-              conversationId,
-              messageId: assistantMessageId,
-              abortSignal: abortController.signal,
-            }
-          );
+    // Only process if we have tool invocations
+    if (toolInvocations.length > 0) {
+      // Execute tool invocations and create tool response message
+      const toolResponseFragments = await Promise.all(
+        toolInvocations.map(async (frag) => {
+          const part = frag.part;
+          if (part.pt !== 'tool_invocation' || part.invocation.type !== 'function_call') {
+            // This shouldn't happen due to filter above, but TypeScript needs this
+            return null;
+          }
 
-          return create_FunctionCallResponse_ContentFragment(
-            part.id,
-            result.error || false,
-            invocation.name,
-            result.result || '',
-            'client'
-          );
-        } catch (error: any) {
-          return create_FunctionCallResponse_ContentFragment(
-            part.id,
-            error.message || 'Tool execution failed',
-            invocation.name,
+          const invocation = part.invocation;
+          try {
+            // Execute using unified tool system
+            const result = await executeToolCall(
+              invocation.name,
+              invocation.args,
+              {
+                projectHandle: activeProject?.handle || undefined,
+                conversationId,
+                messageId: assistantMessageId,
+                abortSignal: abortController.signal,
+              }
+            );
+
+            // Always create a tool response, even if there's an error
+            return create_FunctionCallResponse_ContentFragment(
+              part.id,
+              result.error ? result.error : false,  // Pass the actual error string or false
+              invocation.name,
+              result.result || (result.error ? '' : 'Success'),  // Provide result or empty on error
+              'client'
+            );
+          } catch (error: any) {
+            // Even on exception, create a tool response
+            return create_FunctionCallResponse_ContentFragment(
+              part.id,
+              error.message || 'Tool execution failed',
+              invocation.name,
+              '',
+              'client'
+            );
+          }
+        })
+      );
+
+      // Filter out null results (shouldn't happen anymore but keep for safety)
+      const validResponses = toolResponseFragments.filter(f => f !== null);
+
+      // ALWAYS append tool responses if we had tool invocations
+      // Even if all tools failed, we need to record the failures
+      if (toolInvocations.length > 0) {
+        // Create and append tool response message as a user message
+        // (tool responses are sent back to the AI as user messages)
+        const toolResponseMessage = createDMessageFromFragments('user', validResponses.length > 0 ? validResponses : [
+          // Fallback: create a generic error response if somehow no responses were generated
+          create_FunctionCallResponse_ContentFragment(
+            toolInvocations[0].part.id,
+            'Tool execution failed - no response generated',
+            toolInvocations[0].part.invocation.name,
             '',
             'client'
-          );
-        }
-      })
-    );
+          )
+        ]);
 
-    // Filter out null results and append tool response message
-    const validResponses = toolResponseFragments.filter(f => f !== null);
-    if (validResponses.length > 0) {
-      // Create and append tool response message as a user message
-      // (tool responses are sent back to the AI as user messages)
-      const toolResponseMessage = createDMessageFromFragments('user', validResponses);
-      cHandler.messageAppend(toolResponseMessage);
+        // Debug: log the tool response message
+        console.log('[Tool Response] Creating message with', validResponses.length, 'tool responses');
+        console.log('[Tool Response] Message:', JSON.stringify(toolResponseMessage, null, 2));
 
-      // Trigger continuation with tool results
-      // We'll do this by calling runPersonaOnConversationHead again recursively
-      // but we need to prevent infinite loops, so we'll only do this if the AI requested tools
-      await runPersonaOnConversationHead(assistantLlmId, conversationId);
-      return true; // Return early as the recursive call will handle the rest
+        // Append tool response message and wait for it to be saved
+        // This ensures the tool_result is in the conversation history before continuing
+        await cHandler.messageAppend(toolResponseMessage);
+
+        // Small delay to ensure the message is properly persisted
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Always trigger continuation with tool results
+        // The AI needs to see the tool responses (including errors) to adjust its behavior
+        await runPersonaOnConversationHead(assistantLlmId, conversationId);
+        return true; // Return early as the recursive call will handle the rest
+      }
     }
   }
 

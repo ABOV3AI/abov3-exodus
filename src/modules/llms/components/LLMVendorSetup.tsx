@@ -6,6 +6,7 @@ import { findModelVendor, ModelVendorId } from '../vendors/vendors.registry';
 
 
 // direct imports for all vendor setup components - NOTE: we could lazy load if this becomes a performance issue
+import { ABOV3ServiceSetup } from '../vendors/abov3/ABOV3ServiceSetup';
 import { AlibabaServiceSetup } from '../vendors/alibaba/AlibabaServiceSetup';
 import { AnthropicServiceSetup } from '../vendors/anthropic/AnthropicServiceSetup';
 import { AzureServiceSetup } from '../vendors/azure/AzureServiceSetup';
@@ -30,6 +31,7 @@ import { XAIServiceSetup } from '../vendors/xai/XAIServiceSetup';
  *       code on vendor definitions (which must be lightweight as it impacts boot time).
  */
 const vendorSetupComponents: Record<ModelVendorId, React.ComponentType<{ serviceId: DModelsServiceId }>> = {
+  abov3: ABOV3ServiceSetup,
   alibaba: AlibabaServiceSetup,
   anthropic: AnthropicServiceSetup,
   azure: AzureServiceSetup,

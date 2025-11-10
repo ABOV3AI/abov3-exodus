@@ -11,6 +11,88 @@ export interface Project {
   // It will be requested again when needed via showDirectoryPicker with the same directory
 }
 
+// IndexedDB for persistent FileSystem handles
+const DB_NAME = 'agi-project-handles';
+const DB_VERSION = 1;
+const STORE_NAME = 'handles';
+
+async function openHandlesDB(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME);
+      }
+    };
+  });
+}
+
+async function saveHandleToIDB(id: string, handle: FileSystemDirectoryHandle): Promise<void> {
+  try {
+    const db = await openHandlesDB();
+    const transaction = db.transaction(STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+    store.put(handle, id);
+    await new Promise((resolve, reject) => {
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error);
+    });
+    db.close();
+  } catch (error) {
+    console.error('Failed to save handle to IndexedDB:', error);
+  }
+}
+
+async function loadHandleFromIDB(id: string): Promise<FileSystemDirectoryHandle | null> {
+  try {
+    const db = await openHandlesDB();
+    const transaction = db.transaction(STORE_NAME, 'readonly');
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.get(id);
+
+    const handle = await new Promise<FileSystemDirectoryHandle | null>((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error);
+    });
+
+    db.close();
+
+    // Verify we still have permission
+    if (handle) {
+      const permission = await handle.queryPermission({ mode: 'readwrite' });
+      if (permission === 'granted') {
+        return handle;
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Failed to load handle from IndexedDB:', error);
+    return null;
+  }
+}
+
+async function removeHandleFromIDB(id: string): Promise<void> {
+  try {
+    const db = await openHandlesDB();
+    const transaction = db.transaction(STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+    store.delete(id);
+    await new Promise((resolve, reject) => {
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error);
+    });
+    db.close();
+  } catch (error) {
+    console.error('Failed to remove handle from IndexedDB:', error);
+  }
+}
+
 export type ProjectMode = 'coding' | 'research' | 'chat';
 
 interface ProjectsState {
@@ -40,6 +122,9 @@ interface ProjectsActions {
 
   // Store directory handle (called after user grants permission)
   setProjectHandle: (id: string, handle: FileSystemDirectoryHandle) => void;
+
+  // Load persisted handles from IndexedDB
+  loadPersistedHandles: () => Promise<void>;
 
   // Get active project info
   getActiveProject: () => (Project & { handle: FileSystemDirectoryHandle | null }) | null;
@@ -96,6 +181,9 @@ export const useProjectsStore = create<ProjectsStore>()(
           addedAt: Date.now(),
         };
 
+        // Save handle to IndexedDB for persistence
+        await saveHandleToIDB(id, handle);
+
         set((state) => ({
           projects: [...state.projects, newProject],
           projectHandles: new Map(state.projectHandles).set(id, handle),
@@ -105,6 +193,9 @@ export const useProjectsStore = create<ProjectsStore>()(
       },
 
       removeProject: (id: string) => {
+        // Remove handle from IndexedDB
+        removeHandleFromIDB(id);
+
         set((state) => {
           const newHandles = new Map(state.projectHandles);
           newHandles.delete(id);
@@ -139,9 +230,29 @@ export const useProjectsStore = create<ProjectsStore>()(
       },
 
       setProjectHandle: (id: string, handle: FileSystemDirectoryHandle) => {
+        // Save handle to IndexedDB when user grants permission
+        saveHandleToIDB(id, handle);
+
         set((state) => ({
           projectHandles: new Map(state.projectHandles).set(id, handle),
         }));
+      },
+
+      // Load all handles from IndexedDB on app startup
+      loadPersistedHandles: async () => {
+        const state = get();
+        const newHandles = new Map(state.projectHandles);
+
+        for (const project of state.projects) {
+          if (!newHandles.has(project.id)) {
+            const handle = await loadHandleFromIDB(project.id);
+            if (handle) {
+              newHandles.set(project.id, handle);
+            }
+          }
+        }
+
+        set({ projectHandles: newHandles });
       },
 
       getActiveProject: () => {

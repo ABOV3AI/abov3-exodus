@@ -358,8 +358,12 @@ export function useMessageAvatarLabel(
       };
     }
 
+    // Get vendor ID and model ID early for use in all paths
+    const modelId = generator.aix?.mId ?? null;
+    const vendorId = generator.aix?.vId ?? null;
+
     // incomplete: just the name
-    const prettyName = prettyShortChatModelName(generatorName);
+    const prettyName = prettyShortChatModelName(generatorName, vendorId);
     if (pendingIncomplete)
       return {
         label: prettyName,
@@ -378,8 +382,6 @@ export function useMessageAvatarLabel(
       };
 
     // aix generator: details galore
-    const modelId = generator.aix?.mId ?? null;
-    const vendorId = generator.aix?.vId ?? null;
     const VendorIcon = (vendorId && complexity !== 'minimal') ? llmsGetVendorIcon(vendorId) : null;
     const metrics = generator.metrics ? _prettyMetrics(generator.metrics, complexity) : null;
     const stopReason = generator.tokenStopReason ? _prettyTokenStopReason(generator.tokenStopReason, complexity) : null;
@@ -389,7 +391,7 @@ export function useMessageAvatarLabel(
       label: (stopReason && complexity !== 'minimal') ? <>{prettyName} <small>({stopReason})</small></> : prettyName,
       tooltip: complexity === 'minimal' ? null : (
         <Box sx={tooltipSx}>
-          {VendorIcon ? <Box sx={tooltipIconContainerSx}><VendorIcon />{generator.name}</Box> : <div>{generator.name}</div>}
+          {VendorIcon ? <Box sx={tooltipIconContainerSx}><VendorIcon />{prettyName}</Box> : <div>{prettyName}</div>}
           {(modelId && complexity === 'extra') && <div>{modelId}</div>}
           {metrics && <div>{metrics}</div>}
           {stopReason && <div>{stopReason}</div>}
@@ -397,7 +399,7 @@ export function useMessageAvatarLabel(
         </Box>
       ),
     };
-  }, [complexity, created, generatorName, pendingIncomplete, updated]);
+  }, [complexity, created, generator, generatorName, pendingIncomplete, updated]);
 }
 
 function _prettyMetrics(metrics: DMessageGenerator['metrics'], uiComplexityMode: UIComplexityMode): React.ReactNode {
@@ -492,10 +494,17 @@ const geminiRegex = /gemini-|gemma-|learnlm-/;
 
 
 /** Pretty name for a chat model ID - VERY HARDCODED - shall use the Avatar Label-style code instead */
-export function prettyShortChatModelName(model: string | undefined): string {
+export function prettyShortChatModelName(model: string | undefined, vendorId?: string | null): string {
   if (!model) return '';
 
   // TODO: fully reform this function to be using information from the DLLM, rather than this manual mapping
+
+  // [ABOV3] - Use hardcoded mapping for ABOV3 custom model names
+  // Check by vendorId OR by model ID prefix (for initial renders when vendorId may not be set yet)
+  if (vendorId === 'abov3' || model?.startsWith('abov3-')) {
+    const prettyAbov3 = _prettyAbov3ModelName(model);
+    if (prettyAbov3) return prettyAbov3;
+  }
 
   // [OpenAI]
   let prefixIndex = model.search(oaiORegex);
@@ -648,6 +657,53 @@ function _prettyAnthropicModelName(modelId: string): string | null {
   if (subStr.includes(`-haiku`)) return `Claude ${version} Haiku`;
 
   return `Claude ${version}`;
+}
+
+function _prettyAbov3ModelName(modelId: string): string | null {
+  // Strip 'abov3-' prefix and '-thinking' suffix if present
+  let cleanModelId = modelId;
+  if (cleanModelId.startsWith('abov3-')) {
+    cleanModelId = cleanModelId.slice(6); // Remove 'abov3-'
+  }
+  if (cleanModelId.endsWith('-thinking')) {
+    cleanModelId = cleanModelId.slice(0, -9); // Remove '-thinking'
+  }
+
+  // Hardcoded mapping of Claude model IDs to ABOV3 custom names
+  const abov3ModelMap: Record<string, string> = {
+    // Primary models (latest)
+    'claude-sonnet-4-5-20250929': 'ABOV3 Exodus 5786.03.19',
+    'claude-haiku-4-5-20251001': 'ABOV3 Solomon 5786.03.19',
+    'claude-opus-4-1-20250805': 'ABOV3 Genesis 5786.03.19',
+
+    // Previous generation
+    'claude-opus-4-20250514': 'ABOV3 Genesis 4',
+    'claude-sonnet-4-20250514': 'ABOV3 Exodus 5785.12.18',
+    'claude-haiku-4-20250514': 'ABOV3 Solomon2 5786.03.19',
+    'claude-3-7-sonnet-20250219': 'ABOV3 Exodus 5785.03.04',
+
+    // Claude 3.5 models
+    'claude-3-5-haiku-20241022': 'ABOV3 Solomon 5786.03.19',
+    'claude-3-5-sonnet-20241022': 'ABOV3 Exodus 5785.03.04',
+    'claude-3-5-sonnet-20240620': 'ABOV3 Exodus 3.5 (previous)',
+
+    // Claude 3 models
+    'claude-3-haiku-20240307': 'ABOV3 Solomon 5785.12.18',
+    'claude-3-opus-20240229': 'ABOV3 Genesis 5784.3.22',
+    'claude-3-sonnet-20240229': 'ABOV3 Exodus 5784.3.22',
+
+    // Legacy models
+    'claude-2.1': 'ABOV3 2.1',
+    'claude-2.0': 'ABOV3 2',
+  };
+
+  // Check if this is an ABOV3 model and return the mapped name
+  const mappedName = abov3ModelMap[cleanModelId];
+  if (mappedName) {
+    return mappedName;
+  }
+
+  return null; // Not an ABOV3 model
 }
 
 function _prettyLMStudioFileModelName(filePath: string): string {
