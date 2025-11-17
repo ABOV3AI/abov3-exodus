@@ -48,6 +48,7 @@ export interface DLLM {
   userLabel?: string;
   userHidden?: boolean;
   userStarred?: boolean;
+  userMcpEnabled?: boolean;              // user wants MCP tools for this model (undefined = enabled if model supports function calls)
   userParameters?: DModelParameterValues; // user has set these parameters
 }
 

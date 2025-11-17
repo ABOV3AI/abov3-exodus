@@ -58,9 +58,15 @@ RUN npm prune --production
 FROM base AS runner
 WORKDIR /app
 
+# Install wget for health checks
+RUN apk add --no-cache wget
+
 # As user
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
+
+# Copy package.json for prisma commands
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 
 # Copy Built app
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
@@ -77,6 +83,10 @@ USER nextjs
 
 # Expose port 3000 for the application to listen on
 EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=40s \
+  CMD wget --quiet --tries=1 --spider http://localhost:3000/api/health || exit 1
 
 # Start the application
 CMD ["next", "start"]

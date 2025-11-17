@@ -12,9 +12,10 @@ export class AudioLivePlayer {
   private isMediaSourceOpen: boolean = false;
 
 
-  constructor() {
+  constructor(playbackRate: number = 1.0) {
     this.audioContext = new AudioContext();
     this.audioElement = new Audio();
+    this.audioElement.playbackRate = playbackRate;
     this.mediaSource = new MediaSource();
     this.audioElement.src = URL.createObjectURL(this.mediaSource);
     this.audioElement.autoplay = true;

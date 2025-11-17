@@ -101,7 +101,8 @@ export async function runPersonaOnConversationHead(
   } else {
     // Send all available tools regardless of mode
     // Mode enforcement happens at execution time in tools.executor.ts
-    tools = getEnabledAIXTools();
+    // Pass modelId to filter MCP tools based on per-model settings
+    tools = getEnabledAIXTools({ modelId: assistantLlmId });
   }
 
   // Ensure Anthropic OAuth token is fresh before making API call

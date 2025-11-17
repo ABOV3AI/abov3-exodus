@@ -129,7 +129,7 @@ export function ChatBarPrism(props: {
                 : isScattering ? _styles.barScatter
                   : undefined}
           >
-            {isGatheringAny ? 'Merging...' : isScattering ? 'Beaming...' : isEditMode ? 'Prism Edit' : 'Prism'}
+            {isGatheringAny ? 'Merging...' : isScattering ? 'Illuminating...' : isEditMode ? 'Prism Edit' : 'Prism'}
           </Box>
           {(!isGatheringAny && !isScattering && !isEditMode) && ' Mode'}
         </Typography>

@@ -21,6 +21,7 @@ import { BaseProduct } from '~/common/app.release';
 import { FeatureBadge } from '~/common/components/FeatureBadge';
 import { GoodModal } from '~/common/components/modals/GoodModal';
 import { PhSquaresFour } from '~/common/components/icons/phosphor/PhSquaresFour';
+import { UserMenu } from '~/common/components/UserMenu';
 import { checkDivider, checkVisibileIcon, NavItemApp, navItems } from '~/common/app.nav';
 import { themeZIndexDesktopNav } from '~/common/app.theme';
 import { useHasLLMs } from '~/common/stores/llms/llms.hooks';
@@ -360,7 +361,7 @@ export function DesktopNav(props: { component: React.ElementType, currentApp?: N
       </Box>
 
       <DesktopNavGroupBox sx={bottomGroupSx}>
-        {/*<UserNavIcon />*/}
+        <UserMenu variant='icon' />
         {navExtLinkItems}
         {navModalItems}
       </DesktopNavGroupBox>

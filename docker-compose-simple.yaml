@@ -1,0 +1,53 @@
+version: '3.8'
+
+# ABOV3 Exodus - Simple Installation (No Database)
+#
+# This configuration runs ABOV3 Exodus without a database.
+# All data is stored in the browser (localStorage/IndexedDB).
+# Perfect for personal use or testing.
+#
+# To start: docker-compose -f docker-compose-simple.yaml up -d
+# To stop:  docker-compose -f docker-compose-simple.yaml down
+
+services:
+  abov3-exodus:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Optional: Set these at build time for custom branding
+        # NEXT_PUBLIC_GA4_MEASUREMENT_ID: ""
+        # NEXT_PUBLIC_POSTHOG_KEY: ""
+    container_name: abov3-exodus-simple
+    ports:
+      - "3006:3000"
+    environment:
+      # Node environment
+      - NODE_ENV=production
+      - NEXT_PUBLIC_DEPLOYMENT_TYPE=docker
+
+      # No database configuration - app uses browser storage
+      # Database variables intentionally omitted
+
+      # Optional: Configure AI model API keys (can also set in UI)
+      # - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      # - GOOGLE_AI_API_KEY=${GOOGLE_AI_API_KEY:-}
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    labels:
+      - "com.abov3.exodus.mode=simple"
+      - "com.abov3.exodus.version=1.0"
+      - "com.abov3.exodus.description=ABOV3 Exodus - Simple mode without database"
+
+networks:
+  default:
+    name: abov3-exodus-network

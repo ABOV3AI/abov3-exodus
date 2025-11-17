@@ -1,4 +1,5 @@
-import { elevenLabsSpeakText } from '~/modules/elevenlabs/elevenlabs.client';
+import { ttsSpeakText } from '~/modules/tts/tts.client';
+import { getTTSPreferences } from '~/modules/tts/store-tts-preferences';
 
 import { isTextContentFragment } from '~/common/stores/chat/chat.fragments';
 
@@ -58,7 +59,13 @@ export class PersonaChatMessageSpeak implements PersonaProcessorInterface {
   #speak(text: string) {
     console.log('📢 TTS:', text);
     this.spokenLine = true;
-    // fire/forget: we don't want to stall this loop
-    void elevenLabsSpeakText(text, undefined, false, true);
+    // fire/forget: we don't want to stall this loop - use preferred TTS provider
+    const { preferredProvider } = getTTSPreferences();
+    void ttsSpeakText(preferredProvider, {
+      text,
+      voiceId: undefined,
+      audioStreaming: false,
+      audioTurbo: true,
+    });
   }
 }

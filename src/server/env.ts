@@ -94,6 +94,10 @@ export const env = createEnv({
     ELEVENLABS_API_HOST: z.url().optional(),
     ELEVENLABS_VOICE_ID: z.string().optional(),
 
+    // Text-To-Speech: ABOV3 Pauline - pauline.ts
+    PAULINE_ENDPOINT: z.string().optional(),
+    PAULINE_VOICE_ID: z.string().optional(),
+
 
     // Backend: HTTP Basic Authentication
     HTTP_BASIC_AUTH_USERNAME: z.string().optional(),

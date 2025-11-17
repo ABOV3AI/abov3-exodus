@@ -1,12 +1,3 @@
-import NextAuth from 'next-auth';
-import { authConfig } from '~/server/auth/auth.config';
-import { env } from '~/server/env';
+import { handlers } from '~/server/auth/auth';
 
-
-// Extend NextAuth configuration with secret
-const handler = NextAuth({
-  ...authConfig,
-  secret: env.NEXTAUTH_SECRET || 'your-secret-key-change-in-production',
-});
-
-export { handler as GET, handler as POST };
+export const { GET, POST } = handlers;

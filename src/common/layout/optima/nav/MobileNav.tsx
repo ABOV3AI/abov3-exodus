@@ -4,6 +4,7 @@ import Router from 'next/router';
 import type { SxProps } from '@mui/joy/styles/types';
 
 import { checkDivider, checkVisibileIcon, NavItemApp, navItems } from '~/common/app.nav';
+import { UserMenu } from '~/common/components/UserMenu';
 
 import { InvertedBar } from '../InvertedBar';
 import { MobileNavGroupBox, MobileNavIcon, mobileNavItemClasses } from './MobileNavIcon';
@@ -61,6 +62,7 @@ export function MobileNav(props: {
     >
 
       <MobileNavGroupBox>
+        <UserMenu variant='icon' />
         {navAppItems}
       </MobileNavGroupBox>
 

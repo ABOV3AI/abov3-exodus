@@ -8,8 +8,9 @@
  */
 import type { FetchCreateContextFnOptions } from '@trpc/server/adapters/fetch';
 import * as z from 'zod/v4';
-import { initTRPC } from '@trpc/server';
+import { initTRPC, TRPCError } from '@trpc/server';
 import { transformer } from '~/server/trpc/trpc.transformer';
+import { auth } from '~/server/auth/auth';
 
 
 /**
@@ -26,13 +27,18 @@ export type ChatGenerateContentContext = Awaited<ReturnType<typeof createTRPCFet
  * These allow you to access things when processing a request, like the database, the session, etc.
  */
 export const createTRPCFetchContext = async ({ req }: FetchCreateContextFnOptions) => {
-  // const user = { name: req.headers.get('username') ?? 'anonymous' };
-  // return { req, resHeaders };
+  // Get session from NextAuth
+  const session = await auth();
+
   return {
     // only used by Backend Analytics
     hostName: req.headers?.get('host') ?? 'localhost',
     // enables cancelling upstream requests when the downstream request is aborted
     reqSignal: req.signal,
+    // Authentication context
+    session,
+    userId: session?.user?.id || null,
+    isAdmin: (session?.user as any)?.isAdmin || false,
   };
 };
 
@@ -83,6 +89,58 @@ export const createTRPCRouter = t.router;
  * @link https://trpc.io/docs/v11/procedures
  */
 export const publicProcedure = t.procedure;
+
+/**
+ * Protected (authenticated) procedure
+ *
+ * This procedure requires the user to be signed in. If not authenticated, it throws UNAUTHORIZED.
+ *
+ * Use this for endpoints that require user authentication.
+ *
+ * @link https://trpc.io/docs/v11/middlewares
+ */
+const enforceUserIsAuthed = t.middleware(({ ctx, next }) => {
+  if (!ctx.session || !ctx.userId) {
+    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'You must be signed in to perform this action' });
+  }
+  return next({
+    ctx: {
+      ...ctx,
+      session: ctx.session,
+      userId: ctx.userId,
+    },
+  });
+});
+
+export const protectedProcedure = t.procedure.use(enforceUserIsAuthed);
+
+/**
+ * Admin procedure
+ *
+ * This procedure requires the user to be signed in AND be an admin. If not admin, it throws FORBIDDEN.
+ *
+ * Use this for admin-only endpoints (e.g., SMTP configuration, user management).
+ *
+ * @link https://trpc.io/docs/v11/middlewares
+ */
+const enforceUserIsAdmin = t.middleware(({ ctx, next }) => {
+  if (!ctx.session || !ctx.userId) {
+    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'You must be signed in to perform this action' });
+  }
+  if (!ctx.isAdmin) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+  }
+  return next({
+    ctx: {
+      ...ctx,
+      session: ctx.session,
+      userId: ctx.userId,
+      isAdmin: ctx.isAdmin,
+    },
+  });
+});
+
+export const adminProcedure = t.procedure.use(enforceUserIsAdmin);
 
 // /**
 //  * Create a server-side caller

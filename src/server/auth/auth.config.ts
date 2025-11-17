@@ -63,6 +63,12 @@ const signInSchema = z.object({
 export const authConfig: NextAuthConfig = {
   adapter: PrismaAdapter(prismaDb),
 
+  // Secret for JWT signing (required in production)
+  secret: env.NEXTAUTH_SECRET || 'your-secret-key-change-in-production',
+
+  // Base URL for callbacks
+  basePath: '/api/auth',
+
   // Session configuration
   session: {
     strategy: 'jwt', // Use JWT for better serverless compatibility
@@ -123,21 +129,12 @@ export const authConfig: NextAuthConfig = {
       },
     }),
 
-    // Magic Link (Email) provider - dynamically configured
-    ...(async () => {
-      const emailConfig = await getEmailConfig();
-      if (!emailConfig) {
-        console.warn('No email configuration found. Magic link authentication disabled.');
-        return [];
-      }
-
-      return [
-        Resend({
-          apiKey: process.env.RESEND_API_KEY, // If using Resend service
-          from: emailConfig.from,
-        }),
-      ];
-    })(),
+    // Magic Link (Email) provider - can be configured later via Admin Panel
+    // Uncomment and configure when SMTP is set up:
+    // Resend({
+    //   apiKey: process.env.RESEND_API_KEY,
+    //   from: process.env.EMAIL_FROM || 'noreply@abov3-exodus.com',
+    // }),
   ],
 
   // Callbacks

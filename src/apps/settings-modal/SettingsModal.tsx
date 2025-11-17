@@ -13,7 +13,7 @@ import TerminalOutlinedIcon from '@mui/icons-material/TerminalOutlined';
 
 import { BrowseSettings } from '~/modules/browse/BrowseSettings';
 import { DallESettings } from '~/modules/t2i/dalle/DallESettings';
-import { ElevenlabsSettings } from '~/modules/elevenlabs/ElevenlabsSettings';
+import { TTSSettings } from '~/modules/tts/TTSSettings';
 import { GoogleSearchSettings } from '~/modules/google/GoogleSearchSettings';
 import { MCPServersSettings } from '~/modules/mcp/MCPServersSettings';
 import { T2ISettings } from '~/modules/t2i/T2ISettings';
@@ -276,8 +276,8 @@ export function SettingsModal(props: {
             <Topic icon={/*'🎙️'*/ <MicIcon />} title='Microphone'>
               <VoiceSettings />
             </Topic>
-            <Topic icon={/*'📢'*/ <RecordVoiceOverIcon />} title='ElevenLabs API'>
-              <ElevenlabsSettings />
+            <Topic icon={/*'📢'*/ <RecordVoiceOverIcon />} title='Text-to-Speech'>
+              <TTSSettings />
             </Topic>
           </Topics>
         </TabPanel>

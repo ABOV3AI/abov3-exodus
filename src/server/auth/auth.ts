@@ -1,14 +1,21 @@
-import { getServerSession } from 'next-auth';
+import NextAuth from 'next-auth';
 import { authConfig } from './auth.config';
 
+/**
+ * NextAuth instance with our configuration
+ */
+const { auth: getSession, handlers, signIn, signOut } = NextAuth(authConfig);
 
 /**
  * Get the current session on the server side
  * Use this in API routes, server components, etc.
  */
-export async function auth() {
-  return await getServerSession(authConfig);
-}
+export const auth = getSession;
+
+/**
+ * NextAuth handlers for API routes
+ */
+export { handlers, signIn, signOut };
 
 /**
  * Get the current user ID

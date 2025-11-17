@@ -29,6 +29,7 @@ export interface BackendCapabilities {
   hasBrowsing: boolean;
   hasGoogleCustomSearch: boolean;
   hasVoiceElevenLabs: boolean;
+  hasVoicePauline: boolean;
   // hashes
   hashLlmReconfig: string;
   // build data
@@ -68,6 +69,7 @@ const useBackendCapabilitiesStore = create<BackendStore>()(
     hasBrowsing: false,
     hasGoogleCustomSearch: false,
     hasVoiceElevenLabs: false,
+    hasVoicePauline: false,
     hashLlmReconfig: '',
     build: undefined,
     _loadedCapabilities: false,

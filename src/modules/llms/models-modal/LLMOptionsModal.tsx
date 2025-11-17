@@ -1,7 +1,8 @@
 import * as React from 'react';
 import TimeAgo from 'react-timeago';
 
-import { Box, Button, ButtonGroup, Divider, FormControl, Input, Switch, Tooltip, Typography } from '@mui/joy';
+import { Box, Button, ButtonGroup, Divider, FormControl, FormHelperText, Input, Switch, Tooltip, Typography } from '@mui/joy';
+import CloudIcon from '@mui/icons-material/Cloud';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import StarIcon from '@mui/icons-material/Star';
@@ -9,6 +10,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
 import type { DLLMId } from '~/common/stores/llms/llms.types';
+import { LLM_IF_OAI_Fn } from '~/common/stores/llms/llms.types';
 import type { DPricingChatGenerate } from '~/common/stores/llms/llms.pricing';
 import { FormLabelStart } from '~/common/components/forms/FormLabelStart';
 import { GoodModal } from '~/common/components/modals/GoodModal';
@@ -83,6 +85,8 @@ export function LLMOptionsModal(props: { id: DLLMId, onClose: () => void }) {
 
   const handleLlmStarredToggle = () => updateLLM(llm.id, { userStarred: !llm.userStarred });
 
+  const handleLlmMcpToggle = () => updateLLM(llm.id, { userMcpEnabled: llm.userMcpEnabled === false ? undefined : false });
+
   const handleLlmDelete = () => {
     removeLLM(llm.id);
     props.onClose();
@@ -145,6 +149,24 @@ export function LLMOptionsModal(props: { id: DLLMId, onClose: () => void }) {
                   endDecorator={!llm.hidden ? <VisibilityIcon /> : <VisibilityOffIcon />}
                   slotProps={{ endDecorator: { sx: { minWidth: 26 } } }} />
         </Tooltip>
+      </FormControl>
+
+      <FormControl orientation='horizontal' sx={{ flexWrap: 'wrap', alignItems: 'center' }}>
+        <FormLabelStart title='MCP Tools' sx={{ minWidth: 80 }} />
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Tooltip title={llm.userMcpEnabled !== false ? 'Disable MCP server tools for this model' : 'Enable MCP server tools for this model'}>
+            <Switch
+              checked={llm.userMcpEnabled !== false}
+              onChange={handleLlmMcpToggle}
+              disabled={!llm.interfaces.includes(LLM_IF_OAI_Fn)}
+              endDecorator={<CloudIcon />}
+              slotProps={{ endDecorator: { sx: { minWidth: 26 } } }}
+            />
+          </Tooltip>
+          {!llm.interfaces.includes(LLM_IF_OAI_Fn) && (
+            <FormHelperText>Model does not support function calling</FormHelperText>
+          )}
+        </Box>
       </FormControl>
 
       <FormControl orientation='horizontal' sx={{ flexWrap: 'nowrap' }}>

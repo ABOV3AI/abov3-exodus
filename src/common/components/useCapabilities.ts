@@ -33,6 +33,17 @@ export interface CapabilityElevenLabsSpeechSynthesis {
 export { useCapability as useCapabilityElevenLabs } from '~/modules/elevenlabs/elevenlabs.client';
 
 
+/// Speech Synthesis: Generic TTS (Multi-Provider)
+
+export interface CapabilityTTSSpeechSynthesis {
+  mayWork: boolean;
+  provider: 'elevenlabs' | 'pauline';
+  providerName: string;
+}
+
+export { useCapabilityTTS } from '~/modules/tts/useCapabilityTTS';
+
+
 /// Image Generation
 
 export interface TextToImageProvider {

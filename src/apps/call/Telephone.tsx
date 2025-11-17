@@ -14,7 +14,8 @@ import { ScrollToBottomButton } from '~/common/scroll-to-bottom/ScrollToBottomBu
 import { useChatLLMDropdown } from '../chat/components/layout-bar/useLLMDropdown';
 
 import { SystemPurposeId, SystemPurposes } from '../../data';
-import { elevenLabsSpeakText } from '~/modules/elevenlabs/elevenlabs.client';
+import { ttsSpeakText } from '~/modules/tts/tts.client';
+import { useTTSPreferences } from '~/modules/tts/store-tts-preferences';
 import { AixChatGenerateContent_DMessage, aixChatGenerateContent_DMessage_FromConversation } from '~/modules/aix/client/aix.client';
 import { useElevenLabsVoiceDropdown } from '~/modules/elevenlabs/useElevenLabsVoiceDropdown';
 
@@ -102,6 +103,7 @@ export function Telephone(props: {
   const responseAbortController = React.useRef<AbortController | null>(null);
 
   // external state
+  const { preferredProvider } = useTTSPreferences();
   const { chatLLMId: modelId, chatLLMDropdown: modelDropdown } = useChatLLMDropdown(llmDropdownRef);
   const { chatTitle, reMessages } = useChatStore(useShallow(state => {
     const conversation = props.callIntent.conversationId
@@ -181,11 +183,16 @@ export function Telephone(props: {
 
     setCallMessages([createDMessageTextContent('assistant', firstMessage)]); // [state] set assistant:hello message
 
-    // fire/forget
-    void elevenLabsSpeakText(firstMessage, personaVoiceId, true, true);
+    // fire/forget - use preferred TTS provider
+    void ttsSpeakText(preferredProvider, {
+      text: firstMessage,
+      voiceId: personaVoiceId,
+      audioStreaming: true,
+      audioTurbo: true,
+    });
 
     return () => clearInterval(interval);
-  }, [isConnected, personaCallStarters, personaVoiceId]);
+  }, [isConnected, personaCallStarters, personaVoiceId, preferredProvider]);
 
   // [E] persona streaming response - upon new user message
   React.useEffect(() => {
@@ -266,9 +273,14 @@ export function Telephone(props: {
       fullMessage.generator = status.lastDMessage.generator;
       setCallMessages(messages => [...messages, fullMessage]); // [state] append assistant:call_response
 
-      // fire/forget
+      // fire/forget - use preferred TTS provider
       if (status.outcome === 'success' && finalText?.length >= 1)
-        void elevenLabsSpeakText(finalText, personaVoiceId, true, true);
+        void ttsSpeakText(preferredProvider, {
+          text: finalText,
+          voiceId: personaVoiceId,
+          audioStreaming: true,
+          audioTurbo: true,
+        });
 
     }).catch((err: DOMException) => {
       if (err?.name !== 'AbortError') {
@@ -284,7 +296,7 @@ export function Telephone(props: {
       responseAbortController.current?.abort();
       responseAbortController.current = null;
     };
-  }, [isConnected, callMessages, modelId, personaVoiceId, personaSystemMessage, reMessages]);
+  }, [isConnected, callMessages, modelId, personaVoiceId, personaSystemMessage, reMessages, preferredProvider]);
 
   // [E] Message interrupter
   const abortTrigger = isConnected && recognitionState.hasSpeech;

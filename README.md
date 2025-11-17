@@ -14,13 +14,44 @@ Built for engineers, founders, researchers, self-hosters, and IT departments who
 
 ## 🚀 Installation
 
-### Prerequisites
+### Quick Start with Docker (Recommended for Non-Technical Users)
+
+**One-click installation** for easy setup:
+
+#### Windows
+```batch
+# Simple Mode (no database, browser storage)
+install-simple.bat
+
+# Full Mode (with database, authentication, multi-user)
+install-full.bat
+```
+
+#### Mac/Linux
+```bash
+# Simple Mode (no database, browser storage)
+./install-simple.sh
+
+# Full Mode (with database, authentication, multi-user)
+./install-full.sh
+```
+
+📖 **See [EASY-INSTALL.md](EASY-INSTALL.md) for detailed installation guide**
+
+**Docker Requirements:**
+- Docker Desktop installed and running
+- 2GB free disk space
+- 5-15 minutes setup time
+
+### Manual Installation (For Developers)
+
+#### Prerequisites
 
 - **Node.js**: Version 18.17 or later
 - **npm**: Version 9 or later (comes with Node.js)
 - **Git**: For cloning the repository
 
-### Quick Start (Development)
+#### Quick Start (Development)
 
 Full control over your AI workspace. Deploy locally for development:
 
@@ -38,7 +69,7 @@ npm run dev
 
 Visit **http://localhost:3000** to start using ABOV3 Exodus.
 
-### Production Deployment
+#### Production Deployment
 
 For production use, build and run the optimized version:
 
@@ -114,7 +145,49 @@ GOOGLE_API_KEY=AI...
 - Page content extraction and analysis
 - YouTube transcript integration
 
-### 📁 File Operations (New!)
+### 🎙️ ABOV3 Pauline TTS (New!)
+- **Self-Hosted TTS**: Professional text-to-speech with 28 voices
+- **GPU Accelerated**: CUDA, ROCm, and CPU support
+- **High Quality**: Natural-sounding voice synthesis
+- **Real-time Streaming**: Low-latency audio generation
+- **Privacy-First**: All processing happens locally
+- **Easy Setup**: One-command Docker deployment
+
+**Quick Start:**
+```bash
+# Deploy ABOV3 Pauline TTS
+cd inference_server
+docker-compose -f docker-compose.pauline.yml up -d
+
+# Configure in Settings → Preferences → Voice
+# Endpoint: http://localhost:8004
+```
+
+📖 **See [docs/config-pauline-tts.md](docs/config-pauline-tts.md) for detailed setup guide**
+
+### 🏛️ ABOV3 Ark LocalAI (New!)
+- **Self-Hosted LLMs**: Run Mistral models locally with full privacy
+- **GPU Accelerated**: CUDA, ROCm, and CPU support
+- **3 Curated Models**: OpenHermes-2.5, Mistral-OpenOrca, Nous-Hermes-2
+- **Model Gallery**: Easy installation via UI or API
+- **OpenAI Compatible**: Drop-in replacement for OpenAI API
+- **No Cloud Dependencies**: All inference happens on your hardware
+
+**Quick Start:**
+```bash
+# Deploy ABOV3 Ark LocalAI
+cd inference_server
+docker-compose -f docker-compose.ark.yml up -d
+
+# Configure in Settings → Models → LocalAI
+# Endpoint: http://localhost:8080
+
+# Install models via Gallery Admin in Exodus UI
+```
+
+📖 **See [docs/config-ark-localai.md](docs/config-ark-localai.md) for detailed setup guide**
+
+### 📁 File Operations
 - **Read/Write Files**: AI can read and modify files in your project
 - **Directory Management**: Create directories and organize files
 - **Project Integration**: Select any local directory for AI assistance

@@ -107,6 +107,7 @@ export function getEnabledAIXTools(options?: {
   category?: ToolCategory;
   requiresProject?: boolean;
   readOnly?: boolean; // If true, only return read-only tools (research mode)
+  modelId?: string;   // If specified, filter MCP tools based on model's userMcpEnabled setting
 }): AixTools_ToolDefinition[] {
   let tools = getAllTools();
 
@@ -130,9 +131,34 @@ export function getEnabledAIXTools(options?: {
 
   const aixTools = tools.map(t => t.aixDefinition);
 
-  // Add MCP tools (they don't have enable/disable toggles - controlled by server enabled state)
-  const mcpRuntime = getMCPRuntime();
-  const mcpTools = mcpRuntime.getAvailableTools();
+  // Add MCP tools - filter based on model's MCP setting if modelId is provided
+  let mcpTools: AixTools_ToolDefinition[] = [];
+
+  if (options?.modelId) {
+    // Per-model MCP filtering
+    const { findLLMOrThrow } = require('~/common/stores/llms/llms.hooks');
+    const { LLM_IF_OAI_Fn } = require('~/common/stores/llms/llms.types');
+
+    try {
+      const llm = findLLMOrThrow(options.modelId);
+      const mcpEnabled = llm.userMcpEnabled !== false; // undefined = enabled
+      const hasFunctionCalls = llm.interfaces.includes(LLM_IF_OAI_Fn);
+
+      if (mcpEnabled && hasFunctionCalls) {
+        const mcpRuntime = getMCPRuntime();
+        mcpTools = mcpRuntime.getAvailableTools();
+      }
+    } catch (error) {
+      // Model not found or error - fall back to including MCP tools
+      console.warn('Error filtering MCP tools by model:', error);
+      const mcpRuntime = getMCPRuntime();
+      mcpTools = mcpRuntime.getAvailableTools();
+    }
+  } else {
+    // No modelId specified - include all MCP tools (backwards compatibility)
+    const mcpRuntime = getMCPRuntime();
+    mcpTools = mcpRuntime.getAvailableTools();
+  }
 
   return [...aixTools, ...mcpTools];
 }
