@@ -1,6 +1,7 @@
 import type { FunctionComponent } from 'react';
 
 // App icons
+import AccountTreeRoundedIcon from '@mui/icons-material/AccountTreeRounded';
 import CallIcon from '@mui/icons-material/Call';
 import CallOutlinedIcon from '@mui/icons-material/CallOutlined';
 import DifferenceOutlinedIcon from '@mui/icons-material/DifferenceOutlined';
@@ -102,6 +103,17 @@ export const navItems: {
       route: '/call',
       hideDrawer: true,
       panelAsMenu: true,
+      fullWidth: true,
+    },
+    {
+      name: 'FlowCore',
+      barTitle: 'Workflow Builder',
+      tooltip: 'Visual workflow automation',
+      icon: AccountTreeRoundedIcon,
+      iconActive: AccountTreeRoundedIcon,
+      type: 'app',
+      route: '/flowcore',
+      hideDrawer: true,
       fullWidth: true,
     },
     // {
