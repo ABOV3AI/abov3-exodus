@@ -6,8 +6,9 @@ FlowCore is a native visual workflow automation builder integrated into ABOV3 Ex
 
 ## Features
 
-### ✅ Completed (Phase 1 - MVP)
+### ✅ Completed
 
+**Phase 1 - Core Builder (MVP)**
 - **Multi-Workflow Management**: Create and manage unlimited workflows
 - **Drag-and-Drop Canvas**: Visual node-based workflow editor powered by React Flow
 - **Node Palette**: Pre-built node types for tools, AI, logic, triggers, and outputs
@@ -17,6 +18,29 @@ FlowCore is a native visual workflow automation builder integrated into ABOV3 Ex
 - **Persistent Storage**: IndexedDB-backed storage via Zustand persist middleware
 - **Navigation Integration**: FlowCore icon (🔀) in left sidebar below Call button
 - **Full-Screen Builder**: Dedicated `/flowcore` route with full-page interface
+
+**Phase 2 - Execution Engine**
+- **Workflow Executor**: Graph-based execution engine with sequential node processing
+- **Real-time Visualization**: Live execution viewer showing current node and progress
+- **Visual Highlighting**: Canvas nodes highlight during execution (blue=current, green=completed, red=error)
+- **Error Handling**: Automatic retry with exponential backoff (3 retries: 1s, 2s, 4s delays)
+- **Execution History**: View past workflow runs with timing, results, and errors
+- **Execution Context**: Track variables, node results, and errors throughout execution
+
+**Phase 3 - Scheduling & Templates**
+- **Cron Scheduler**: Schedule workflows with cron expressions (e.g., '0 9 * * *' = 9am daily)
+- **Schedule Presets**: Common schedules (every minute, hourly, daily, weekly, custom)
+- **Webhook Triggers**: HTTP endpoint to trigger workflows remotely via POST
+- **Template Gallery**: Pre-built workflow templates (News Summary, Data Pipeline, Website Monitor, Content Generator)
+- **Template Categories**: Browse templates by All/Research/Data/Monitoring/Content
+- **Import/Export**: JSON-based workflow import/export with copy and download
+- **Active/Inactive Toggle**: Enable/disable workflows without deletion
+
+**Phase 4 - Integration**
+- **Enhanced Store**: Zustand store with execution tracking and scheduler integration
+- **Scheduler Lifecycle**: Auto-initialize on app startup, cleanup on unmount
+- **Execution Persistence**: Workflow runs saved to history (keeps last 50)
+- **Template Instantiation**: One-click template usage with auto-import
 
 ## How to Use
 
@@ -42,7 +66,52 @@ FlowCore is a native visual workflow automation builder integrated into ABOV3 Ex
 
 1. Select the workflow from the left sidebar
 2. Click the **"Run"** button in the toolbar
-3. Watch the execution in real-time (future feature)
+3. Watch the execution in real-time:
+   - Current node highlights in **blue** with glow effect
+   - Completed nodes turn **green**
+   - Failed nodes turn **red**
+   - ExecutionViewer panel shows live progress in bottom-right
+
+### Schedule a Workflow
+
+1. Open a workflow
+2. Click the **"More" menu (⋮)** in the toolbar
+3. Configure trigger type (manual or schedule)
+4. For scheduled workflows:
+   - Choose a cron preset (hourly, daily, weekly, etc.)
+   - Or enter a custom cron expression
+5. Toggle workflow to **Active** to enable scheduling
+6. Scheduler runs automatically in the background
+
+### Use Templates
+
+1. When no workflow is selected, click **"Browse Templates"**
+2. Or click **"More" menu → "Browse Templates"**
+3. Browse by category: All, Research, Data, Monitoring, Content
+4. Click **"Use Template"** to instantly create a new workflow
+5. Customize the template workflow as needed
+
+### Import/Export Workflows
+
+**Export:**
+1. Open a workflow
+2. Click **"More" menu → "Export Workflow"**
+3. Copy JSON to clipboard or download as `.flowcore.json` file
+
+**Import:**
+1. Click **"More" menu → "Import Workflow"**
+2. Paste JSON or upload a `.flowcore.json` file
+3. Click **"Import"** - workflow appears in your list
+
+### View Execution History
+
+1. Open a workflow
+2. Click **"More" menu → "Execution History"**
+3. See all past runs with:
+   - Status (completed/failed/running)
+   - Timing and duration
+   - Results and errors
+   - Full execution details
 
 ## Architecture
 
@@ -50,20 +119,28 @@ FlowCore is a native visual workflow automation builder integrated into ABOV3 Ex
 
 ```
 src/apps/flowcore/
-├── AppFlowCore.tsx              # Main app component
+├── AppFlowCore.tsx              # Main app component with scheduler init
 ├── flowcore.types.ts            # TypeScript interfaces
-├── store-flowcore.ts            # Zustand store with IndexedDB
+├── store-flowcore.ts            # Basic Zustand store with IndexedDB
+├── store-flowcore-enhanced.ts   # Enhanced store with execution & scheduler
 ├── components/
 │   ├── WorkflowList.tsx         # Left sidebar - workflow list
-│   ├── WorkflowCanvas.tsx       # Center - React Flow canvas
+│   ├── WorkflowCanvas.tsx       # Center - React Flow canvas with execution highlighting
 │   ├── NodePalette.tsx          # Bottom - available nodes
 │   ├── PropertiesPanel.tsx      # Right - node configuration
-│   └── WorkflowToolbar.tsx      # Top - workflow controls
-├── nodes/                       # Custom node types (future)
-├── runtime/                     # Execution engine (future)
-└── templates/                   # Workflow templates (future)
+│   ├── WorkflowToolbar.tsx      # Top - workflow controls with menus
+│   ├── ExecutionViewer.tsx      # Real-time execution progress viewer
+│   ├── ExecutionHistory.tsx     # Past execution logs viewer
+│   ├── TemplateGallery.tsx      # Template browser with categories
+│   └── ImportExportDialog.tsx   # Import/export JSON dialogs
+├── runtime/
+│   ├── executor.ts              # Workflow execution engine with retry logic
+│   └── scheduler.ts             # Cron scheduler with presets
+└── templates/
+    └── templates.ts             # Pre-built workflow templates
 
 pages/flowcore.tsx               # Next.js page route
+app/api/flowcore/webhook/[workflowId]/route.ts   # Webhook API endpoint
 ```
 
 ### Available Node Types
@@ -86,8 +163,8 @@ pages/flowcore.tsx               # Next.js page route
 
 #### 📥 Triggers
 - Manual (run button)
-- Schedule (cron - future)
-- Webhook (future)
+- Schedule (cron with presets)
+- Webhook (HTTP POST endpoint)
 
 #### 📤 Outputs
 - Return Result
@@ -121,10 +198,44 @@ interface FlowCoreStore {
 
 ## Technical Details
 
+### Webhook API
+
+FlowCore provides webhook endpoints to trigger workflows remotely:
+
+**Endpoint:** `POST /api/flowcore/webhook/[workflowId]`
+
+**Example:**
+```bash
+curl -X POST http://localhost:3000/api/flowcore/webhook/my-workflow-id \
+  -H "Content-Type: application/json" \
+  -d '{"data": "your input data"}'
+```
+
+**Optional Authentication:**
+Set `FLOWCORE_WEBHOOK_SECRET` environment variable to require bearer token:
+```bash
+curl -X POST http://localhost:3000/api/flowcore/webhook/my-workflow-id \
+  -H "Authorization: Bearer your-secret-here" \
+  -H "Content-Type: application/json" \
+  -d '{"data": "your input data"}'
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "workflowId": "my-workflow-id",
+  "executionId": "exec-webhook-...",
+  "message": "Workflow triggered successfully",
+  "timestamp": "2025-01-19T..."
+}
+```
+
 ### Dependencies Added
 
 - **reactflow@11.10.0**: Visual workflow editor library
-- **node-cron@3.0.3**: Scheduling library (for future cron triggers)
+- **node-cron@3.0.3**: Cron scheduling library
+- **@types/node-cron@3.0.11**: TypeScript definitions for node-cron
 
 ### Key Technologies
 
