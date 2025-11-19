@@ -1,17 +1,32 @@
 import * as React from 'react';
-import { Box, Button, IconButton, Input, Typography } from '@mui/joy';
+import { Box, Button, IconButton, Input, Typography, Dropdown, Menu, MenuButton, MenuItem } from '@mui/joy';
 import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
 import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
 import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded';
+import AccountTreeRoundedIcon from '@mui/icons-material/AccountTreeRounded';
+import DownloadIcon from '@mui/icons-material/Download';
+import UploadIcon from '@mui/icons-material/Upload';
+import HistoryIcon from '@mui/icons-material/History';
 
 import { useFlowCoreStore } from '../store-flowcore';
+import { useFlowCoreStoreEnhanced } from '../store-flowcore-enhanced';
+import { TemplateGallery } from './TemplateGallery';
+import { ExportDialog, ImportDialog } from './ImportExportDialog';
+import { ExecutionHistory } from './ExecutionHistory';
 
 export function WorkflowToolbar() {
-  const { currentWorkflowId, workflows, updateWorkflowName, saveCurrentWorkflow, runWorkflow } = useFlowCoreStore();
+  const { currentWorkflowId, workflows, updateWorkflowName, saveCurrentWorkflow } = useFlowCoreStore();
+  const runWorkflow = useFlowCoreStoreEnhanced((state) => state.runWorkflow);
 
   const currentWorkflow = workflows.find(w => w.id === currentWorkflowId);
   const [isEditingName, setIsEditingName] = React.useState(false);
   const [editedName, setEditedName] = React.useState(currentWorkflow?.name || '');
+
+  // Dialog states
+  const [showTemplates, setShowTemplates] = React.useState(false);
+  const [showExport, setShowExport] = React.useState(false);
+  const [showImport, setShowImport] = React.useState(false);
+  const [showHistory, setShowHistory] = React.useState(false);
 
   React.useEffect(() => {
     if (currentWorkflow) {
@@ -34,12 +49,31 @@ export function WorkflowToolbar() {
 
   if (!currentWorkflow) {
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
-        <Typography level='h4'>FlowCore</Typography>
-        <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
-          Select or create a workflow to get started
-        </Typography>
-      </Box>
+      <>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Typography level='h4'>FlowCore</Typography>
+          <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
+            Select or create a workflow to get started
+          </Typography>
+          <Box sx={{ flex: 1 }} />
+          <Button
+            startDecorator={<AccountTreeRoundedIcon />}
+            variant='outlined'
+            onClick={() => setShowTemplates(true)}
+          >
+            Browse Templates
+          </Button>
+          <Button
+            startDecorator={<UploadIcon />}
+            variant='outlined'
+            onClick={() => setShowImport(true)}
+          >
+            Import
+          </Button>
+        </Box>
+        <TemplateGallery open={showTemplates} onClose={() => setShowTemplates(false)} />
+        <ImportDialog open={showImport} onClose={() => setShowImport(false)} />
+      </>
     );
   }
 
@@ -89,9 +123,49 @@ export function WorkflowToolbar() {
       </Button>
 
       {/* More Menu */}
-      <IconButton variant='plain'>
-        <MoreVertRoundedIcon />
-      </IconButton>
+      <Dropdown>
+        <MenuButton
+          slots={{ root: IconButton }}
+          slotProps={{ root: { variant: 'plain' } }}
+        >
+          <MoreVertRoundedIcon />
+        </MenuButton>
+        <Menu>
+          <MenuItem onClick={() => setShowHistory(true)}>
+            <HistoryIcon sx={{ mr: 1 }} />
+            Execution History
+          </MenuItem>
+          <MenuItem onClick={() => setShowTemplates(true)}>
+            <AccountTreeRoundedIcon sx={{ mr: 1 }} />
+            Browse Templates
+          </MenuItem>
+          <MenuItem onClick={() => setShowExport(true)}>
+            <DownloadIcon sx={{ mr: 1 }} />
+            Export Workflow
+          </MenuItem>
+          <MenuItem onClick={() => setShowImport(true)}>
+            <UploadIcon sx={{ mr: 1 }} />
+            Import Workflow
+          </MenuItem>
+        </Menu>
+      </Dropdown>
+      {/* Dialogs */}
+      <TemplateGallery open={showTemplates} onClose={() => setShowTemplates(false)} />
+      {currentWorkflowId && (
+        <>
+          <ExportDialog
+            open={showExport}
+            onClose={() => setShowExport(false)}
+            workflowId={currentWorkflowId}
+          />
+          <ExecutionHistory
+            open={showHistory}
+            onClose={() => setShowHistory(false)}
+            workflowId={currentWorkflowId}
+          />
+        </>
+      )}
+      <ImportDialog open={showImport} onClose={() => setShowImport(false)} />
     </Box>
   );
 }

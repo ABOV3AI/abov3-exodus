@@ -113,7 +113,6 @@ export const navItems: {
       iconActive: AccountTreeRoundedIcon,
       type: 'app',
       route: '/flowcore',
-      hideDrawer: true,
       fullWidth: true,
     },
     // {
