@@ -143,6 +143,8 @@ export function OptimaBar(props: { component: React.ElementType, currentApp?: Na
             height: 'auto',
             maxHeight: '32px',
             width: 'auto',
+            mixBlendMode: 'screen',
+            opacity: 0.9,
           }}
           priority
         />
