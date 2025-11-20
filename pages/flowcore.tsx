@@ -2,6 +2,9 @@ import * as React from 'react';
 
 import { AppFlowCore } from '~/apps/flowcore/AppFlowCore';
 
-export default function FlowCorePage() {
+import { withNextJSPerPageLayout } from '~/common/layout/withLayout';
+
+
+export default withNextJSPerPageLayout({ type: 'optima' }, () => {
   return <AppFlowCore />;
-}
+});
