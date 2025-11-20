@@ -232,12 +232,17 @@ export async function runPersonaOnConversationHead(
       if (toolInvocations.length > 0) {
         // Create and append tool response message as a user message
         // (tool responses are sent back to the AI as user messages)
+        const firstInvocation = toolInvocations[0];
+        const firstPart = firstInvocation.part;
+        const toolName = firstPart.pt === 'tool_invocation' && firstPart.invocation.type === 'function_call'
+          ? firstPart.invocation.name
+          : '';
         const toolResponseMessage = createDMessageFromFragments('user', validResponses.length > 0 ? validResponses : [
           // Fallback: create a generic error response if somehow no responses were generated
           create_FunctionCallResponse_ContentFragment(
-            toolInvocations[0].part.id,
+            firstPart.pt === 'tool_invocation' ? firstPart.id : '',
             'Tool execution failed - no response generated',
-            toolInvocations[0].part.invocation.name,
+            toolName,
             '',
             'client'
           )

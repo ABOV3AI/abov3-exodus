@@ -62,7 +62,7 @@ export default function SignInPage() {
             {/* Optional: Link to signup tab */}
             <Box sx={{ mt: 3, textAlign: 'center' }}>
               <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <JoyLink
                   component='button'
                   onClick={() => setActiveTab('signup')}

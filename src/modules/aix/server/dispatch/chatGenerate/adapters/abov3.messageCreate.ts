@@ -556,7 +556,8 @@ function* _generateABOV3MessagesContentBlocks({ parts, role }: AixMessages_ChatM
             break;
 
           case 'meta_cache_control':
-            yield { set_cache_control: part.control };
+            // Map anthropic-ephemeral to abov3-ephemeral for ABOV3 API
+            yield { set_cache_control: part.control === 'anthropic-ephemeral' ? 'abov3-ephemeral' : 'abov3-ephemeral' as const };
             break;
 
           // Handle tool responses in user messages (when sent back after tool execution)
@@ -642,7 +643,8 @@ function* _generateABOV3MessagesContentBlocks({ parts, role }: AixMessages_ChatM
         // Handle cache control after content
         for (const part of parts) {
           if (part.pt === 'meta_cache_control') {
-            yield { set_cache_control: part.control };
+            // Map anthropic-ephemeral to abov3-ephemeral for ABOV3 API
+            yield { set_cache_control: part.control === 'anthropic-ephemeral' ? 'abov3-ephemeral' : 'abov3-ephemeral' as const };
           }
         }
       } else {
@@ -692,7 +694,8 @@ function* _generateABOV3MessagesContentBlocks({ parts, role }: AixMessages_ChatM
               break;
 
             case 'meta_cache_control':
-              yield { set_cache_control: part.control };
+              // Map anthropic-ephemeral to abov3-ephemeral for ABOV3 API
+              yield { set_cache_control: part.control === 'anthropic-ephemeral' ? 'abov3-ephemeral' : 'abov3-ephemeral' as const };
               break;
 
             default:

@@ -250,7 +250,7 @@ export const createScatterSlice: StateCreator<RootStoreSlice & ScatterStoreSlice
       // if present, use the model from the imported message
       let raysLlmId = raysLlmIdFallback;
       if (message.generator?.mgt === 'aix') {
-        const aixLlmId = message.generator?.aix?.mId;
+        const aixLlmId = message.generator.aix.mId;
         if (aixLlmId) {
           try {
             findLLMOrThrow(aixLlmId);

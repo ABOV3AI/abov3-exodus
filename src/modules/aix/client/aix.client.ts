@@ -8,6 +8,7 @@ import { DLLM, DLLMId, LLM_IF_HOTFIX_NoTemperature, LLM_IF_OAI_Responses, LLM_IF
 import { apiStream } from '~/common/util/trpc.client';
 import { DMetricsChatGenerate_Lg, metricsChatGenerateLgToMd, metricsComputeChatGenerateCostsMd } from '~/common/stores/metrics/metrics.chatgenerate';
 import { DModelParameterValues, getAllModelParameterValues } from '~/common/stores/llms/llms.parameters';
+import { agiId } from '~/common/util/idUtils';
 import { createErrorContentFragment, DMessageContentFragment, DMessageErrorPart, DMessageVoidFragment, isContentFragment, isErrorPart } from '~/common/stores/chat/chat.fragments';
 import { findLLMOrThrow } from '~/common/stores/llms/store-llms';
 import { getAixInspector } from '~/common/stores/store-ui';
@@ -677,10 +678,11 @@ async function _aixChatGenerateContent_LL(
         // Short-circuit with error fragment
         const errorMessage = getAirGappedBlockedMessage(vendorId);
         accumulator_LL.fragments.push({
+          ft: 'content',
+          fId: agiId('chat-dfragment'),
           part: { pt: 'text', text: errorMessage },
-          part_metadata: { pmt: 'blocked-air-gapped' } as any,
         });
-        accumulator_LL.genFinishReason = 'client-stop-blocked';
+        accumulator_LL.genTokenStopReason = 'filter';
         if (onGenerateContentUpdate)
           await onGenerateContentUpdate(accumulator_LL, true);
         return accumulator_LL;

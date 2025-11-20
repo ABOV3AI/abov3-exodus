@@ -41,7 +41,10 @@ export function ABOV3ServiceSetup(props: { serviceId: DModelsServiceId }) {
   const { service, serviceAccess, serviceHasCloudTenantConfig, serviceHasLLMs, updateSettings } =
     useServiceSetup(props.serviceId, ModelVendorABOV3);
 
-  const { autoVndAbov3Breakpoints, setAutoVndAbov3Breakpoints } = useChatAutoAI();
+  // Note: autoVndAbov3Breakpoints not yet implemented in store-app-chat
+  // const { autoVndAbov3Breakpoints, setAutoVndAbov3Breakpoints } = useChatAutoAI();
+  const autoVndAbov3Breakpoints = false;
+  const setAutoVndAbov3Breakpoints = () => {};
 
   // derived state
   const { abov3Key, abov3Host, heliconeKey, oauthAccessToken, oauthExpiresAt } = serviceAccess;

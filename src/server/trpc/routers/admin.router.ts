@@ -1,8 +1,8 @@
-import { z } from 'zod/v4';
+import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import nodemailer from 'nodemailer';
 
-import { adminProcedure, publicProcedure, router } from '../trpc.server';
+import { adminProcedure, publicProcedure, createTRPCRouter } from '../trpc.server';
 import { prismaDb } from '../../prisma/prismaDb';
 
 
@@ -16,7 +16,7 @@ const smtpConfigSchema = z.object({
 });
 
 
-export const adminRouter = router({
+export const adminRouter = createTRPCRouter({
 
   // Get current admin settings
   getSettings: adminProcedure
@@ -86,7 +86,7 @@ export const adminRouter = router({
 
       try {
         // Create transporter
-        const transporter = nodemailer.createTransporter({
+        const transporter = nodemailer.createTransport({
           host: settings.smtpHost,
           port: settings.smtpPort || 587,
           secure: settings.smtpSecure,

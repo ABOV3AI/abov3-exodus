@@ -139,9 +139,8 @@ export function aixToGeminiGenerateContent(model: AixAPI_Model, _chatGenerate: A
   const hasRestrictivePolicy = chatGenerate.toolsPolicy?.type === 'any' || chatGenerate.toolsPolicy?.type === 'function_call';
   const skipHostedToolsDueToCustomTools = hasCustomTools && hasRestrictivePolicy;
 
-  // Custom tools - only if model supports function calling
-  const modelSupportsFunctionCalling = model.interfaces?.includes(LLM_IF_OAI_Fn);
-  if (chatGenerate.tools && modelSupportsFunctionCalling) {
+  // Custom tools
+  if (chatGenerate.tools) {
     payload.tools = _toGeminiTools(chatGenerate.tools);
     if (chatGenerate.toolsPolicy)
       payload.toolConfig = _toGeminiToolConfig(chatGenerate.toolsPolicy);

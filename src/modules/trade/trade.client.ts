@@ -204,7 +204,7 @@ export function conversationToMarkdown(conversation: DConversation, hideSystemMe
         break;
       case 'assistant':
         const purpose = message.purposeId || conversation.systemPurposeId || null;
-        const vendorId = message.generator?.aix?.vId || null;
+        const vendorId = message.generator?.mgt === 'aix' ? message.generator.aix.vId : null;
         senderName = `${purpose || 'Assistant'} · *${prettyShortChatModelName(message.generator?.name || '', vendorId)}*`.trim();
         if (purpose && purpose in SystemPurposes)
           senderName = `${SystemPurposes[purpose as SystemPurposeId]?.symbol || ''} ${senderName}`.trim();

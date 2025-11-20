@@ -353,6 +353,12 @@ function _toOpenAIResponsesRequestInput(systemMessage: AixMessages_SystemMessage
               // ignored - Anthropic only
               break;
 
+            case 'tool_response':
+              // Tool responses are not supported in OpenAI Responses API
+              // Skip silently or throw error depending on requirements
+              console.warn(`OpenAI Responses API: tool_response part not supported, skipping`);
+              break;
+
             default:
               const _exhaustiveCheck: never = uPt;
               throw new Error(`Unsupported part type in User message: ${uPt}`);

@@ -7,24 +7,24 @@ import { useTTSPreferences } from './store-tts-preferences';
 import { getTTSProviderName } from './tts.client';
 import type { CapabilityTTSSpeechSynthesis } from '~/common/components/useCapabilities';
 
+// Import capability hooks at module level to avoid conditional hook calls
+import { useCapability as useElevenLabsCapability } from '~/modules/elevenlabs/elevenlabs.client';
+import { useCapability as usePaulineCapability } from '~/modules/pauline/pauline.client';
+
 
 export function useCapabilityTTS(): CapabilityTTSSpeechSynthesis {
   const { preferredProvider } = useTTSPreferences();
 
-  // Lazy import capability checks to avoid circular dependencies
-  let mayWork = false;
+  // Call all hooks unconditionally (required by React hooks rules)
+  const elevenlabsCapability = useElevenLabsCapability();
+  const paulineCapability = usePaulineCapability();
 
-  if (preferredProvider === 'elevenlabs') {
-    // Check ElevenLabs capability
-    const { useCapability } = require('~/modules/elevenlabs/elevenlabs.client');
-    const elevenlabsCapability = useCapability();
-    mayWork = elevenlabsCapability.mayWork;
-  } else if (preferredProvider === 'pauline') {
-    // Check ABOV3 Pauline capability
-    const { useCapability } = require('~/modules/pauline/pauline.client');
-    const paulineCapability = useCapability();
-    mayWork = paulineCapability.mayWork;
-  }
+  // Determine if TTS may work based on active provider
+  const mayWork = preferredProvider === 'elevenlabs'
+    ? elevenlabsCapability.mayWork
+    : preferredProvider === 'pauline'
+    ? paulineCapability.mayWork
+    : false;
 
   return {
     mayWork,

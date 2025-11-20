@@ -33,6 +33,15 @@ export function UserMenu(props: { variant?: 'button' | 'icon' }) {
     router.push('/auth/signin');
   };
 
+  // Loading
+  if (status === 'loading') {
+    return (
+      <IconButton variant='plain' color='neutral' disabled>
+        <AccountCircleIcon />
+      </IconButton>
+    );
+  }
+
   // Not signed in
   if (status === 'unauthenticated' || !session) {
     if (variant === 'button') {
@@ -55,15 +64,6 @@ export function UserMenu(props: { variant?: 'button' | 'icon' }) {
         onClick={handleSignIn}
         aria-label='Sign in'
       >
-        <AccountCircleIcon />
-      </IconButton>
-    );
-  }
-
-  // Loading
-  if (status === 'loading') {
-    return (
-      <IconButton variant='plain' color='neutral' disabled>
         <AccountCircleIcon />
       </IconButton>
     );

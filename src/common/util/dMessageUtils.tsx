@@ -359,8 +359,8 @@ export function useMessageAvatarLabel(
     }
 
     // Get vendor ID and model ID early for use in all paths
-    const modelId = generator.aix?.mId ?? null;
-    const vendorId = generator.aix?.vId ?? null;
+    const modelId = generator.mgt === 'aix' ? generator.aix.mId : null;
+    const vendorId = generator.mgt === 'aix' ? generator.aix.vId : null;
 
     // incomplete: just the name
     const prettyName = prettyShortChatModelName(generatorName, vendorId);

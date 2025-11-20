@@ -35,17 +35,9 @@ export function aixToOpenAIChatCompletions(openAIDialect: OpenAIDialects, model:
   // Pre-process CGR - approximate spill of System to User message
   let chatGenerate = aixSpillSystemToUser(_chatGenerate);
 
-  // [OpenRouter] Check if model supports function calling
-  // If tools are requested but model doesn't support them, gracefully skip tools
-  const modelSupportsFunctionCalling = model.interfaces?.includes(LLM_IF_OAI_Fn);
-  if (openAIDialect === 'openrouter' && chatGenerate.tools?.length && !modelSupportsFunctionCalling) {
-    // Graceful degradation: remove tools to prevent 404 error
-    chatGenerate = {
-      ...chatGenerate,
-      tools: undefined,
-      toolsPolicy: undefined,
-    };
-  }
+  // [OpenRouter] Note: model.interfaces was removed from the AIX API Model type
+  // Function calling support can no longer be checked at this layer
+  // Models that don't support function calling will fail at the API level
 
   // Dialect incompatibilities -> Hotfixes
   const hotFixAlternateUserAssistantRoles = openAIDialect === 'deepseek' || openAIDialect === 'perplexity';
@@ -477,6 +469,12 @@ function _toOpenAIMessages(systemMessage: AixMessages_SystemMessage | null, chat
                 role: !hotFixOpenAIo1Family ? 'system' : 'user', // NOTE: o1Family does not support system messages for this, we downcast to 'user'
                 content: aixMetaRef_to_OpenAIText(part),
               });
+              break;
+
+            case 'tool_response':
+              // Handle tool responses - send back to model as tool role message
+              const toolErrorPrefix = part.error ? (typeof part.error === 'string' ? `[ERROR] ${part.error} - ` : '[ERROR] ') : '';
+              chatMessages.push(OpenAIWire_Messages.ToolMessage(part.id, toolErrorPrefix + part.response.result));
               break;
 
             default:

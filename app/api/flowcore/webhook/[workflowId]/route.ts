@@ -6,10 +6,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { workflowId: string } }
+  { params }: { params: Promise<{ workflowId: string }> }
 ) {
   try {
-    const { workflowId } = params;
+    const { workflowId } = await params;
 
     // Parse incoming payload
     let payload: Record<string, any> = {};
@@ -62,9 +62,9 @@ export async function POST(
 // GET method to check webhook status
 export async function GET(
   request: NextRequest,
-  { params }: { params: { workflowId: string } }
+  { params }: { params: Promise<{ workflowId: string }> }
 ) {
-  const { workflowId } = params;
+  const { workflowId } = await params;
 
   return NextResponse.json({
     workflowId,
