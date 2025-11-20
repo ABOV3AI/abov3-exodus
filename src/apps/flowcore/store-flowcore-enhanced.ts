@@ -6,7 +6,6 @@ import { applyNodeChanges, applyEdgeChanges, addEdge } from 'reactflow';
 import type { Workflow, ExecutionContext, TriggerConfig } from './flowcore.types';
 import { createIDBPersistStorage } from '~/common/util/idbUtils';
 import { WorkflowExecutor } from './runtime/executor';
-import { WorkflowScheduler } from './runtime/scheduler';
 
 // Generate unique IDs
 const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -28,9 +27,6 @@ export interface FlowCoreStoreEnhanced {
   // Execution state
   executionContext: ExecutionContext | null;
   isExecuting: boolean;
-
-  // Scheduler instance (not persisted)
-  _scheduler: WorkflowScheduler | null;
 
   // Workflow management actions
   createWorkflow: (name: string) => string;
@@ -60,10 +56,6 @@ export interface FlowCoreStoreEnhanced {
   // Execution
   runWorkflow: (id: string) => Promise<void>;
   stopExecution: () => void;
-
-  // Scheduler
-  initializeScheduler: () => void;
-  updateSchedules: () => void;
 }
 
 export const useFlowCoreStoreEnhanced = create<FlowCoreStoreEnhanced>()(
@@ -76,7 +68,6 @@ export const useFlowCoreStoreEnhanced = create<FlowCoreStoreEnhanced>()(
       selectedNodeId: null,
       executionContext: null,
       isExecuting: false,
-      _scheduler: null,
 
       createWorkflow: (name: string) => {
         const id = generateId();
@@ -106,12 +97,7 @@ export const useFlowCoreStoreEnhanced = create<FlowCoreStoreEnhanced>()(
       },
 
       deleteWorkflow: (id: string) => {
-        // Unschedule if scheduled
-        const scheduler = get()._scheduler;
-        if (scheduler) {
-          scheduler.unscheduleWorkflow(id);
-        }
-
+        // Note: Scheduler runs server-side, unscheduling handled via API
         set((state) => ({
           workflows: state.workflows.filter((w) => w.id !== id),
           currentWorkflowId: state.currentWorkflowId === id ? null : state.currentWorkflowId,
@@ -179,9 +165,7 @@ export const useFlowCoreStoreEnhanced = create<FlowCoreStoreEnhanced>()(
             w.id === id ? { ...w, trigger, updatedAt: new Date() } : w
           ),
         }));
-
-        // Update schedules
-        get().updateSchedules();
+        // Note: Scheduler sync handled server-side
       },
 
       toggleWorkflowActive: (id: string) => {
@@ -190,9 +174,7 @@ export const useFlowCoreStoreEnhanced = create<FlowCoreStoreEnhanced>()(
             w.id === id ? { ...w, isActive: !w.isActive, updatedAt: new Date() } : w
           ),
         }));
-
-        // Update schedules
-        get().updateSchedules();
+        // Note: Scheduler sync handled server-side
       },
 
       importWorkflow: (workflowJson: string) => {
@@ -331,28 +313,6 @@ export const useFlowCoreStoreEnhanced = create<FlowCoreStoreEnhanced>()(
 
       stopExecution: () => {
         set({ isExecuting: false, executionContext: null });
-      },
-
-      // Scheduler
-      initializeScheduler: () => {
-        if (get()._scheduler) return;
-
-        const scheduler = new WorkflowScheduler(async (workflowId) => {
-          await get().runWorkflow(workflowId);
-        });
-
-        set({ _scheduler: scheduler });
-
-        // Schedule all active workflows
-        get().updateSchedules();
-      },
-
-      updateSchedules: () => {
-        const scheduler = get()._scheduler;
-        if (!scheduler) return;
-
-        const workflows = get().workflows;
-        scheduler.updateSchedules(workflows);
       },
     }),
     {

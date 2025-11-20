@@ -6,25 +6,10 @@ import { WorkflowList } from './components/WorkflowList';
 import { WorkflowCanvas } from './components/WorkflowCanvas';
 import { NodePalette } from './components/NodePalette';
 import { PropertiesPanel } from './components/PropertiesPanel';
-import { useFlowCoreStoreEnhanced } from './store-flowcore-enhanced';
 
 export function AppFlowCore() {
-  const initializeScheduler = useFlowCoreStoreEnhanced((state) => state.initializeScheduler);
-
-  // Initialize scheduler on mount
-  React.useEffect(() => {
-    console.log('[FlowCore] Initializing workflow scheduler');
-    initializeScheduler();
-
-    return () => {
-      // Cleanup scheduler on unmount
-      const scheduler = useFlowCoreStoreEnhanced.getState()._scheduler;
-      if (scheduler) {
-        console.log('[FlowCore] Cleaning up scheduler');
-        scheduler.destroy();
-      }
-    };
-  }, [initializeScheduler]);
+  // Note: Scheduler initialization moved to server-side API route
+  // Cron scheduling runs in background via Next.js API routes
 
   return (
     <Box
