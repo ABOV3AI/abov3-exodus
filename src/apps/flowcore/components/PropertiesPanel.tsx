@@ -1,13 +1,36 @@
 import * as React from 'react';
 import { Box, Typography, Sheet, Input, Button, FormControl, FormLabel } from '@mui/joy';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
+import InfoRoundedIcon from '@mui/icons-material/InfoRounded';
 
 import { useFlowCoreStore } from '../store-flowcore';
 
 export function PropertiesPanel() {
-  const { selectedNodeId, nodes, updateNode, deleteNode } = useFlowCoreStore();
+  const { selectedNodeId, nodes, updateNode, deleteNode, currentWorkflowId } = useFlowCoreStore();
 
   const selectedNode = nodes.find(node => node.id === selectedNodeId);
+
+  if (!currentWorkflowId) {
+    return (
+      <Sheet
+        sx={{
+          width: 300,
+          borderLeft: '1px solid',
+          borderColor: 'divider',
+          p: 2,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <InfoRoundedIcon sx={{ fontSize: 48, color: 'text.tertiary', mb: 2 }} />
+        <Typography level='body-sm' sx={{ color: 'text.secondary', textAlign: 'center' }}>
+          No workflow selected
+        </Typography>
+      </Sheet>
+    );
+  }
 
   if (!selectedNode) {
     return (

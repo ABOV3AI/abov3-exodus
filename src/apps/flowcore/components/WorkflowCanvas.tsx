@@ -7,7 +7,9 @@ import ReactFlow, {
   NodeTypes,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Box } from '@mui/joy';
+import { Box, Typography, Button } from '@mui/joy';
+import AddRoundedIcon from '@mui/icons-material/AddRounded';
+import AccountTreeRoundedIcon from '@mui/icons-material/AccountTreeRounded';
 
 import { useFlowCoreStore } from '../store-flowcore';
 import { useFlowCoreStoreEnhanced } from '../store-flowcore-enhanced';
@@ -24,6 +26,9 @@ export function WorkflowCanvas() {
     onEdgesChange,
     onConnect,
     selectNode,
+    currentWorkflowId,
+    createWorkflow,
+    workflows,
   } = useFlowCoreStore();
 
   // Get execution context for highlighting
@@ -64,6 +69,44 @@ export function WorkflowCanvas() {
       },
     }));
   }, [nodes, currentNodeId, executionContext]);
+
+  // Show empty state if no workflow is selected
+  if (!currentWorkflowId) {
+    return (
+      <Box
+        sx={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: 'background.level1',
+        }}
+      >
+        <Box
+          sx={{
+            textAlign: 'center',
+            maxWidth: 400,
+            p: 4,
+          }}
+        >
+          <AccountTreeRoundedIcon sx={{ fontSize: 64, color: 'text.tertiary', mb: 2 }} />
+          <Typography level='h3' sx={{ mb: 1 }}>
+            No Workflow Selected
+          </Typography>
+          <Typography level='body-md' sx={{ color: 'text.secondary', mb: 3 }}>
+            Create a new workflow or select an existing one from the sidebar to start building your automation.
+          </Typography>
+          <Button
+            startDecorator={<AddRoundedIcon />}
+            onClick={() => createWorkflow(`Workflow ${workflows.length + 1}`)}
+            size='lg'
+          >
+            Create New Workflow
+          </Button>
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ flex: 1, position: 'relative', bgcolor: 'background.level1' }}>

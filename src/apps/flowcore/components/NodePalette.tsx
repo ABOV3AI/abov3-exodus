@@ -1,10 +1,11 @@
 import * as React from 'react';
-import { Box, Typography, Sheet, Chip } from '@mui/joy';
+import { Box, Typography, Sheet, Chip, Alert } from '@mui/joy';
 import BuildRoundedIcon from '@mui/icons-material/BuildRounded';
 import SmartToyRoundedIcon from '@mui/icons-material/SmartToyRounded';
 import BoltRoundedIcon from '@mui/icons-material/BoltRounded';
 import InputRoundedIcon from '@mui/icons-material/InputRounded';
 import OutputRoundedIcon from '@mui/icons-material/OutputRounded';
+import InfoRoundedIcon from '@mui/icons-material/InfoRounded';
 
 import { useFlowCoreStore } from '../store-flowcore';
 
@@ -62,7 +63,7 @@ const nodeCategories = [
 ];
 
 export function NodePalette() {
-  const { addNode, nodes } = useFlowCoreStore();
+  const { addNode, nodes, currentWorkflowId } = useFlowCoreStore();
 
   const handleDragStart = (event: React.DragEvent, nodeType: string, nodeLabel: string) => {
     event.dataTransfer.setData('application/reactflow', JSON.stringify({ type: nodeType, label: nodeLabel }));
@@ -94,7 +95,17 @@ export function NodePalette() {
         overflowX: 'auto',
       }}
     >
-      {nodeCategories.map((category) => (
+      {!currentWorkflowId && (
+        <Alert
+          variant='soft'
+          color='neutral'
+          startDecorator={<InfoRoundedIcon />}
+          sx={{ flex: 1, justifyContent: 'center' }}
+        >
+          Create or select a workflow to start adding nodes
+        </Alert>
+      )}
+      {currentWorkflowId && nodeCategories.map((category) => (
         <Box key={category.id} sx={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 200 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
             {category.icon}
