@@ -115,7 +115,13 @@ export function ABOV3ServiceSetup(props: { serviceId: DModelsServiceId }) {
       <img
         src='/images/abov3-logo.png'
         alt='ABOV3 Logo'
-        style={{ height: '48px', width: 'auto' }}
+        style={{
+          height: '48px',
+          width: 'auto',
+          // Remove black background using blend modes
+          mixBlendMode: 'screen',
+          opacity: 0.9,
+        }}
       />
     </Box>
 

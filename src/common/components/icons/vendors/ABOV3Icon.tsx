@@ -14,6 +14,9 @@ export function ABOV3Icon(props: SvgIconProps) {
         width: size,
         height: size,
         objectFit: 'contain',
+        // Remove black background using blend modes
+        mixBlendMode: 'screen',
+        opacity: 0.9,
       }}
       className={otherProps.className}
       id={otherProps.id}
