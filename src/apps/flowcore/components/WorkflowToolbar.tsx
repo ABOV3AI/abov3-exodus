@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Box, Button, IconButton, Input, Typography, Dropdown, Menu, MenuButton, MenuItem } from '@mui/joy';
+import { Box, Button, IconButton, Input, Typography, Dropdown, Menu, MenuButton, MenuItem, Modal, ModalDialog, ModalClose, Divider } from '@mui/joy';
 import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
 import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
 import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded';
@@ -7,6 +7,8 @@ import AccountTreeRoundedIcon from '@mui/icons-material/AccountTreeRounded';
 import DownloadIcon from '@mui/icons-material/Download';
 import UploadIcon from '@mui/icons-material/Upload';
 import HistoryIcon from '@mui/icons-material/History';
+import DeleteIcon from '@mui/icons-material/Delete';
+import WarningRoundedIcon from '@mui/icons-material/WarningRounded';
 
 import { useFlowCoreStore } from '../store-flowcore';
 import { useFlowCoreStoreEnhanced } from '../store-flowcore-enhanced';
@@ -15,7 +17,7 @@ import { ExportDialog, ImportDialog } from './ImportExportDialog';
 import { ExecutionHistory } from './ExecutionHistory';
 
 export function WorkflowToolbar() {
-  const { currentWorkflowId, workflows, updateWorkflowName, saveCurrentWorkflow } = useFlowCoreStore();
+  const { currentWorkflowId, workflows, updateWorkflowName, saveCurrentWorkflow, deleteWorkflow } = useFlowCoreStore();
   const runWorkflow = useFlowCoreStoreEnhanced((state) => state.runWorkflow);
 
   const currentWorkflow = workflows.find(w => w.id === currentWorkflowId);
@@ -27,6 +29,7 @@ export function WorkflowToolbar() {
   const [showExport, setShowExport] = React.useState(false);
   const [showImport, setShowImport] = React.useState(false);
   const [showHistory, setShowHistory] = React.useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
 
   React.useEffect(() => {
     if (currentWorkflow) {
@@ -44,6 +47,13 @@ export function WorkflowToolbar() {
   const handleRun = () => {
     if (currentWorkflowId) {
       runWorkflow(currentWorkflowId);
+    }
+  };
+
+  const handleDeleteConfirm = () => {
+    if (currentWorkflowId) {
+      deleteWorkflow(currentWorkflowId);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -147,6 +157,11 @@ export function WorkflowToolbar() {
             <UploadIcon sx={{ mr: 1 }} />
             Import Workflow
           </MenuItem>
+          <Divider />
+          <MenuItem onClick={() => setShowDeleteConfirm(true)} color='danger'>
+            <DeleteIcon sx={{ mr: 1 }} />
+            Delete Workflow
+          </MenuItem>
         </Menu>
       </Dropdown>
       {/* Dialogs */}
@@ -166,6 +181,31 @@ export function WorkflowToolbar() {
         </>
       )}
       <ImportDialog open={showImport} onClose={() => setShowImport(false)} />
+
+      {/* Delete Confirmation Dialog */}
+      <Modal open={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)}>
+        <ModalDialog variant='outlined' color='danger'>
+          <ModalClose />
+          <Typography level='h4' startDecorator={<WarningRoundedIcon />}>
+            Delete Workflow
+          </Typography>
+          <Divider />
+          <Typography level='body-md'>
+            Are you sure you want to delete <strong>{currentWorkflow?.name}</strong>?
+          </Typography>
+          <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
+            This action cannot be undone. All workflow data including execution history will be permanently deleted.
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', mt: 2 }}>
+            <Button variant='plain' color='neutral' onClick={() => setShowDeleteConfirm(false)}>
+              Cancel
+            </Button>
+            <Button variant='solid' color='danger' onClick={handleDeleteConfirm}>
+              Delete
+            </Button>
+          </Box>
+        </ModalDialog>
+      </Modal>
     </Box>
   );
 }

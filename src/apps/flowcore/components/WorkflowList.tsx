@@ -1,19 +1,34 @@
 import * as React from 'react';
-import { Box, Button, Input, List, ListItem, ListItemButton, ListItemContent, Typography, Sheet } from '@mui/joy';
+import { Box, Button, Input, List, ListItem, ListItemButton, ListItemContent, Typography, Sheet, IconButton, Modal, ModalDialog, ModalClose, Divider } from '@mui/joy';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import RadioButtonUncheckedRoundedIcon from '@mui/icons-material/RadioButtonUncheckedRounded';
+import DeleteIcon from '@mui/icons-material/Delete';
+import WarningRoundedIcon from '@mui/icons-material/WarningRounded';
 
 import { useFlowCoreStore } from '../store-flowcore';
 
 export function WorkflowList() {
-  const { workflows, currentWorkflowId, createWorkflow, selectWorkflow } = useFlowCoreStore();
+  const { workflows, currentWorkflowId, createWorkflow, selectWorkflow, deleteWorkflow } = useFlowCoreStore();
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [deleteConfirmId, setDeleteConfirmId] = React.useState<string | null>(null);
 
   const handleCreateWorkflow = () => {
     const name = `Workflow ${workflows.length + 1}`;
     createWorkflow(name);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, workflowId: string) => {
+    e.stopPropagation(); // Prevent selecting the workflow
+    setDeleteConfirmId(workflowId);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deleteConfirmId) {
+      deleteWorkflow(deleteConfirmId);
+      setDeleteConfirmId(null);
+    }
   };
 
   const filteredWorkflows = workflows.filter(w =>
@@ -68,7 +83,24 @@ export function WorkflowList() {
           </Box>
         ) : (
           filteredWorkflows.map((workflow) => (
-            <ListItem key={workflow.id}>
+            <ListItem
+              key={workflow.id}
+              endAction={
+                <IconButton
+                  size='sm'
+                  variant='plain'
+                  color='danger'
+                  onClick={(e) => handleDeleteClick(e, workflow.id)}
+                  sx={{
+                    opacity: 0,
+                    transition: 'opacity 0.2s',
+                    '.MuiListItem-root:hover &': { opacity: 1 },
+                  }}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              }
+            >
               <ListItemButton
                 selected={workflow.id === currentWorkflowId}
                 onClick={() => selectWorkflow(workflow.id)}
@@ -96,6 +128,31 @@ export function WorkflowList() {
           ))
         )}
       </List>
+
+      {/* Delete Confirmation Dialog */}
+      <Modal open={!!deleteConfirmId} onClose={() => setDeleteConfirmId(null)}>
+        <ModalDialog variant='outlined' color='danger'>
+          <ModalClose />
+          <Typography level='h4' startDecorator={<WarningRoundedIcon />}>
+            Delete Workflow
+          </Typography>
+          <Divider />
+          <Typography level='body-md'>
+            Are you sure you want to delete <strong>{workflows.find(w => w.id === deleteConfirmId)?.name}</strong>?
+          </Typography>
+          <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
+            This action cannot be undone. All workflow data including execution history will be permanently deleted.
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', mt: 2 }}>
+            <Button variant='plain' color='neutral' onClick={() => setDeleteConfirmId(null)}>
+              Cancel
+            </Button>
+            <Button variant='solid' color='danger' onClick={handleDeleteConfirm}>
+              Delete
+            </Button>
+          </Box>
+        </ModalDialog>
+      </Modal>
     </Sheet>
   );
 }
