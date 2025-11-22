@@ -10,15 +10,13 @@ import HistoryIcon from '@mui/icons-material/History';
 import DeleteIcon from '@mui/icons-material/Delete';
 import WarningRoundedIcon from '@mui/icons-material/WarningRounded';
 
-import { useFlowCoreStore } from '../store-flowcore';
 import { useFlowCoreStoreEnhanced } from '../store-flowcore-enhanced';
 import { TemplateGallery } from './TemplateGallery';
 import { ExportDialog, ImportDialog } from './ImportExportDialog';
 import { ExecutionHistory } from './ExecutionHistory';
 
 export function WorkflowToolbar() {
-  const { currentWorkflowId, workflows, updateWorkflowName, saveCurrentWorkflow, deleteWorkflow } = useFlowCoreStore();
-  const runWorkflow = useFlowCoreStoreEnhanced((state) => state.runWorkflow);
+  const { currentWorkflowId, workflows, updateWorkflowName, saveCurrentWorkflow, deleteWorkflow, runWorkflow } = useFlowCoreStoreEnhanced();
 
   const currentWorkflow = workflows.find(w => w.id === currentWorkflowId);
   const [isEditingName, setIsEditingName] = React.useState(false);

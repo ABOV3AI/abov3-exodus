@@ -7,7 +7,7 @@ import RadioButtonUncheckedRoundedIcon from '@mui/icons-material/RadioButtonUnch
 import DeleteIcon from '@mui/icons-material/Delete';
 import WarningRoundedIcon from '@mui/icons-material/WarningRounded';
 
-import { useFlowCoreStore } from '../store-flowcore';
+import { useFlowCoreStoreEnhanced as useFlowCoreStore } from '../store-flowcore-enhanced';
 
 export function WorkflowList() {
   const { workflows, currentWorkflowId, createWorkflow, selectWorkflow, deleteWorkflow } = useFlowCoreStore();

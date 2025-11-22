@@ -11,7 +11,6 @@ import { Box, Typography, Button } from '@mui/joy';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import AccountTreeRoundedIcon from '@mui/icons-material/AccountTreeRounded';
 
-import { useFlowCoreStore } from '../store-flowcore';
 import { useFlowCoreStoreEnhanced } from '../store-flowcore-enhanced';
 import { ExecutionViewer } from './ExecutionViewer';
 
@@ -29,10 +28,9 @@ export function WorkflowCanvas() {
     currentWorkflowId,
     createWorkflow,
     workflows,
-  } = useFlowCoreStore();
+    executionContext,
+  } = useFlowCoreStoreEnhanced();
 
-  // Get execution context for highlighting
-  const executionContext = useFlowCoreStoreEnhanced((state) => state.executionContext);
   const currentNodeId = executionContext?.currentNodeId;
 
   const handleNodeClick = React.useCallback(

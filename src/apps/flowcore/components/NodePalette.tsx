@@ -7,7 +7,7 @@ import InputRoundedIcon from '@mui/icons-material/InputRounded';
 import OutputRoundedIcon from '@mui/icons-material/OutputRounded';
 import InfoRoundedIcon from '@mui/icons-material/InfoRounded';
 
-import { useFlowCoreStore } from '../store-flowcore';
+import { useFlowCoreStoreEnhanced as useFlowCoreStore } from '../store-flowcore-enhanced';
 
 const nodeCategories = [
   {

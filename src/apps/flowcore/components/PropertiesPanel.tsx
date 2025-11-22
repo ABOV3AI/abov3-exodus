@@ -1,9 +1,14 @@
 import * as React from 'react';
-import { Box, Typography, Sheet, Input, Button, FormControl, FormLabel } from '@mui/joy';
+import { Box, Typography, Sheet, Input, Button, FormControl, FormLabel, Divider, Chip } from '@mui/joy';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import InfoRoundedIcon from '@mui/icons-material/InfoRounded';
 
-import { useFlowCoreStore } from '../store-flowcore';
+import { useFlowCoreStoreEnhanced as useFlowCoreStore } from '../store-flowcore-enhanced';
+import { ToolNodeConfig } from './config/ToolNodeConfig';
+import { AINodeConfig } from './config/AINodeConfig';
+import { LogicNodeConfig } from './config/LogicNodeConfig';
+import { TriggerNodeConfig } from './config/TriggerNodeConfig';
+import { OutputNodeConfig } from './config/OutputNodeConfig';
 
 export function PropertiesPanel() {
   const { selectedNodeId, nodes, updateNode, deleteNode, currentWorkflowId } = useFlowCoreStore();
@@ -42,20 +47,26 @@ export function PropertiesPanel() {
           p: 2,
           display: 'flex',
           flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        <Typography level='body-sm' sx={{ color: 'text.secondary', textAlign: 'center', mt: 4 }}>
-          Select a node to view properties
+        <InfoRoundedIcon sx={{ fontSize: 48, color: 'text.tertiary', mb: 2 }} />
+        <Typography level='body-sm' sx={{ color: 'text.secondary', textAlign: 'center' }}>
+          Select a node to configure
         </Typography>
       </Sheet>
     );
   }
 
-  const handleLabelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const nodeType = selectedNode.data?.type;
+  const nodeLabel = selectedNode.data?.label || 'Unknown Node';
+
+  const handleLabelChange = (newLabel: string) => {
     updateNode(selectedNode.id, {
       data: {
         ...selectedNode.data,
-        label: e.target.value,
+        label: newLabel,
       },
     });
   };
@@ -67,56 +78,108 @@ export function PropertiesPanel() {
   return (
     <Sheet
       sx={{
-        width: 300,
+        width: 350,
         borderLeft: '1px solid',
         borderColor: 'divider',
-        p: 2,
         display: 'flex',
         flexDirection: 'column',
-        gap: 2,
-        overflow: 'auto',
+        overflow: 'hidden',
       }}
     >
-      <Typography level='title-lg'>Node Properties</Typography>
-
-      {/* Node Name */}
-      <FormControl>
-        <FormLabel>Name</FormLabel>
-        <Input
-          value={selectedNode.data?.label || ''}
-          onChange={handleLabelChange}
-          placeholder='Node name'
-        />
-      </FormControl>
-
-      {/* Node Type */}
-      <FormControl>
-        <FormLabel>Type</FormLabel>
-        <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
-          {selectedNode.data?.type || 'default'}
-        </Typography>
-      </FormControl>
-
-      {/* Node ID */}
-      <FormControl>
-        <FormLabel>ID</FormLabel>
-        <Typography level='body-xs' sx={{ color: 'text.secondary', fontFamily: 'monospace' }}>
-          {selectedNode.id}
-        </Typography>
-      </FormControl>
-
-      {/* Configuration Section */}
-      <Box sx={{ flex: 1 }} />
-
-      {/* Actions */}
-      <Button
-        startDecorator={<DeleteRoundedIcon />}
-        color='danger'
-        variant='outlined'
-        onClick={handleDelete}
+      {/* Header */}
+      <Box
+        sx={{
+          p: 2,
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
       >
-        Delete Node
-      </Button>
+        <Box sx={{ flex: 1 }}>
+          <Typography level='title-md'>Node Properties</Typography>
+          <Chip size="sm" variant="soft" sx={{ mt: 0.5 }}>
+            {nodeType}
+          </Chip>
+        </Box>
+        <Button
+          size="sm"
+          variant="soft"
+          color="danger"
+          startDecorator={<DeleteRoundedIcon />}
+          onClick={handleDelete}
+        >
+          Delete
+        </Button>
+      </Box>
+
+      {/* Scrollable Content */}
+      <Box
+        sx={{
+          flex: 1,
+          overflow: 'auto',
+          p: 2,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+        }}
+      >
+        {/* Basic Info */}
+        <FormControl>
+          <FormLabel>Node Label</FormLabel>
+          <Input
+            value={nodeLabel}
+            onChange={(e) => handleLabelChange(e.target.value)}
+            placeholder="Enter node label"
+          />
+        </FormControl>
+
+        <FormControl>
+          <FormLabel>Node ID</FormLabel>
+          <Input
+            value={selectedNode.id}
+            readOnly
+            slotProps={{
+              input: {
+                sx: { fontFamily: 'monospace', fontSize: 'xs' },
+              },
+            }}
+          />
+        </FormControl>
+
+        <Divider />
+
+        {/* Type-specific Configuration */}
+        {nodeType === 'tool' && (
+          <ToolNodeConfig node={selectedNode} onChange={updateNode} />
+        )}
+
+        {nodeType === 'ai' && (
+          <AINodeConfig node={selectedNode} onChange={updateNode} />
+        )}
+
+        {nodeType === 'logic' && (
+          <LogicNodeConfig node={selectedNode} onChange={updateNode} />
+        )}
+
+        {nodeType === 'trigger' && (
+          <TriggerNodeConfig node={selectedNode} onChange={updateNode} />
+        )}
+
+        {nodeType === 'output' && (
+          <OutputNodeConfig node={selectedNode} onChange={updateNode} />
+        )}
+
+        {/* Unknown node type */}
+        {!['tool', 'ai', 'logic', 'trigger', 'output'].includes(nodeType) && (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
+              No configuration available for this node type
+            </Typography>
+          </Box>
+        )}
+      </Box>
     </Sheet>
   );
 }

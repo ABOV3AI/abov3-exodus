@@ -29,7 +29,7 @@ export interface WorkflowExecution {
   workflowId: string;
   startTime: Date;
   endTime?: Date;
-  status: 'running' | 'completed' | 'failed';
+  status: 'running' | 'completed' | 'failed' | 'cancelled';
   error?: string;
   results: Record<string, any>;
 }
