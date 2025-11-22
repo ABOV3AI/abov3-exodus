@@ -372,6 +372,26 @@ export class WorkflowExecutor {
     // Map node label to tool ID
     const toolId = this.mapNodeLabelToToolId(label);
 
+    // Dry-run mode: simulate execution
+    if (this.debugOptions.dryRun) {
+      if (this.logger) {
+        this.logger.logInfo(node.id, label, 'DRY-RUN: Simulating tool execution', interpolatedConfig);
+      }
+
+      return {
+        type: 'tool',
+        tool: label,
+        toolId: toolId || 'simulated',
+        status: 'success',
+        dryRun: true,
+        data: {
+          message: `[DRY-RUN] Would execute tool: ${label}`,
+          config: interpolatedConfig,
+          simulatedResult: this.generateMockToolResult(label, interpolatedConfig),
+        },
+      };
+    }
+
     if (!toolId) {
       // No tool mapping, return simulated result
       return {
@@ -425,6 +445,29 @@ export class WorkflowExecutor {
       temperature = 0.7,
       maxTokens = 2000,
     } = interpolatedConfig;
+
+    // Dry-run mode: simulate AI execution
+    if (this.debugOptions.dryRun) {
+      if (this.logger) {
+        this.logger.logInfo(node.id, label, 'DRY-RUN: Simulating AI execution', { modelId, prompt: prompt.substring(0, 100) + '...' });
+      }
+
+      return {
+        type: 'ai',
+        model: label,
+        modelId,
+        status: 'success',
+        dryRun: true,
+        data: {
+          response: `[DRY-RUN] Simulated AI response for: ${prompt.substring(0, 50)}...`,
+          tokenUsage: {
+            input: Math.floor(prompt.length / 4),
+            output: 50,
+          },
+          config: interpolatedConfig,
+        },
+      };
+    }
 
     try {
       // Prepare messages
@@ -764,6 +807,63 @@ export class WorkflowExecutor {
       await this.waitForResume();
     } else if (this.isPaused) {
       await this.waitForResume();
+    }
+  }
+
+  private generateMockToolResult(toolLabel: string, config: any): any {
+    // Generate realistic mock results based on tool type
+    switch (toolLabel) {
+      case 'HTTP Request':
+        return {
+          status: 200,
+          statusText: 'OK',
+          data: { message: 'Mock response data', timestamp: new Date().toISOString() },
+          headers: { 'content-type': 'application/json' },
+        };
+
+      case 'Web Search':
+        return {
+          results: [
+            { title: 'Mock Result 1', url: 'https://example.com/1', snippet: 'This is a mock search result' },
+            { title: 'Mock Result 2', url: 'https://example.com/2', snippet: 'Another mock search result' },
+          ],
+        };
+
+      case 'File Read':
+        return {
+          content: 'Mock file content',
+          size: 1024,
+          path: config.path || '/mock/path/file.txt',
+        };
+
+      case 'File Write':
+        return {
+          success: true,
+          path: config.path || '/mock/path/output.txt',
+          bytesWritten: config.content?.length || 0,
+        };
+
+      case 'Fetch Webpage':
+        return {
+          content: 'Mock webpage content in ' + (config.format || 'markdown'),
+          url: config.url || 'https://example.com',
+          contentLength: 2048,
+        };
+
+      case 'Scrape Links':
+        return {
+          links: [
+            'https://example.com/page1',
+            'https://example.com/page2',
+            'https://example.com/page3',
+          ],
+        };
+
+      default:
+        return {
+          message: `Mock result for ${toolLabel}`,
+          success: true,
+        };
     }
   }
 }
