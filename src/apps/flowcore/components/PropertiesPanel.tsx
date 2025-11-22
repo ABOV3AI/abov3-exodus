@@ -9,8 +9,7 @@ import { AINodeConfig } from './config/AINodeConfig';
 import { LogicNodeConfig } from './config/LogicNodeConfig';
 import { TriggerNodeConfig } from './config/TriggerNodeConfig';
 import { OutputNodeConfig } from './config/OutputNodeConfig';
-import { EmailNodeConfig } from './config/EmailNodeConfig';
-import { SlackNodeConfig } from './config/SlackNodeConfig';
+import { IntegrationNodeConfig } from './config/IntegrationNodeConfig';
 import { DatabaseNodeConfig } from './config/DatabaseNodeConfig';
 
 export function PropertiesPanel() {
@@ -174,20 +173,22 @@ export function PropertiesPanel() {
           <OutputNodeConfig node={selectedNode} onChange={updateNode} />
         )}
 
-        {nodeType === 'email' && (
-          <EmailNodeConfig node={selectedNode} onChange={updateNode} />
-        )}
-
-        {nodeType === 'slack' && (
-          <SlackNodeConfig node={selectedNode} onChange={updateNode} />
+        {(nodeType === 'email' || nodeType === 'slack' || nodeType === 'discord') && (
+          <IntegrationNodeConfig
+            node={selectedNode}
+            onChange={(config) => updateNode(selectedNode.id, { data: { ...selectedNode.data, config } })}
+          />
         )}
 
         {nodeType === 'database' && (
-          <DatabaseNodeConfig node={selectedNode} onChange={updateNode} />
+          <DatabaseNodeConfig
+            node={selectedNode}
+            onChange={(config) => updateNode(selectedNode.id, { data: { ...selectedNode.data, config } })}
+          />
         )}
 
         {/* Unknown node type */}
-        {!['tool', 'ai', 'logic', 'trigger', 'output', 'email', 'slack', 'database'].includes(nodeType) && (
+        {!['tool', 'ai', 'logic', 'trigger', 'output', 'email', 'slack', 'discord', 'database'].includes(nodeType) && (
           <Box sx={{ textAlign: 'center', py: 4 }}>
             <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
               No configuration available for this node type

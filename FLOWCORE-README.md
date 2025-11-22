@@ -170,6 +170,17 @@ app/api/flowcore/webhook/[workflowId]/route.ts   # Webhook API endpoint
 - Return Result
 - Send Notification
 
+#### 📧 Integrations (NEW - Sprint 1)
+- Send Email (SMTP with Nodemailer)
+- Slack Message (webhook notifications)
+- Discord Webhook (webhook notifications with embeds)
+
+#### 💾 Database (NEW - Sprint 1)
+- PostgreSQL (SQL queries and operations)
+- MySQL (SQL queries and operations)
+- MongoDB (NoSQL operations and aggregations)
+- SQLite (local file-based database)
+
 ### Data Storage
 
 - **Storage Backend**: IndexedDB via Zustand persist middleware

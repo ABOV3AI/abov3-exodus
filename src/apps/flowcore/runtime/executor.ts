@@ -4,6 +4,13 @@ import { executeToolCall } from '~/modules/tools/tools.executor';
 import { aixChatGenerateContent_DMessage } from '~/modules/aix/client/aix.client';
 import { VariableInterpolator, type ExecutionContext as VarContext, type NodeExecutionResult } from './variable-interpolator';
 import { ExecutionLogger, type ExecutionLog } from './execution-logger';
+import { executeEmailNode as executeEmailNodeImpl } from '../nodes/integrations/email.executor';
+import { executeSlackNode as executeSlackNodeImpl } from '../nodes/integrations/slack.executor';
+import { executeDiscordNode as executeDiscordNodeImpl } from '../nodes/integrations/discord.executor';
+import { executePostgresNode } from '../nodes/database/postgres.executor';
+import { executeMySQLNode } from '../nodes/database/mysql.executor';
+import { executeMongoDBNode } from '../nodes/database/mongodb.executor';
+import { executeSQLiteNode } from '../nodes/database/sqlite.executor';
 
 // Re-export for compatibility
 export type { ExecutionContext as VarContext, NodeExecutionResult } from './variable-interpolator';
@@ -255,7 +262,8 @@ export class WorkflowExecutor {
           result = await this.executeEmailNode(node);
           break;
         case 'slack':
-          result = await this.executeSlackNode(node);
+        case 'discord':
+          result = await this.executeIntegrationNode(node);
           break;
         case 'database':
           result = await this.executeDatabaseNode(node);
@@ -886,10 +894,11 @@ export class WorkflowExecutor {
     // Interpolate variables in config
     const interpolatedConfig = {
       ...config,
-      to: config.to?.map((email: string) => VariableInterpolator.interpolateString(email, this.varContext)),
-      cc: config.cc?.map((email: string) => VariableInterpolator.interpolateString(email, this.varContext)),
+      to: VariableInterpolator.interpolateString(config.to || '', this.varContext),
+      cc: VariableInterpolator.interpolateString(config.cc || '', this.varContext),
       subject: VariableInterpolator.interpolateString(config.subject || '', this.varContext),
-      body: VariableInterpolator.interpolateString(config.body || '', this.varContext),
+      text: VariableInterpolator.interpolateString(config.text || '', this.varContext),
+      html: VariableInterpolator.interpolateString(config.html || '', this.varContext),
     };
 
     // Dry-run mode
@@ -905,97 +914,56 @@ export class WorkflowExecutor {
       };
     }
 
-    // NOTE: Real SMTP sending would require a server-side implementation
-    // For now, return success with simulated result
-    // In production, this would call a server-side tRPC endpoint that handles SMTP
-
     if (this.logger) {
-      this.logger.logInfo(node.id, label, `Sending email to ${interpolatedConfig.to?.join(', ')}`);
+      this.logger.logInfo(node.id, label, `Sending email to ${interpolatedConfig.to}`);
     }
 
-    return {
-      success: true,
-      messageId: `<${Date.now()}-${Math.random().toString(36).substr(2, 9)}@flowcore.local>`,
-      to: interpolatedConfig.to,
-      subject: interpolatedConfig.subject,
-      timestamp: new Date().toISOString(),
-    };
+    // Call actual email executor
+    return await executeEmailNodeImpl(interpolatedConfig);
   }
 
   /**
-   * Execute Slack Node (Webhook)
+   * Execute Integration Node (Slack/Discord)
    */
-  private async executeSlackNode(node: Node): Promise<any> {
-    const label = node.data?.label || 'Slack Message';
+  private async executeIntegrationNode(node: Node): Promise<any> {
+    const label = node.data?.label || 'Integration';
+    const nodeType = node.data?.type;
     const config = node.data?.config || {};
 
     // Interpolate variables
-    const webhookUrl = VariableInterpolator.interpolateString(config.webhookUrl || '', this.varContext);
-    const text = VariableInterpolator.interpolateString(config.text || '', this.varContext);
+    const interpolatedConfig = {
+      ...config,
+      webhookUrl: VariableInterpolator.interpolateString(config.webhookUrl || '', this.varContext),
+      text: VariableInterpolator.interpolateString(config.text || '', this.varContext),
+      content: VariableInterpolator.interpolateString(config.content || '', this.varContext),
+      username: VariableInterpolator.interpolateString(config.username || '', this.varContext),
+      channel: VariableInterpolator.interpolateString(config.channel || '', this.varContext),
+    };
 
     // Dry-run mode
     if (this.debugOptions.dryRun) {
       return {
-        type: 'slack',
+        type: nodeType,
         dryRun: true,
         data: {
-          webhookUrl,
-          text,
-          messageFormat: config.messageFormat || 'simple',
+          webhookUrl: interpolatedConfig.webhookUrl,
+          text: interpolatedConfig.text || interpolatedConfig.content,
         },
       };
     }
 
-    // Build Slack message payload
-    const payload: any = {
-      text,
-      username: config.username,
-      icon_emoji: config.iconEmoji,
-      channel: config.channel,
-      unfurl_links: config.unfurlLinks,
-      unfurl_media: config.unfurlMedia,
-    };
-
-    // Add blocks if using blocks format
-    if (config.messageFormat === 'blocks' && config.blocks) {
-      payload.blocks = config.blocks.map((block: any) => ({
-        ...block,
-        text: {
-          ...block.text,
-          text: VariableInterpolator.interpolateString(block.text?.text || '', this.varContext),
-        },
-      }));
+    if (this.logger) {
+      this.logger.logInfo(node.id, label, `Sending ${nodeType} message`);
     }
 
-    // Add thread support
-    if (config.threadTs) {
-      payload.thread_ts = VariableInterpolator.interpolateString(config.threadTs, this.varContext);
+    // Call appropriate executor based on node type
+    if (nodeType === 'slack') {
+      return await executeSlackNodeImpl(interpolatedConfig);
+    } else if (nodeType === 'discord') {
+      return await executeDiscordNodeImpl(interpolatedConfig);
     }
 
-    // Send webhook request
-    try {
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Slack webhook failed: ${response.status} ${response.statusText}`);
-      }
-
-      if (this.logger) {
-        this.logger.logHttpRequest(node.id, label, 'POST', webhookUrl, response.status);
-      }
-
-      return {
-        success: true,
-        status: response.status,
-        timestamp: new Date().toISOString(),
-      };
-    } catch (error: any) {
-      throw new Error(`Slack webhook error: ${error.message}`);
-    }
+    throw new Error(`Unknown integration type: ${nodeType}`);
   }
 
   /**
@@ -1004,8 +972,14 @@ export class WorkflowExecutor {
   private async executeDatabaseNode(node: Node): Promise<any> {
     const label = node.data?.label || 'Database Query';
     const config = node.data?.config || {};
-    const dbType = config.dbType || 'postgresql';
-    const operation = config.operation || 'query';
+
+    // Interpolate variables in config
+    const interpolatedConfig = {
+      ...config,
+      query: VariableInterpolator.interpolateString(config.query || '', this.varContext),
+      database: VariableInterpolator.interpolateString(config.database || '', this.varContext),
+      collection: VariableInterpolator.interpolateString(config.collection || '', this.varContext),
+    };
 
     // Dry-run mode
     if (this.debugOptions.dryRun) {
@@ -1013,53 +987,28 @@ export class WorkflowExecutor {
         type: 'database',
         dryRun: true,
         data: {
-          dbType,
-          operation,
-          simulatedRows: operation.includes('insert') ? 1 : operation.includes('find') || operation.includes('query') ? 5 : 0,
+          dbType: label,
+          operation: config.operation,
+          simulatedRows: 5,
         },
       };
     }
 
-    // NOTE: Real database operations require server-side implementation
-    // Client-side database access is a security risk
-    // In production, this would call a server-side tRPC endpoint that handles database connections
-
     if (this.logger) {
-      this.logger.logInfo(node.id, label, `Executing ${dbType} ${operation}`);
+      this.logger.logInfo(node.id, label, `Executing ${label} ${config.operation || 'query'}`);
     }
 
-    // Simulated database result
-    const mockResults = {
-      postgresql: {
-        query: [
-          { id: 1, name: 'Mock User 1', email: 'user1@example.com' },
-          { id: 2, name: 'Mock User 2', email: 'user2@example.com' },
-        ],
-        insert: { insertedId: 123, affectedRows: 1 },
-        update: { affectedRows: 1 },
-        delete: { affectedRows: 1 },
-      },
-      mongodb: {
-        find: [
-          { _id: '507f1f77bcf86cd799439011', name: 'Mock Doc 1' },
-          { _id: '507f1f77bcf86cd799439012', name: 'Mock Doc 2' },
-        ],
-        findOne: { _id: '507f1f77bcf86cd799439011', name: 'Mock Doc' },
-        insertOne: { insertedId: '507f1f77bcf86cd799439013', acknowledged: true },
-        updateOne: { modifiedCount: 1, acknowledged: true },
-        deleteOne: { deletedCount: 1, acknowledged: true },
-      },
-    };
+    // Call appropriate database executor based on node label
+    if (label === 'PostgreSQL') {
+      return await executePostgresNode(interpolatedConfig);
+    } else if (label === 'MySQL') {
+      return await executeMySQLNode(interpolatedConfig);
+    } else if (label === 'MongoDB') {
+      return await executeMongoDBNode(interpolatedConfig);
+    } else if (label === 'SQLite') {
+      return await executeSQLiteNode(interpolatedConfig);
+    }
 
-    const dbResults = mockResults[dbType as keyof typeof mockResults] || mockResults.postgresql;
-    const result = dbResults[operation as keyof typeof dbResults] || { success: true };
-
-    return {
-      success: true,
-      dbType,
-      operation,
-      result,
-      timestamp: new Date().toISOString(),
-    };
+    throw new Error(`Unknown database type: ${label}`);
   }
 }
