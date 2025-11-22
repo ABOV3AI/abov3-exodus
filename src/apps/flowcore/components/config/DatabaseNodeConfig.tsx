@@ -90,7 +90,7 @@ export function DatabaseNodeConfig({ node, onChange }: DatabaseNodeConfigProps) 
                 onChange={(e) => handleConfigChange('connectionString', e.target.value)}
               />
               <Typography level="body-xs" sx={{ mt: 0.5, color: 'text.tertiary' }}>
-                Supports {{`{{variables}}`}} for dynamic connection strings
+                Supports {'{{variables}}'} for dynamic connection strings
               </Typography>
             </FormControl>
           </TabPanel>
@@ -386,7 +386,7 @@ export function DatabaseNodeConfig({ node, onChange }: DatabaseNodeConfigProps) 
           💡 Tips:
         </Typography>
         <Typography level="body-xs" sx={{ fontFamily: 'monospace', color: 'text.secondary', mb: 0.5 }}>
-          • Use {{`{{variables}}`}} in queries and connection strings
+          • Use {'{{variables}}'} in queries and connection strings
         </Typography>
         <Typography level="body-xs" sx={{ fontFamily: 'monospace', color: 'text.secondary', mb: 0.5 }}>
           • Always use parameterized queries to prevent SQL injection
