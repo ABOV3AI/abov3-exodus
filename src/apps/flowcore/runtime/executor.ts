@@ -3,9 +3,11 @@ import type { DLLMId } from '~/common/stores/llms/llms.types';
 import { executeToolCall } from '~/modules/tools/tools.executor';
 import { aixChatGenerateContent_DMessage } from '~/modules/aix/client/aix.client';
 import { VariableInterpolator, type ExecutionContext as VarContext, type NodeExecutionResult } from './variable-interpolator';
+import { ExecutionLogger, type ExecutionLog } from './execution-logger';
 
 // Re-export for compatibility
 export type { ExecutionContext as VarContext, NodeExecutionResult } from './variable-interpolator';
+export type { ExecutionLog } from './execution-logger';
 
 // Workflow execution result
 export interface WorkflowExecution {
@@ -53,19 +55,38 @@ const DEFAULT_RETRY_CONFIG: RetryConfig = {
   retryBackoff: 2,
 };
 
+export interface DebugOptions {
+  enabled: boolean;
+  breakpoints?: Set<string>; // node IDs to break on
+  stepMode?: boolean; // pause after each node
+  dryRun?: boolean; // simulate without side effects
+}
+
 export class WorkflowExecutor {
   private executionContext: ExecutionContext | null = null;
   private varContext: VarContext | null = null;
   private onStatusUpdate?: (context: ExecutionContext) => void;
   private retryConfig: RetryConfig;
   private abortController: AbortController | null = null;
+  private logger: ExecutionLogger | null = null;
+  private debugOptions: DebugOptions;
+  private isPaused: boolean = false;
+  private resumeCallback: (() => void) | null = null;
 
   constructor(
     onStatusUpdate?: (context: ExecutionContext) => void,
-    retryConfig?: Partial<RetryConfig>
+    retryConfig?: Partial<RetryConfig>,
+    debugOptions?: Partial<DebugOptions>
   ) {
     this.onStatusUpdate = onStatusUpdate;
     this.retryConfig = { ...DEFAULT_RETRY_CONFIG, ...retryConfig };
+    this.debugOptions = {
+      enabled: false,
+      breakpoints: new Set(),
+      stepMode: false,
+      dryRun: false,
+      ...debugOptions,
+    };
   }
 
   async executeWorkflow(
@@ -79,6 +100,12 @@ export class WorkflowExecutor {
 
     // Create abort controller for cancellation
     this.abortController = new AbortController();
+
+    // Initialize logger if debug mode enabled
+    if (this.debugOptions.enabled) {
+      this.logger = new ExecutionLogger(executionId, workflowId);
+      this.logger.logInfo('workflow', 'Workflow', `Starting workflow execution in ${this.debugOptions.dryRun ? 'DRY-RUN' : 'LIVE'} mode`);
+    }
 
     // Initialize legacy execution context (for UI compatibility)
     this.executionContext = {
@@ -184,9 +211,19 @@ export class WorkflowExecutor {
       throw new Error('Workflow execution was cancelled');
     }
 
+    const nodeLabel = node.data?.label || 'Unknown Node';
+
+    // Check breakpoint / pause
+    await this.checkBreakpoint(node.id, nodeLabel);
+
     // Update current node
     this.executionContext.currentNodeId = node.id;
     this.notifyStatusUpdate();
+
+    // Log node start
+    if (this.logger) {
+      this.logger.logNodeStart(node.id, nodeLabel, node.data?.config);
+    }
 
     // Simulate delay for visualization
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -219,6 +256,7 @@ export class WorkflowExecutor {
       }
 
       const nodeEndTime = new Date();
+      const duration = nodeEndTime.getTime() - nodeStartTime.getTime();
 
       // Store result in variable context
       this.varContext.nodes[node.id] = {
@@ -227,11 +265,16 @@ export class WorkflowExecutor {
         result,
         startTime: nodeStartTime,
         endTime: nodeEndTime,
-        duration: nodeEndTime.getTime() - nodeStartTime.getTime(),
+        duration,
       };
 
       // Store result in legacy context
       this.executionContext.nodeResults.set(node.id, result);
+
+      // Log node success
+      if (this.logger) {
+        this.logger.logNodeSuccess(node.id, nodeLabel, result, duration);
+      }
 
       // For logic nodes (If/Else), edges might be conditional
       if (nodeType === 'logic' && node.data?.label?.includes('If')) {
@@ -271,11 +314,21 @@ export class WorkflowExecutor {
         startTime: nodeStartTime,
       };
 
+      // Log error
+      if (this.logger) {
+        this.logger.logNodeError(node.id, nodeLabel, error, retryCount + 1);
+      }
+
       // Retry logic
       if (retryCount < this.retryConfig.maxRetries) {
         const delay = this.retryConfig.retryDelay * Math.pow(this.retryConfig.retryBackoff, retryCount);
 
         console.log(`[FlowCore] Retrying node ${node.id} (attempt ${retryCount + 1}/${this.retryConfig.maxRetries}) after ${delay}ms`);
+
+        // Log retry
+        if (this.logger) {
+          this.logger.logNodeRetry(node.id, nodeLabel, retryCount + 1, delay);
+        }
 
         // Wait before retrying with exponential backoff
         await new Promise(resolve => setTimeout(resolve, delay));
@@ -285,7 +338,7 @@ export class WorkflowExecutor {
       }
 
       // Max retries exceeded, record error and throw
-      const errorMessage = `Node ${node.data?.label || node.id} failed after ${retryCount} retries: ${error.message}`;
+      const errorMessage = `Node ${nodeLabel} failed after ${retryCount} retries: ${error.message}`;
 
       this.executionContext.errors.push({
         nodeId: node.id,
@@ -632,5 +685,85 @@ export class WorkflowExecutor {
 
   getVariableContext(): VarContext | null {
     return this.varContext;
+  }
+
+  // Debug and logging methods
+
+  pause() {
+    this.isPaused = true;
+    if (this.logger) {
+      this.logger.logInfo('workflow', 'Workflow', 'Execution paused by user');
+    }
+  }
+
+  resume() {
+    this.isPaused = false;
+    if (this.resumeCallback) {
+      this.resumeCallback();
+      this.resumeCallback = null;
+    }
+    if (this.logger) {
+      this.logger.logInfo('workflow', 'Workflow', 'Execution resumed by user');
+    }
+  }
+
+  step() {
+    if (this.isPaused && this.resumeCallback) {
+      this.resumeCallback();
+      this.resumeCallback = null;
+      this.isPaused = true; // Keep paused for next node
+    }
+  }
+
+  isPausedState(): boolean {
+    return this.isPaused;
+  }
+
+  getExecutionLog(): ExecutionLog | null {
+    return this.logger?.export() || null;
+  }
+
+  getLogger(): ExecutionLogger | null {
+    return this.logger;
+  }
+
+  setBreakpoint(nodeId: string) {
+    this.debugOptions.breakpoints?.add(nodeId);
+  }
+
+  removeBreakpoint(nodeId: string) {
+    this.debugOptions.breakpoints?.delete(nodeId);
+  }
+
+  toggleStepMode(enabled: boolean) {
+    this.debugOptions.stepMode = enabled;
+  }
+
+  private async waitForResume(): Promise<void> {
+    if (!this.isPaused) return;
+
+    return new Promise<void>((resolve) => {
+      this.resumeCallback = resolve;
+    });
+  }
+
+  private async checkBreakpoint(nodeId: string, nodeLabel: string): Promise<void> {
+    if (!this.debugOptions.enabled) return;
+
+    // Check if we should pause at this node
+    const shouldPause =
+      this.debugOptions.stepMode ||
+      this.debugOptions.breakpoints?.has(nodeId);
+
+    if (shouldPause && !this.isPaused) {
+      this.isPaused = true;
+      if (this.logger) {
+        this.logger.logInfo(nodeId, nodeLabel, `Paused at breakpoint`);
+      }
+      this.notifyStatusUpdate();
+      await this.waitForResume();
+    } else if (this.isPaused) {
+      await this.waitForResume();
+    }
   }
 }
