@@ -4,7 +4,7 @@
  */
 
 import { z } from 'zod';
-import { createTRPCRouter, publicProcedure } from '../trpc.server';
+import { createTRPCRouter, publicProcedure } from '../../trpc/trpc.server';
 
 // Schema definitions
 const WorkflowSchema = z.object({
