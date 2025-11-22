@@ -6,6 +6,9 @@ import BoltRoundedIcon from '@mui/icons-material/BoltRounded';
 import InputRoundedIcon from '@mui/icons-material/InputRounded';
 import OutputRoundedIcon from '@mui/icons-material/OutputRounded';
 import InfoRoundedIcon from '@mui/icons-material/InfoRounded';
+import EmailIcon from '@mui/icons-material/Email';
+import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
+import StorageIcon from '@mui/icons-material/Storage';
 
 import { useFlowCoreStoreEnhanced as useFlowCoreStore } from '../store-flowcore-enhanced';
 
@@ -58,6 +61,27 @@ const nodeCategories = [
     nodes: [
       { id: 'result', label: 'Return Result', type: 'output' },
       { id: 'notification', label: 'Send Notification', type: 'output' },
+    ],
+  },
+  {
+    id: 'integrations',
+    label: 'Integrations',
+    icon: <ChatBubbleIcon />,
+    nodes: [
+      { id: 'email', label: 'Send Email', type: 'email' },
+      { id: 'slack', label: 'Slack Message', type: 'slack' },
+      { id: 'discord', label: 'Discord Webhook', type: 'slack' }, // Uses same config as Slack
+    ],
+  },
+  {
+    id: 'database',
+    label: 'Database',
+    icon: <StorageIcon />,
+    nodes: [
+      { id: 'postgres', label: 'PostgreSQL', type: 'database' },
+      { id: 'mysql', label: 'MySQL', type: 'database' },
+      { id: 'mongodb', label: 'MongoDB', type: 'database' },
+      { id: 'sqlite', label: 'SQLite', type: 'database' },
     ],
   },
 ];

@@ -3,9 +3,10 @@ import { persist } from 'zustand/middleware';
 import type { Node, Edge, NodeChange, EdgeChange, Connection } from 'reactflow';
 import { applyNodeChanges, applyEdgeChanges, addEdge } from 'reactflow';
 
-import type { Workflow, ExecutionContext, TriggerConfig } from './flowcore.types';
+import type { Workflow, ExecutionContext, TriggerConfig, WorkflowExecution } from './flowcore.types';
 import { createIDBPersistStorage } from '~/common/util/idbUtils';
 import { WorkflowExecutor } from './runtime/executor';
+import * as flowcoreClient from './flowcore.client';
 
 // Generate unique IDs
 const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -27,6 +28,11 @@ export interface FlowCoreStoreEnhanced {
   // Execution state
   executionContext: ExecutionContext | null;
   isExecuting: boolean;
+
+  // Server sync state
+  serverSyncEnabled: boolean;
+  isSyncing: boolean;
+  lastSyncTime: Date | null;
 
   // Workflow management actions
   createWorkflow: (name: string) => string;
@@ -56,6 +62,13 @@ export interface FlowCoreStoreEnhanced {
   // Execution
   runWorkflow: (id: string) => Promise<void>;
   stopExecution: () => void;
+
+  // Server sync actions
+  enableServerSync: () => void;
+  disableServerSync: () => void;
+  syncWorkflowToServer: (id: string) => Promise<void>;
+  loadWorkflowFromServer: (id: string) => Promise<void>;
+  syncAllWorkflows: () => Promise<void>;
 }
 
 export const useFlowCoreStoreEnhanced = create<FlowCoreStoreEnhanced>()(
@@ -68,6 +81,9 @@ export const useFlowCoreStoreEnhanced = create<FlowCoreStoreEnhanced>()(
       selectedNodeId: null,
       executionContext: null,
       isExecuting: false,
+      serverSyncEnabled: false,
+      isSyncing: false,
+      lastSyncTime: null,
 
       createWorkflow: (name: string) => {
         const id = generateId();
@@ -314,6 +330,78 @@ export const useFlowCoreStoreEnhanced = create<FlowCoreStoreEnhanced>()(
       stopExecution: () => {
         set({ isExecuting: false, executionContext: null });
       },
+
+      // Server sync actions
+      enableServerSync: () => {
+        set({ serverSyncEnabled: true });
+      },
+
+      disableServerSync: () => {
+        set({ serverSyncEnabled: false });
+      },
+
+      syncWorkflowToServer: async (id: string) => {
+        const { serverSyncEnabled, workflows } = get();
+        if (!serverSyncEnabled) return;
+
+        const workflow = workflows.find((w) => w.id === id);
+        if (!workflow) return;
+
+        set({ isSyncing: true });
+
+        try {
+          await flowcoreClient.syncWorkflowToServer(workflow);
+          set({ lastSyncTime: new Date(), isSyncing: false });
+          console.log(`Workflow ${id} synced to server`);
+        } catch (error) {
+          console.error('Failed to sync workflow to server:', error);
+          set({ isSyncing: false });
+        }
+      },
+
+      loadWorkflowFromServer: async (id: string) => {
+        const { serverSyncEnabled } = get();
+        if (!serverSyncEnabled) return;
+
+        set({ isSyncing: true });
+
+        try {
+          const workflow = await flowcoreClient.loadWorkflowFromServer(id);
+          if (workflow) {
+            set((state) => ({
+              workflows: state.workflows.some((w) => w.id === id)
+                ? state.workflows.map((w) => (w.id === id ? workflow : w))
+                : [...state.workflows, workflow],
+              isSyncing: false,
+              lastSyncTime: new Date(),
+            }));
+            console.log(`Workflow ${id} loaded from server`);
+          } else {
+            set({ isSyncing: false });
+          }
+        } catch (error) {
+          console.error('Failed to load workflow from server:', error);
+          set({ isSyncing: false });
+        }
+      },
+
+      syncAllWorkflows: async () => {
+        const { serverSyncEnabled, workflows } = get();
+        if (!serverSyncEnabled) return;
+
+        set({ isSyncing: true });
+
+        try {
+          await Promise.all(
+            workflows.map((workflow) => flowcoreClient.syncWorkflowToServer(workflow))
+          );
+          set({ lastSyncTime: new Date(), isSyncing: false });
+          console.log('All workflows synced to server');
+        } catch (error) {
+          console.error('Failed to sync all workflows:', error);
+          set({ isSyncing: false });
+        }
+      },
     }),
     {
       name: 'app-flowcore-enhanced',
@@ -321,6 +409,7 @@ export const useFlowCoreStoreEnhanced = create<FlowCoreStoreEnhanced>()(
       version: 1,
       partialize: (state) => ({
         workflows: state.workflows,
+        serverSyncEnabled: state.serverSyncEnabled,
       }),
     }
   )

@@ -9,6 +9,9 @@ import { AINodeConfig } from './config/AINodeConfig';
 import { LogicNodeConfig } from './config/LogicNodeConfig';
 import { TriggerNodeConfig } from './config/TriggerNodeConfig';
 import { OutputNodeConfig } from './config/OutputNodeConfig';
+import { EmailNodeConfig } from './config/EmailNodeConfig';
+import { SlackNodeConfig } from './config/SlackNodeConfig';
+import { DatabaseNodeConfig } from './config/DatabaseNodeConfig';
 
 export function PropertiesPanel() {
   const { selectedNodeId, nodes, updateNode, deleteNode, currentWorkflowId } = useFlowCoreStore();
@@ -171,8 +174,20 @@ export function PropertiesPanel() {
           <OutputNodeConfig node={selectedNode} onChange={updateNode} />
         )}
 
+        {nodeType === 'email' && (
+          <EmailNodeConfig node={selectedNode} onChange={updateNode} />
+        )}
+
+        {nodeType === 'slack' && (
+          <SlackNodeConfig node={selectedNode} onChange={updateNode} />
+        )}
+
+        {nodeType === 'database' && (
+          <DatabaseNodeConfig node={selectedNode} onChange={updateNode} />
+        )}
+
         {/* Unknown node type */}
-        {!['tool', 'ai', 'logic', 'trigger', 'output'].includes(nodeType) && (
+        {!['tool', 'ai', 'logic', 'trigger', 'output', 'email', 'slack', 'database'].includes(nodeType) && (
           <Box sx={{ textAlign: 'center', py: 4 }}>
             <Typography level='body-sm' sx={{ color: 'text.secondary' }}>
               No configuration available for this node type
