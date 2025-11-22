@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { Box, IconButton, Drawer, useMediaQuery, useTheme } from '@mui/joy';
+import { Box, IconButton, Drawer, useTheme } from '@mui/joy';
+import { useMediaQuery } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import SettingsIcon from '@mui/icons-material/Settings';
 
