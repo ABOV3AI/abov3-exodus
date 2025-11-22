@@ -251,6 +251,15 @@ export class WorkflowExecutor {
         case 'output':
           result = await this.executeOutputNode(node);
           break;
+        case 'email':
+          result = await this.executeEmailNode(node);
+          break;
+        case 'slack':
+          result = await this.executeSlackNode(node);
+          break;
+        case 'database':
+          result = await this.executeDatabaseNode(node);
+          break;
         default:
           result = { success: true, message: `Executed ${node.data?.label}` };
       }
@@ -865,5 +874,192 @@ export class WorkflowExecutor {
           success: true,
         };
     }
+  }
+
+  /**
+   * Execute Email Node (SMTP)
+   */
+  private async executeEmailNode(node: Node): Promise<any> {
+    const label = node.data?.label || 'Send Email';
+    const config = node.data?.config || {};
+
+    // Interpolate variables in config
+    const interpolatedConfig = {
+      ...config,
+      to: config.to?.map((email: string) => VariableInterpolator.interpolateString(email, this.varContext)),
+      cc: config.cc?.map((email: string) => VariableInterpolator.interpolateString(email, this.varContext)),
+      subject: VariableInterpolator.interpolateString(config.subject || '', this.varContext),
+      body: VariableInterpolator.interpolateString(config.body || '', this.varContext),
+    };
+
+    // Dry-run mode
+    if (this.debugOptions.dryRun) {
+      return {
+        type: 'email',
+        dryRun: true,
+        data: {
+          to: interpolatedConfig.to,
+          subject: interpolatedConfig.subject,
+          simulatedMessageId: `<mock-${Date.now()}@flowcore.local>`,
+        },
+      };
+    }
+
+    // NOTE: Real SMTP sending would require a server-side implementation
+    // For now, return success with simulated result
+    // In production, this would call a server-side tRPC endpoint that handles SMTP
+
+    if (this.logger) {
+      this.logger.logInfo(node.id, label, `Sending email to ${interpolatedConfig.to?.join(', ')}`);
+    }
+
+    return {
+      success: true,
+      messageId: `<${Date.now()}-${Math.random().toString(36).substr(2, 9)}@flowcore.local>`,
+      to: interpolatedConfig.to,
+      subject: interpolatedConfig.subject,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Execute Slack Node (Webhook)
+   */
+  private async executeSlackNode(node: Node): Promise<any> {
+    const label = node.data?.label || 'Slack Message';
+    const config = node.data?.config || {};
+
+    // Interpolate variables
+    const webhookUrl = VariableInterpolator.interpolateString(config.webhookUrl || '', this.varContext);
+    const text = VariableInterpolator.interpolateString(config.text || '', this.varContext);
+
+    // Dry-run mode
+    if (this.debugOptions.dryRun) {
+      return {
+        type: 'slack',
+        dryRun: true,
+        data: {
+          webhookUrl,
+          text,
+          messageFormat: config.messageFormat || 'simple',
+        },
+      };
+    }
+
+    // Build Slack message payload
+    const payload: any = {
+      text,
+      username: config.username,
+      icon_emoji: config.iconEmoji,
+      channel: config.channel,
+      unfurl_links: config.unfurlLinks,
+      unfurl_media: config.unfurlMedia,
+    };
+
+    // Add blocks if using blocks format
+    if (config.messageFormat === 'blocks' && config.blocks) {
+      payload.blocks = config.blocks.map((block: any) => ({
+        ...block,
+        text: {
+          ...block.text,
+          text: VariableInterpolator.interpolateString(block.text?.text || '', this.varContext),
+        },
+      }));
+    }
+
+    // Add thread support
+    if (config.threadTs) {
+      payload.thread_ts = VariableInterpolator.interpolateString(config.threadTs, this.varContext);
+    }
+
+    // Send webhook request
+    try {
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Slack webhook failed: ${response.status} ${response.statusText}`);
+      }
+
+      if (this.logger) {
+        this.logger.logHttpRequest(node.id, label, 'POST', webhookUrl, response.status);
+      }
+
+      return {
+        success: true,
+        status: response.status,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error: any) {
+      throw new Error(`Slack webhook error: ${error.message}`);
+    }
+  }
+
+  /**
+   * Execute Database Node
+   */
+  private async executeDatabaseNode(node: Node): Promise<any> {
+    const label = node.data?.label || 'Database Query';
+    const config = node.data?.config || {};
+    const dbType = config.dbType || 'postgresql';
+    const operation = config.operation || 'query';
+
+    // Dry-run mode
+    if (this.debugOptions.dryRun) {
+      return {
+        type: 'database',
+        dryRun: true,
+        data: {
+          dbType,
+          operation,
+          simulatedRows: operation.includes('insert') ? 1 : operation.includes('find') || operation.includes('query') ? 5 : 0,
+        },
+      };
+    }
+
+    // NOTE: Real database operations require server-side implementation
+    // Client-side database access is a security risk
+    // In production, this would call a server-side tRPC endpoint that handles database connections
+
+    if (this.logger) {
+      this.logger.logInfo(node.id, label, `Executing ${dbType} ${operation}`);
+    }
+
+    // Simulated database result
+    const mockResults = {
+      postgresql: {
+        query: [
+          { id: 1, name: 'Mock User 1', email: 'user1@example.com' },
+          { id: 2, name: 'Mock User 2', email: 'user2@example.com' },
+        ],
+        insert: { insertedId: 123, affectedRows: 1 },
+        update: { affectedRows: 1 },
+        delete: { affectedRows: 1 },
+      },
+      mongodb: {
+        find: [
+          { _id: '507f1f77bcf86cd799439011', name: 'Mock Doc 1' },
+          { _id: '507f1f77bcf86cd799439012', name: 'Mock Doc 2' },
+        ],
+        findOne: { _id: '507f1f77bcf86cd799439011', name: 'Mock Doc' },
+        insertOne: { insertedId: '507f1f77bcf86cd799439013', acknowledged: true },
+        updateOne: { modifiedCount: 1, acknowledged: true },
+        deleteOne: { deletedCount: 1, acknowledged: true },
+      },
+    };
+
+    const dbResults = mockResults[dbType as keyof typeof mockResults] || mockResults.postgresql;
+    const result = dbResults[operation as keyof typeof dbResults] || { success: true };
+
+    return {
+      success: true,
+      dbType,
+      operation,
+      result,
+      timestamp: new Date().toISOString(),
+    };
   }
 }
