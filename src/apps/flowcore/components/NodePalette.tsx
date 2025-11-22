@@ -113,10 +113,20 @@ export function NodePalette() {
       sx={{
         borderTop: '1px solid',
         borderColor: 'divider',
-        p: 2,
+        p: { xs: 1, sm: 2 },
         display: 'flex',
-        gap: 3,
+        gap: { xs: 2, sm: 3 },
         overflowX: 'auto',
+        overflowY: 'hidden',
+        minHeight: { xs: 120, sm: 'auto' },
+        maxHeight: { xs: 150, sm: 200 },
+        '&::-webkit-scrollbar': {
+          height: 8,
+        },
+        '&::-webkit-scrollbar-thumb': {
+          backgroundColor: 'neutral.outlinedBorder',
+          borderRadius: 4,
+        },
       }}
     >
       {!currentWorkflowId && (
@@ -130,10 +140,10 @@ export function NodePalette() {
         </Alert>
       )}
       {currentWorkflowId && nodeCategories.map((category) => (
-        <Box key={category.id} sx={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 200 }}>
+        <Box key={category.id} sx={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: { xs: 160, sm: 200 }, flexShrink: 0 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
             {category.icon}
-            <Typography level='title-sm'>{category.label}</Typography>
+            <Typography level='title-sm' sx={{ fontSize: { xs: 'xs', sm: 'sm' } }}>{category.label}</Typography>
           </Box>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
             {category.nodes.map((node) => (
@@ -147,6 +157,11 @@ export function NodePalette() {
                 sx={{
                   cursor: 'grab',
                   '&:active': { cursor: 'grabbing' },
+                  fontSize: { xs: 'xs', sm: 'sm' },
+                  minHeight: { xs: 28, sm: 32 },
+                  py: { xs: 0.5, sm: 1 },
+                  px: { xs: 1, sm: 1.5 },
+                  touchAction: 'none', // Better touch support
                 }}
               >
                 {node.label}

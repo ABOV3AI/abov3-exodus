@@ -86,7 +86,7 @@ export function WorkflowToolbar() {
   }
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 }, p: { xs: 1.5, sm: 2 }, borderBottom: '1px solid', borderColor: 'divider', flexWrap: { xs: 'wrap', md: 'nowrap' } }}>
       {/* Workflow Name */}
       {isEditingName ? (
         <Input
@@ -98,7 +98,8 @@ export function WorkflowToolbar() {
             if (e.key === 'Escape') setIsEditingName(false);
           }}
           autoFocus
-          sx={{ flex: 1, maxWidth: 400 }}
+          size="sm"
+          sx={{ flex: 1, maxWidth: 400, minWidth: { xs: 200, sm: 300 } }}
         />
       ) : (
         <Typography
@@ -117,18 +118,38 @@ export function WorkflowToolbar() {
         startDecorator={<PlayArrowRoundedIcon />}
         color='primary'
         onClick={handleRun}
+        size="sm"
+        sx={{ display: { xs: 'none', sm: 'flex' } }}
       >
         Run
       </Button>
+      <IconButton
+        color='primary'
+        onClick={handleRun}
+        size="sm"
+        sx={{ display: { xs: 'flex', sm: 'none' } }}
+      >
+        <PlayArrowRoundedIcon />
+      </IconButton>
 
       {/* Save Button */}
       <Button
         startDecorator={<SaveRoundedIcon />}
         variant='outlined'
         onClick={saveCurrentWorkflow}
+        size="sm"
+        sx={{ display: { xs: 'none', sm: 'flex' } }}
       >
         Save
       </Button>
+      <IconButton
+        variant='outlined'
+        onClick={saveCurrentWorkflow}
+        size="sm"
+        sx={{ display: { xs: 'flex', sm: 'none' } }}
+      >
+        <SaveRoundedIcon />
+      </IconButton>
 
       {/* More Menu */}
       <Dropdown>
