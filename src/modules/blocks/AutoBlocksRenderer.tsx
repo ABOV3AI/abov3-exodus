@@ -153,8 +153,9 @@ export function AutoBlocksRenderer(props: {
             const disableBecauseInProgress = bkInput.isPartial && props.optiAllowSubBlocksMemo === true;
             const disableBecauseTooShort = !bkInput.title && bkInput.lines <= 3;
             let disableEnhancedRender = disableBecauseInProgress || disableBecauseTooShort;
-            // Start collapsed if code is longer than 5 lines
-            let enhancedStartCollapsed = bkInput.lines > 5;
+            // Start collapsed if code is longer than 5 lines OR longer than 500 characters
+            const isLongCode = bkInput.lines > 5 || bkInput.code.length > 500;
+            let enhancedStartCollapsed = isLongCode;
 
             return (props.codeRenderVariant === 'enhanced' && !disableEnhancedRender) ? (
               <EnhancedRenderCode
