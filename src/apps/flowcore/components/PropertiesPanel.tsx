@@ -174,18 +174,16 @@ export function PropertiesPanel() {
           <OutputNodeConfig node={selectedNode} onChange={updateNode} />
         )}
 
-        {(nodeType === 'email' || nodeType === 'slack' || nodeType === 'discord') && (
-          <IntegrationNodeConfig
-            node={selectedNode}
-            onChange={(config) => updateNode(selectedNode.id, { data: { ...selectedNode.data, config } })}
-          />
+        {nodeType === 'email' && (
+          <EmailNodeConfig node={selectedNode} onChange={updateNode} />
+        )}
+
+        {(nodeType === 'slack' || nodeType === 'discord') && (
+          <SlackNodeConfig node={selectedNode} onChange={updateNode} />
         )}
 
         {nodeType === 'database' && (
-          <DatabaseNodeConfig
-            node={selectedNode}
-            onChange={(config) => updateNode(selectedNode.id, { data: { ...selectedNode.data, config } })}
-          />
+          <DatabaseNodeConfig node={selectedNode} onChange={updateNode} />
         )}
 
         {/* Unknown node type */}
