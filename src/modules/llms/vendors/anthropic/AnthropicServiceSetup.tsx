@@ -85,8 +85,8 @@ export function AnthropicServiceSetup(props: { serviceId: DModelsServiceId }) {
       const { url, verifier } = await generateAuthUrl();
       setOAuthVerifier(verifier);
       setOAuthDialogOpen(true);
-      // Open authorization URL in new window
-      window.open(url, '_blank', 'width=600,height=800');
+      // Open authorization URL using mobile-friendly method
+      openAuthorizationWindow(url);
     } catch (error: any) {
       setOAuthError(error.message || 'Failed to generate authorization URL');
     }

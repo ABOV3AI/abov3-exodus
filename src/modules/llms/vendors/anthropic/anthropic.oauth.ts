@@ -108,8 +108,24 @@ export async function refreshAccessToken(refreshToken: string): Promise<Anthropi
 
 
 /**
- * Open authorization URL in new browser window
+ * Detect if device is mobile
+ */
+function isMobileDevice(): boolean {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    (window.innerWidth <= 768);
+}
+
+/**
+ * Open authorization URL in new browser window or tab
+ * On mobile: Opens in new tab (better UX, avoids popup blockers)
+ * On desktop: Opens in popup window (traditional OAuth flow)
  */
 export function openAuthorizationWindow(url: string): void {
-  window.open(url, '_blank', 'width=600,height=800');
+  if (isMobileDevice()) {
+    // Mobile: Open in new tab (popup blockers often prevent popups on mobile)
+    window.open(url, '_blank');
+  } else {
+    // Desktop: Open in popup window
+    window.open(url, '_blank', 'width=600,height=800');
+  }
 }
