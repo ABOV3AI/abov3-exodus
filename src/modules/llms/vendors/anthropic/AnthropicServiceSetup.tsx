@@ -24,7 +24,7 @@ import { ApproximateCosts } from '../ApproximateCosts';
 import { useLlmUpdateModels } from '../../llm.client.hooks';
 import { useServiceSetup } from '../useServiceSetup';
 
-import { generateAuthUrl } from './anthropic.oauth';
+import { generateAuthUrl, openAuthorizationWindow } from './anthropic.oauth';
 import { isValidAnthropicApiKey, ModelVendorAnthropic } from './anthropic.vendor';
 
 
