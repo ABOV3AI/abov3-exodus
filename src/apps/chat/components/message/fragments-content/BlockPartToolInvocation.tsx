@@ -1,7 +1,9 @@
 import * as React from 'react';
 
 import type { ColorPaletteProp, SxProps, VariantProp } from '@mui/joy/styles/types';
-import { Sheet } from '@mui/joy';
+import { Box, IconButton, Sheet } from '@mui/joy';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 
 import { BlocksContainer } from '~/modules/blocks/BlocksContainers';
 import { useScaledTypographySx } from '~/modules/blocks/blocks.styles';
@@ -64,6 +66,36 @@ export function KeyValueGrid(props: {
 }
 
 
+function CollapsibleContent(props: { content: string; maxLines?: number }) {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+  const maxLines = props.maxLines || 3;
+
+  const lines = props.content.split('\n');
+  const shouldCollapse = lines.length > maxLines;
+  const displayContent = shouldCollapse && !isExpanded
+    ? lines.slice(0, maxLines).join('\n') + '\n...'
+    : props.content;
+
+  if (!shouldCollapse) {
+    return <div style={{ whiteSpace: 'pre-wrap' }}>{props.content}</div>;
+  }
+
+  return (
+    <Box sx={{ position: 'relative' }}>
+      <div style={{ whiteSpace: 'pre-wrap' }}>{displayContent}</div>
+      <IconButton
+        size="sm"
+        variant="plain"
+        onClick={() => setIsExpanded(!isExpanded)}
+        sx={{ mt: 0.5 }}
+      >
+        {isExpanded ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+        {isExpanded ? 'Show less' : `Show ${lines.length - maxLines} more lines`}
+      </IconButton>
+    </Box>
+  );
+}
+
 export function BlockPartToolInvocation(props: {
   toolInvocationPart: DMessageToolInvocationPart,
   contentScaling: ContentScaling,
@@ -75,9 +107,10 @@ export function BlockPartToolInvocation(props: {
   const kvData: KeyValueData = React.useMemo(() => {
     switch (part.invocation.type) {
       case 'function_call':
+        const argsStr = part.invocation.args || 'None';
         return [
           { label: 'Name', value: <strong>{part.invocation.name}</strong> },
-          { label: 'Args', value: part.invocation.args || 'None', asCode: true },
+          { label: 'Args', value: <CollapsibleContent content={argsStr} maxLines={3} />, asCode: false },
           { label: 'Id', value: part.id },
         ];
       case 'code_execution':
@@ -86,7 +119,7 @@ export function BlockPartToolInvocation(props: {
           { label: 'Author', value: part.invocation.author },
           {
             label: 'Code',
-            value: <div style={{ whiteSpace: 'pre-wrap' }}>{part.invocation.code.trim()}</div>,
+            value: <CollapsibleContent content={part.invocation.code.trim()} maxLines={5} />,
           },
           { label: 'Id', value: part.id },
         ];
