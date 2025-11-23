@@ -9,7 +9,8 @@ import { AINodeConfig } from './config/AINodeConfig';
 import { LogicNodeConfig } from './config/LogicNodeConfig';
 import { TriggerNodeConfig } from './config/TriggerNodeConfig';
 import { OutputNodeConfig } from './config/OutputNodeConfig';
-import { IntegrationNodeConfig } from './config/IntegrationNodeConfig';
+import { EmailNodeConfig } from './config/EmailNodeConfig';
+import { SlackNodeConfig } from './config/SlackNodeConfig';
 import { DatabaseNodeConfig } from './config/DatabaseNodeConfig';
 
 export function PropertiesPanel() {

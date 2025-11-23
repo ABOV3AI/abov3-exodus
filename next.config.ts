@@ -45,11 +45,28 @@ let nextConfig: NextConfig = {
 
   // [puppeteer] https://github.com/puppeteer/puppeteer/issues/11052
   // NOTE: we may not be needing this anymore, as we use '@cloudflare/puppeteer'
-  serverExternalPackages: ['puppeteer-core'],
+  serverExternalPackages: ['puppeteer-core', 'mongodb'],
 
   webpack: (config: any, { isServer }: { isServer: boolean }) => {
     // @mui/joy: anything material gets redirected to Joy
     config.resolve.alias['@mui/material'] = '@mui/joy';
+
+    // [mongodb] Fix: Prevent client-side bundling of server-only modules
+    // MongoDB's client-side encryption tries to use Node.js APIs in browser context
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        'child_process': false,
+        'fs': false,
+        'path': false,
+        'crypto': false,
+        'stream': false,
+        'util': false,
+        'net': false,
+        'tls': false,
+        'os': false,
+      };
+    }
 
     // @dqbd/tiktoken: enable asynchronous WebAssembly
     config.experiments = {
