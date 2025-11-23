@@ -134,21 +134,24 @@ export function aixToGeminiGenerateContent(model: AixAPI_Model, _chatGenerate: A
 
   // --- Tools ---
 
+  // Check if model supports function calling (some models like image generation don't)
+  const modelSupportsFunctionCalling = model.interfaces.includes(LLM_IF_OAI_Fn);
+
   // Allow/deny auto-adding hosted tools when custom tools are present
   const hasCustomTools = chatGenerate.tools?.some(t => t.type === 'function_call');
   const hasRestrictivePolicy = chatGenerate.toolsPolicy?.type === 'any' || chatGenerate.toolsPolicy?.type === 'function_call';
   const skipHostedToolsDueToCustomTools = hasCustomTools && hasRestrictivePolicy;
 
-  // Custom tools
-  if (chatGenerate.tools) {
+  // Custom tools - only if model supports function calling
+  if (chatGenerate.tools && modelSupportsFunctionCalling) {
     payload.tools = _toGeminiTools(chatGenerate.tools);
     if (chatGenerate.toolsPolicy)
       payload.toolConfig = _toGeminiToolConfig(chatGenerate.toolsPolicy);
   }
 
-  // Hosted tools
+  // Hosted tools - only if model supports function calling
   // [Gemini, 2025-10-13] Google Search Grounding: add tool when enabled
-  if (model.vndGeminiGoogleSearch && !skipHostedToolsDueToCustomTools) {
+  if (model.vndGeminiGoogleSearch && !skipHostedToolsDueToCustomTools && modelSupportsFunctionCalling) {
     // Initialize tools array if not present
     if (!payload.tools)
       payload.tools = [];
