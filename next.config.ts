@@ -45,7 +45,7 @@ let nextConfig: NextConfig = {
 
   // [puppeteer] https://github.com/puppeteer/puppeteer/issues/11052
   // NOTE: we may not be needing this anymore, as we use '@cloudflare/puppeteer'
-  serverExternalPackages: ['puppeteer-core', 'mongodb'],
+  serverExternalPackages: ['puppeteer-core', 'mongodb', 'nodemailer', 'mysql2', 'pg', 'sqlite3'],
 
   webpack: (config: any, { isServer }: { isServer: boolean }) => {
     // @mui/joy: anything material gets redirected to Joy
