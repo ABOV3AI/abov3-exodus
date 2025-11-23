@@ -39,7 +39,7 @@ const ExecutionSchema = z.object({
   endTime: z.date().optional(),
   status: z.enum(['running', 'completed', 'failed', 'cancelled']),
   error: z.string().optional(),
-  results: z.record(z.any()),
+  results: z.record(z.string(), z.any()),
   logs: z.any().optional(),
   metrics: z.object({
     duration: z.number(),

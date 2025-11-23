@@ -4,7 +4,7 @@
  */
 
 import * as React from 'react';
-import { Box, FormControl, FormLabel, Input, Textarea, Select, Option, Typography, Chip, IconButton } from '@mui/joy';
+import { Box, FormControl, FormLabel, Input, Textarea, Select, Option, Typography, Chip, IconButton, Button } from '@mui/joy';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import type { Node } from 'reactflow';
@@ -167,9 +167,9 @@ export function EmailNodeConfig({ node, onChange }: EmailNodeConfigProps) {
               </IconButton>
             </Box>
           ))}
-          <IconButton size="sm" variant="outlined" onClick={addRecipient} startDecorator={<AddIcon />}>
+          <Button size="sm" variant="outlined" onClick={addRecipient} startDecorator={<AddIcon />}>
             Add Recipient
-          </IconButton>
+          </Button>
         </FormControl>
 
         {/* CC Recipients */}
@@ -188,9 +188,9 @@ export function EmailNodeConfig({ node, onChange }: EmailNodeConfigProps) {
               </IconButton>
             </Box>
           ))}
-          <IconButton size="sm" variant="outlined" onClick={addCC} startDecorator={<AddIcon />}>
+          <Button size="sm" variant="outlined" onClick={addCC} startDecorator={<AddIcon />}>
             Add CC
-          </IconButton>
+          </Button>
         </FormControl>
 
         <FormControl sx={{ mb: 1.5 }}>
@@ -254,9 +254,9 @@ export function EmailNodeConfig({ node, onChange }: EmailNodeConfigProps) {
           </Box>
         ))}
 
-        <IconButton size="sm" variant="outlined" onClick={addAttachment} startDecorator={<AddIcon />}>
+        <Button size="sm" variant="outlined" onClick={addAttachment} startDecorator={<AddIcon />}>
           Add Attachment
-        </IconButton>
+        </Button>
       </Box>
 
       {/* Variable Help */}

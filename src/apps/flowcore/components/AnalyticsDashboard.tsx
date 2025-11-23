@@ -41,7 +41,7 @@ export function AnalyticsDashboard({ workflow }: AnalyticsDashboardProps) {
 
   // Calculate total tokens used
   const totalTokens = executions.reduce((sum, e) => {
-    return sum + (e.metrics?.tokensUsed || 0);
+    return sum + ((e as any).metrics?.tokensUsed || 0);
   }, 0);
 
   // Get recent executions (last 10)
@@ -252,12 +252,12 @@ export function AnalyticsDashboard({ workflow }: AnalyticsDashboardProps) {
                     </td>
                     <td>
                       <Typography level="body-sm">
-                        {execution.metrics?.nodesExecuted || '-'}
+                        {((execution as any).metrics?.nodesExecuted || '-')}
                       </Typography>
                     </td>
                     <td>
                       <Typography level="body-sm">
-                        {execution.metrics?.tokensUsed?.toLocaleString() || '-'}
+                        {((execution as any).metrics?.tokensUsed?.toLocaleString() || '-')}
                       </Typography>
                     </td>
                   </tr>

@@ -12,6 +12,9 @@ interface ToolNodeConfigProps {
 export function ToolNodeConfig({ node, onChange }: ToolNodeConfigProps) {
   const config = node.data?.config || {};
   const label = node.data?.label || '';
+  const [headers, setHeaders] = React.useState<Array<{ key: string; value: string }>>(
+    config.headers || [{ key: '', value: '' }]
+  );
 
   const updateConfig = (key: string, value: any) => {
     onChange(node.id, {
@@ -27,9 +30,6 @@ export function ToolNodeConfig({ node, onChange }: ToolNodeConfigProps) {
 
   // HTTP Request configuration
   if (label === 'HTTP Request') {
-    const [headers, setHeaders] = React.useState<Array<{ key: string; value: string }>>(
-      config.headers || [{ key: '', value: '' }]
-    );
 
     const updateHeaders = (newHeaders: Array<{ key: string; value: string }>) => {
       setHeaders(newHeaders);

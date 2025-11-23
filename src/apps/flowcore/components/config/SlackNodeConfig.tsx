@@ -4,7 +4,7 @@
  */
 
 import * as React from 'react';
-import { Box, FormControl, FormLabel, Input, Textarea, Select, Option, Typography, Chip, IconButton, Alert } from '@mui/joy';
+import { Box, FormControl, FormLabel, Input, Textarea, Select, Option, Typography, Chip, IconButton, Button, Alert } from '@mui/joy';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import InfoIcon from '@mui/icons-material/Info';
@@ -168,9 +168,9 @@ export function SlackNodeConfig({ node, onChange }: SlackNodeConfigProps) {
             </Box>
           ))}
 
-          <IconButton size="sm" variant="outlined" onClick={addBlock} startDecorator={<AddIcon />}>
+          <Button size="sm" variant="outlined" onClick={addBlock} startDecorator={<AddIcon />}>
             Add Block
-          </IconButton>
+          </Button>
 
           <FormControl sx={{ mt: 2 }}>
             <FormLabel>Fallback Text</FormLabel>
@@ -180,7 +180,7 @@ export function SlackNodeConfig({ node, onChange }: SlackNodeConfigProps) {
               onChange={(e) => handleConfigChange('text', e.target.value)}
             />
             <Typography level="body-xs" sx={{ mt: 0.5, color: 'text.tertiary' }}>
-              Used for notifications when blocks can't be displayed
+              Used for notifications when blocks can&apos;t be displayed
             </Typography>
           </FormControl>
         </Box>

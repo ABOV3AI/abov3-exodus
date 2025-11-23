@@ -20,6 +20,7 @@ const CRON_PRESETS = {
 export function TriggerNodeConfig({ node, onChange }: TriggerNodeConfigProps) {
   const config = node.data?.config || {};
   const label = node.data?.label || '';
+  const [usePreset, setUsePreset] = React.useState(true);
 
   const updateConfig = (key: string, value: any) => {
     onChange(node.id, {
@@ -54,7 +55,7 @@ export function TriggerNodeConfig({ node, onChange }: TriggerNodeConfigProps) {
 
         <Box sx={{ bgcolor: 'background.level1', p: 2, borderRadius: 'sm' }}>
           <Typography level='body-sm'>
-            <strong>Manual Trigger:</strong> Start workflow by clicking "Run" button. You can provide input data each time you run.
+            <strong>Manual Trigger:</strong> Start workflow by clicking &quot;Run&quot; button. You can provide input data each time you run.
           </Typography>
         </Box>
       </Box>
@@ -63,8 +64,6 @@ export function TriggerNodeConfig({ node, onChange }: TriggerNodeConfigProps) {
 
   // Schedule Trigger configuration
   if (label === 'Schedule Trigger') {
-    const [usePreset, setUsePreset] = React.useState(true);
-
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         <Typography level='title-md'>Schedule Trigger Configuration</Typography>
@@ -198,7 +197,7 @@ export function TriggerNodeConfig({ node, onChange }: TriggerNodeConfigProps) {
             type="password"
           />
           <Typography level='body-xs' sx={{ mt: 0.5, color: 'text.tertiary' }}>
-            Optional: Require "Authorization: Bearer {'<token>'}" header
+            {'Optional: Require "Authorization: Bearer <token>" header'}
           </Typography>
         </FormControl>
 
@@ -220,12 +219,9 @@ export function TriggerNodeConfig({ node, onChange }: TriggerNodeConfigProps) {
             Example cURL:
           </Typography>
           <Typography level='body-xs' sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
-            curl -X POST {webhookUrl} \<br/>
-            &nbsp;&nbsp;-H "Content-Type: application/json" \<br/>
-            {config.authToken && (
-              <>-H "Authorization: Bearer {config.authToken}" \<br/></>
-            )}
-            &nbsp;&nbsp;-d '{`{"event": "test"}`}'
+            {`curl -X POST ${webhookUrl} \\\n  -H "Content-Type: application/json" \\\n`}
+            {config.authToken && `-H "Authorization: Bearer ${config.authToken}" \\\n`}
+            {`  -d '{"event": "test"}'`}
           </Typography>
         </Box>
       </Box>

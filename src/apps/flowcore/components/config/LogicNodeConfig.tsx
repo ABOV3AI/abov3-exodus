@@ -98,10 +98,10 @@ export function LogicNodeConfig({ node, onChange }: LogicNodeConfigProps) {
             <strong>Note:</strong> Connect outgoing edges and label them:
           </Typography>
           <Typography level='body-xs' sx={{ color: 'text.secondary' }}>
-            • Label one edge as "true" or "yes" for the true branch
+            • Label one edge as &quot;true&quot; or &quot;yes&quot; for the true branch
           </Typography>
           <Typography level='body-xs' sx={{ color: 'text.secondary' }}>
-            • Label another as "false" or "no" for the false branch
+            • Label another as &quot;false&quot; or &quot;no&quot; for the false branch
           </Typography>
         </Box>
       </Box>

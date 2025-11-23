@@ -4,7 +4,7 @@
  */
 
 import * as React from 'react';
-import { Box, FormControl, FormLabel, Input, Textarea, Select, Option, Typography, Tabs, TabList, Tab, TabPanel, IconButton, Alert } from '@mui/joy';
+import { Box, FormControl, FormLabel, Input, Textarea, Select, Option, Typography, Tabs, TabList, Tab, TabPanel, IconButton, Button, Alert } from '@mui/joy';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import WarningIcon from '@mui/icons-material/Warning';
@@ -242,9 +242,9 @@ export function DatabaseNodeConfig({ node, onChange }: DatabaseNodeConfigProps) 
               </Box>
             ))}
 
-            <IconButton size="sm" variant="outlined" onClick={addParameter} startDecorator={<AddIcon />}>
+            <Button size="sm" variant="outlined" onClick={addParameter} startDecorator={<AddIcon />}>
               Add Parameter
-            </IconButton>
+            </Button>
           </Box>
         </Box>
       )}

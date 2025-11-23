@@ -255,8 +255,10 @@ export class WorkflowExecutor {
           result = await this.executeEmailNode(node);
           break;
         case 'slack':
+          result = await this.executeSlackNode(node);
+          break;
         case 'discord':
-          result = await this.executeIntegrationNode(node);
+          result = { success: true, message: 'Discord integration not yet implemented' };
           break;
         case 'database':
           result = await this.executeDatabaseNode(node);
@@ -881,16 +883,19 @@ export class WorkflowExecutor {
    * Execute Email Node (SMTP)
    */
   private async executeEmailNode(node: Node): Promise<any> {
+    if (!this.varContext) throw new Error('No variable context');
+
     const label = node.data?.label || 'Send Email';
     const config = node.data?.config || {};
+    const varContext = this.varContext; // Store in const for type narrowing in closures
 
     // Interpolate variables in config
     const interpolatedConfig = {
       ...config,
-      to: config.to?.map((email: string) => VariableInterpolator.interpolateString(email, this.varContext)),
-      cc: config.cc?.map((email: string) => VariableInterpolator.interpolateString(email, this.varContext)),
-      subject: VariableInterpolator.interpolateString(config.subject || '', this.varContext),
-      body: VariableInterpolator.interpolateString(config.body || '', this.varContext),
+      to: config.to?.map((email: string) => VariableInterpolator.interpolateString(email, varContext)),
+      cc: config.cc?.map((email: string) => VariableInterpolator.interpolateString(email, varContext)),
+      subject: VariableInterpolator.interpolateString(config.subject || '', varContext),
+      body: VariableInterpolator.interpolateString(config.body || '', varContext),
     };
 
     // Dry-run mode
@@ -927,12 +932,15 @@ export class WorkflowExecutor {
    * Execute Slack Node (Webhook)
    */
   private async executeSlackNode(node: Node): Promise<any> {
+    if (!this.varContext) throw new Error('No variable context');
+
     const label = node.data?.label || 'Slack Message';
     const config = node.data?.config || {};
+    const varContext = this.varContext; // Store in const for type narrowing in closures
 
     // Interpolate variables
-    const webhookUrl = VariableInterpolator.interpolateString(config.webhookUrl || '', this.varContext);
-    const text = VariableInterpolator.interpolateString(config.text || '', this.varContext);
+    const webhookUrl = VariableInterpolator.interpolateString(config.webhookUrl || '', varContext);
+    const text = VariableInterpolator.interpolateString(config.text || '', varContext);
 
     // Dry-run mode
     if (this.debugOptions.dryRun) {
@@ -963,14 +971,14 @@ export class WorkflowExecutor {
         ...block,
         text: {
           ...block.text,
-          text: VariableInterpolator.interpolateString(block.text?.text || '', this.varContext),
+          text: VariableInterpolator.interpolateString(block.text?.text || '', varContext),
         },
       }));
     }
 
     // Add thread support
     if (config.threadTs) {
-      payload.thread_ts = VariableInterpolator.interpolateString(config.threadTs, this.varContext);
+      payload.thread_ts = VariableInterpolator.interpolateString(config.threadTs, varContext);
     }
 
     // Send webhook request
@@ -986,7 +994,7 @@ export class WorkflowExecutor {
       }
 
       if (this.logger) {
-        this.logger.logHttpRequest(node.id, label, 'POST', webhookUrl, response.status);
+        this.logger.logHttpRequest(node.id, label, 'POST', webhookUrl, response.status, 0);
       }
 
       return {

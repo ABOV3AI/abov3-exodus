@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { Box, IconButton, Drawer, useTheme } from '@mui/joy';
-import { useMediaQuery } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import SettingsIcon from '@mui/icons-material/Settings';
 
@@ -12,7 +11,17 @@ import { PropertiesPanel } from './components/PropertiesPanel';
 
 export function AppFlowCore() {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  // Use window.matchMedia for responsive design (Joy UI compatible)
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const mediaQuery = window.matchMedia(`(max-width: ${theme.breakpoints.values.md}px)`);
+    setIsMobile(mediaQuery.matches);
+
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, [theme.breakpoints.values.md]);
   const [workflowListOpen, setWorkflowListOpen] = React.useState(!isMobile);
   const [propertiesPanelOpen, setPropertiesPanelOpen] = React.useState(!isMobile);
 
