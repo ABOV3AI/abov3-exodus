@@ -1,6 +1,5 @@
 import type { AixAPI_Model, AixAPIChatGenerate_Request, AixMessages_ChatMessage, AixParts_DocPart, AixTools_ToolDefinition, AixTools_ToolsPolicy } from '../../../api/aix.wiretypes';
 import { GeminiWire_API_Generate_Content, GeminiWire_ContentParts, GeminiWire_Messages, GeminiWire_Safety, GeminiWire_ToolDeclarations } from '../../wiretypes/gemini.wiretypes';
-import { LLM_IF_OAI_Fn } from '~/common/stores/llms/llms.types';
 
 import { aixSpillSystemToUser, approxDocPart_To_String, approxInReferenceTo_To_XMLString } from './adapters.common';
 import { OPS } from 'pdfjs-dist';
@@ -135,7 +134,9 @@ export function aixToGeminiGenerateContent(model: AixAPI_Model, _chatGenerate: A
   // --- Tools ---
 
   // Check if model supports function calling (some models like image generation don't)
-  const modelSupportsFunctionCalling = model.interfaces.includes(LLM_IF_OAI_Fn);
+  // Image generation models have 'image-generation' in their ID and don't support function calling
+  const isImageGenerationModel = model.id.includes('image-generation');
+  const modelSupportsFunctionCalling = !isImageGenerationModel;
 
   // Allow/deny auto-adding hosted tools when custom tools are present
   const hasCustomTools = chatGenerate.tools?.some(t => t.type === 'function_call');
