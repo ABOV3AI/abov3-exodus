@@ -19,8 +19,8 @@ export async function streamChatWithVercelSDK(
     throw new Error('OAuth access token required');
   }
 
-  // EXACT copy from Genesis CodeForger - creates ABOV3 provider with custom fetch
-  const abov3 = createAnthropic({
+  // EXACT copy from Genesis CodeForger - creates Anthropic provider with custom fetch
+  const anthropic = createAnthropic({
     apiKey: "", // Empty API key like Genesis
     headers: {
       "anthropic-beta": "oauth-2025-04-20,claude-code-20250219,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14",
@@ -44,7 +44,7 @@ export async function streamChatWithVercelSDK(
   });
 
   // Use streamText like Genesis does
-  const model = abov3(modelId);
+  const model = anthropic(modelId);
 
   // Convert system prompt to string if it's an array (Big-AGI sends it as an array)
   let systemPrompt = requestBody.system;
@@ -119,7 +119,7 @@ export async function generateChatWithVercelSDK(
     throw new Error('OAuth access token required');
   }
 
-  const abov3 = createAnthropic({
+  const anthropic = createAnthropic({
     apiKey: "",
     headers: {
       "anthropic-beta": "oauth-2025-04-20,claude-code-20250219,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14",
@@ -140,7 +140,7 @@ export async function generateChatWithVercelSDK(
     },
   });
 
-  const model = abov3(modelId);
+  const model = anthropic(modelId);
 
   // Convert system prompt to string if it's an array
   let systemPrompt = requestBody.system;

@@ -58,7 +58,11 @@ export async function* chatGenerateContentImpl(
 
   // Intake derived state
   const intakeAbortSignal = ctx.reqSignal;
-  const { access, model, chatGenerate, streaming: aixStreaming, connectionOptions } = input;
+  let { access, model, chatGenerate, streaming: aixStreaming, connectionOptions } = input;
+
+  // ABOV3 now uses its own adapter with persona support
+  // Tools are stripped in the adapter when OAuth is used
+
   const accessDialect = access.dialect;
   const prettyDialect = serverCapitalizeFirstLetter(accessDialect);
 
@@ -107,6 +111,7 @@ export async function* chatGenerateContentImpl(
     // Apply OAuth interceptor for ABOV3 and Anthropic requests
     let finalHeaders = dispatch.request.headers;
 
+    // ABOV3 OAuth/API key interceptor
     if (access.dialect === 'abov3') {
       const { abov3OAuthInterceptor } = await import('~/modules/llms/server/abov3/abov3.router');
       const interceptResult = await abov3OAuthInterceptor(
@@ -118,6 +123,7 @@ export async function* chatGenerateContentImpl(
       finalHeaders = interceptResult.headers;
     }
 
+    // Anthropic OAuth/API key interceptor
     if (access.dialect === 'anthropic') {
       const { anthropicOAuthInterceptor } = await import('~/modules/llms/server/anthropic/anthropic.router');
       const interceptResult = await anthropicOAuthInterceptor(
@@ -128,6 +134,33 @@ export async function* chatGenerateContentImpl(
       );
       finalHeaders = interceptResult.headers;
     }
+
+    // DEBUG: Log final request details before sending to API
+    const bodyObj = dispatch.request.body as any;
+    const fullBodyJson = JSON.stringify(dispatch.request.body);
+    const wasABOV3 = (input.access as any).dialect === 'abov3';
+
+    // Log messages array details
+    const messagesInfo = bodyObj?.messages?.map((m: any, i: number) => ({
+      index: i,
+      role: m.role,
+      contentLength: JSON.stringify(m.content).length,
+      contentPreview: typeof m.content === 'string'
+        ? m.content.substring(0, 100)
+        : JSON.stringify(m.content).substring(0, 100),
+    }));
+
+    console.log(`[AIX Router] ${access.dialect.toUpperCase()} - Final request details:`, {
+      dialect: access.dialect,
+      url: dispatch.request.url,
+      method: 'POST',
+      model: bodyObj?.model,
+      maxTokens: bodyObj?.max_tokens,
+      bodyLength: fullBodyJson.length,
+      wasABOV3,
+      messageCount: bodyObj?.messages?.length || 0,
+      messages: messagesInfo,
+    });
 
     // [DEV] Debugging the request without requiring a server restart
     if (echoDispatchRequest) {

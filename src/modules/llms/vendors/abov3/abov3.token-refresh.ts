@@ -73,7 +73,7 @@ export async function ensureABOV3OAuthFresh(throwOnFailure: boolean = false): Pr
       // Only throw if caller wants to handle the error (e.g., from chat-persona)
       if (throwOnFailure) {
         throw new Error(
-          'Your ABOV3 session has expired. Please login again in Settings → Models → ABOV3.'
+          'Your ABOV3 Unlimited session has expired. Please login again in Settings → Models → ABOV3.'
         );
       }
     } finally {

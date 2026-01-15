@@ -39,21 +39,25 @@ export function createChatGenerateDispatch(access: AixAPI_Access, model: AixAPI_
 } {
 
   switch (access.dialect) {
-    case 'abov3':
-      // Check if OAuth is being used (thinking is not supported with OAuth)
-      const isABOV3OAuth = !!(access as any).oauthAccessToken && !!(access as any).oauthRefreshToken;
+    case 'abov3': {
+      const enablePersonas = (access as any).enableABOV3Personas ?? false;
+      const enableProtection = (access as any).enableProprietaryProtection ?? false;
+      const isOAuth = !!(access as any).oauthAccessToken && !!(access as any).oauthRefreshToken;
+
       return {
         request: {
           ...abov3Access(access, model.id, '/v1/messages'),
-          body: aixToABOV3MessageCreate(model, chatGenerate, streaming, isABOV3OAuth),
+          body: aixToABOV3MessageCreate(model, chatGenerate, streaming, isOAuth, enablePersonas, enableProtection),
         },
         demuxerFormat: streaming ? 'fast-sse' : null,
         chatGenerateParse: streaming ? createABOV3MessageParser() : createABOV3MessageParserNS(),
       };
+    }
 
-    case 'anthropic':
+    case 'anthropic': {
       // Check if OAuth is being used (thinking is not supported with OAuth)
       const isOAuth = !!(access as any).oauthAccessToken && !!(access as any).oauthRefreshToken;
+
       return {
         request: {
           ...anthropicAccess(access, model.id, '/v1/messages'),
@@ -62,6 +66,7 @@ export function createChatGenerateDispatch(access: AixAPI_Access, model: AixAPI_
         demuxerFormat: streaming ? 'fast-sse' : null,
         chatGenerateParse: streaming ? createAnthropicMessageParser() : createAnthropicMessageParserNS(),
       };
+    }
 
     case 'gemini':
       /**

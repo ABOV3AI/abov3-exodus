@@ -246,80 +246,140 @@ export const useModelsStore = create<LlmsStore>()(persist(
     setAnthropicOAuth: (tokens: { accessToken: string; refreshToken: string; expiresAt: number }) =>
       set(state => {
         const firstAnthropicService = state.sources.find(s => s.vId === 'anthropic');
+        const firstABOV3Service = state.sources.find(s => s.vId === 'abov3');
         return !firstAnthropicService ? state : {
-          sources: state.sources.map((s: DModelsService): DModelsService =>
-            s.id === firstAnthropicService.id
-              ? {
-                  ...s,
-                  setup: {
-                    ...s.setup,
-                    oauthAccessToken: tokens.accessToken,
-                    oauthRefreshToken: tokens.refreshToken,
-                    oauthExpiresAt: tokens.expiresAt,
-                  },
-                }
-              : s,
-          ),
+          sources: state.sources.map((s: DModelsService): DModelsService => {
+            // Set OAuth for Anthropic
+            if (s.id === firstAnthropicService.id) {
+              return {
+                ...s,
+                setup: {
+                  ...s.setup,
+                  oauthAccessToken: tokens.accessToken,
+                  oauthRefreshToken: tokens.refreshToken,
+                  oauthExpiresAt: tokens.expiresAt,
+                },
+              };
+            }
+            // ALSO set OAuth for ABOV3 (shared tokens since same OAuth client)
+            if (firstABOV3Service && s.id === firstABOV3Service.id) {
+              return {
+                ...s,
+                setup: {
+                  ...s.setup,
+                  oauthAccessToken: tokens.accessToken,
+                  oauthRefreshToken: tokens.refreshToken,
+                  oauthExpiresAt: tokens.expiresAt,
+                },
+              };
+            }
+            return s;
+          }),
         };
       }),
 
     setABOV3OAuth: (tokens) =>
       set(state => {
         const firstABOV3Service = state.sources.find(s => s.vId === 'abov3');
+        const firstAnthropicService = state.sources.find(s => s.vId === 'anthropic');
         return !firstABOV3Service ? state : {
-          sources: state.sources.map((s: DModelsService): DModelsService =>
-            s.id === firstABOV3Service.id
-              ? {
-                  ...s,
-                  setup: {
-                    ...s.setup,
-                    oauthAccessToken: tokens.accessToken,
-                    oauthRefreshToken: tokens.refreshToken,
-                    oauthExpiresAt: tokens.expiresAt,
-                  },
-                }
-              : s,
-          ),
+          sources: state.sources.map((s: DModelsService): DModelsService => {
+            // Set OAuth for ABOV3
+            if (s.id === firstABOV3Service.id) {
+              return {
+                ...s,
+                setup: {
+                  ...s.setup,
+                  oauthAccessToken: tokens.accessToken,
+                  oauthRefreshToken: tokens.refreshToken,
+                  oauthExpiresAt: tokens.expiresAt,
+                },
+              };
+            }
+            // ALSO set OAuth for Anthropic (shared tokens since same OAuth client)
+            if (firstAnthropicService && s.id === firstAnthropicService.id) {
+              return {
+                ...s,
+                setup: {
+                  ...s.setup,
+                  oauthAccessToken: tokens.accessToken,
+                  oauthRefreshToken: tokens.refreshToken,
+                  oauthExpiresAt: tokens.expiresAt,
+                },
+              };
+            }
+            return s;
+          }),
         };
       }),
 
     clearAnthropicOAuth: () =>
       set(state => {
         const firstAnthropicService = state.sources.find(s => s.vId === 'anthropic');
+        const firstABOV3Service = state.sources.find(s => s.vId === 'abov3');
         return !firstAnthropicService ? state : {
-          sources: state.sources.map((s: DModelsService): DModelsService =>
-            s.id === firstAnthropicService.id
-              ? {
-                  ...s,
-                  setup: {
-                    ...s.setup,
-                    oauthAccessToken: null,
-                    oauthRefreshToken: null,
-                    oauthExpiresAt: null,
-                  },
-                }
-              : s,
-          ),
+          sources: state.sources.map((s: DModelsService): DModelsService => {
+            // Clear OAuth for Anthropic
+            if (s.id === firstAnthropicService.id) {
+              return {
+                ...s,
+                setup: {
+                  ...s.setup,
+                  oauthAccessToken: null,
+                  oauthRefreshToken: null,
+                  oauthExpiresAt: null,
+                },
+              };
+            }
+            // ALSO clear OAuth for ABOV3 (shared tokens)
+            if (firstABOV3Service && s.id === firstABOV3Service.id) {
+              return {
+                ...s,
+                setup: {
+                  ...s.setup,
+                  oauthAccessToken: null,
+                  oauthRefreshToken: null,
+                  oauthExpiresAt: null,
+                },
+              };
+            }
+            return s;
+          }),
         };
       }),
 
     clearABOV3OAuth: () =>
       set(state => {
         const firstABOV3Service = state.sources.find(s => s.vId === 'abov3');
+        const firstAnthropicService = state.sources.find(s => s.vId === 'anthropic');
         return !firstABOV3Service ? state : {
-          sources: state.sources.map((s: DModelsService): DModelsService =>
-            s.id === firstABOV3Service.id
-              ? {
-                  ...s,
-                  setup: {
-                    ...s.setup,
-                    oauthAccessToken: null,
-                    oauthRefreshToken: null,
-                    oauthExpiresAt: null,
-                  },
-                }
-              : s,
-          ),
+          sources: state.sources.map((s: DModelsService): DModelsService => {
+            // Clear OAuth for ABOV3
+            if (s.id === firstABOV3Service.id) {
+              return {
+                ...s,
+                setup: {
+                  ...s.setup,
+                  oauthAccessToken: null,
+                  oauthRefreshToken: null,
+                  oauthExpiresAt: null,
+                },
+              };
+            }
+            // ALSO clear OAuth for Anthropic (shared tokens)
+            if (firstAnthropicService && s.id === firstAnthropicService.id) {
+              return {
+                ...s,
+                setup: {
+                  ...s.setup,
+                  oauthAccessToken: null,
+                  oauthRefreshToken: null,
+                  oauthExpiresAt: null,
+                },
+              };
+            }
+            return s;
+          }),
         };
       }),
 

@@ -2,8 +2,8 @@ import * as z from 'zod/v4';
 
 
 /**
- * See the latest ABOV3 Typescript definitions on:
- * https://github.com/abov3/abov3-sdk-typescript/blob/main/src/resources/messages.ts
+ * See the latest Anthropic Typescript definitions on:
+ * https://github.com/anthropics/anthropic-sdk-typescript/blob/main/src/resources/messages.ts
  *
  * ## Updates
  *

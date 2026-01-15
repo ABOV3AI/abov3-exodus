@@ -283,13 +283,14 @@ export function aixToAnthropicMessageCreate(model: AixAPI_Model, _chatGenerate: 
   // }
 
   // Construct the request payload
+  // CRITICAL: OAuth credentials cannot use tools - Anthropic blocks requests with tools for Claude Code OAuth
   const payload: TRequest = {
     max_tokens: model.maxTokens !== undefined ? model.maxTokens : 8192,
     model: model.id,
     system: systemMessage,
     messages: chatMessages,
-    tools: chatGenerate.tools && _toAnthropicTools(chatGenerate.tools),
-    tool_choice: chatGenerate.toolsPolicy && _toAnthropicToolChoice(chatGenerate.toolsPolicy),
+    tools: !isOAuth && chatGenerate.tools ? _toAnthropicTools(chatGenerate.tools) : undefined,
+    tool_choice: !isOAuth && chatGenerate.toolsPolicy ? _toAnthropicToolChoice(chatGenerate.toolsPolicy) : undefined,
     // metadata: { user_id: ... }
     // stop_sequences: undefined,
     stream: streaming,

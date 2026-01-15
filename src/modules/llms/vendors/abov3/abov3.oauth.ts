@@ -1,12 +1,11 @@
 import { generatePKCE } from '@openauthjs/openauth/pkce';
 
 
-// Using same OAuth client ID as Anthropic for unified authentication
 const CLIENT_ID = '9d1c250a-e61b-44d9-88ed-5944d1962f5e';
 
 
 /**
- * OAuth credentials returned from Anthropic
+ * OAuth credentials returned from ABOV3 (via Anthropic backend)
  */
 export interface ABOV3OAuthCredentials {
   accessToken: string;
@@ -17,7 +16,7 @@ export interface ABOV3OAuthCredentials {
 
 /**
  * Generate OAuth authorization URL using PKCE flow
- * This is called when user clicks "Login with ABOV3"
+ * This is called when user clicks "Login with ABOV3 Unlimited" in ABOV3 setup
  */
 export async function generateAuthUrl(): Promise<{ url: string; verifier: string }> {
   const pkce = await generatePKCE();
@@ -41,7 +40,7 @@ export async function generateAuthUrl(): Promise<{ url: string; verifier: string
 
 /**
  * Exchange authorization code for OAuth tokens
- * Called after user authorizes in browser and pastes code
+ * Called after user authorizes in browser and pastes code into ABOV3 setup
  */
 export async function exchangeCodeForTokens(code: string, verifier: string): Promise<ABOV3OAuthCredentials> {
   const [authCode, state] = code.split('#');
@@ -63,7 +62,7 @@ export async function exchangeCodeForTokens(code: string, verifier: string): Pro
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => 'Unknown error');
-    throw new Error(`OAuth token exchange failed: ${errorText}`);
+    throw new Error(`ABOV3 OAuth token exchange failed: ${errorText}`);
   }
 
   const json = await response.json();
@@ -78,7 +77,7 @@ export async function exchangeCodeForTokens(code: string, verifier: string): Pro
 
 /**
  * Refresh expired access token using refresh token
- * Called automatically when access token is about to expire
+ * Called automatically when ABOV3 access token is about to expire
  */
 export async function refreshAccessToken(refreshToken: string): Promise<ABOV3OAuthCredentials> {
   const response = await fetch('https://console.anthropic.com/v1/oauth/token', {
@@ -95,7 +94,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<ABOV3OAu
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => 'Unknown error');
-    throw new Error(`OAuth token refresh failed: ${errorText}`);
+    throw new Error(`ABOV3 OAuth token refresh failed: ${errorText}`);
   }
 
   const json = await response.json();

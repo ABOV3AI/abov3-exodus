@@ -139,6 +139,16 @@ export async function anthropicOAuthInterceptor(
   // Check if token needs refresh (refresh 1 minute before expiry)
   const needsRefresh = !access.oauthExpiresAt || access.oauthExpiresAt < Date.now() + 60000;
 
+  // DEBUG: Log incoming headers for Anthropic OAuth request
+  console.log('[Anthropic OAuth] Interceptor called with incoming headers:', {
+    url,
+    tokenPresent: !!access.oauthAccessToken,
+    tokenExpiry: access.oauthExpiresAt ? new Date(access.oauthExpiresAt).toISOString() : 'none',
+    needsRefresh,
+    incomingHeaderKeys: Object.keys(headers as Record<string, string>),
+    incomingHeaders: headers,
+  });
+
   // Create new headers object
   const newHeaders: Record<string, string> = {};
 
@@ -155,6 +165,15 @@ export async function anthropicOAuthInterceptor(
 
   // CRITICAL: The anthropic-beta header from anthropicAccess() already includes
   // oauth-2025-04-20 when OAuth is active, so we preserve it above
+
+  // DEBUG: Log final headers being sent
+  console.log('[Anthropic OAuth] Final headers after interceptor:', {
+    finalHeaderKeys: Object.keys(newHeaders),
+    finalHeaders: newHeaders,
+    hasXApp: newHeaders['x-app'],
+    hasBeta: newHeaders['anthropic-beta'],
+    hasUserAgent: newHeaders['User-Agent'],
+  });
 
   return {
     headers: newHeaders,

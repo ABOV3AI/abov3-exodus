@@ -11,10 +11,14 @@ interface DABOV3ServiceSettings {
   abov3Key: string;
   abov3Host: string;
   heliconeKey: string;
-  // OAuth credentials for Pro/Max users
+  // OAuth credentials for Unlimited users
   oauthAccessToken?: string;
   oauthRefreshToken?: string;
   oauthExpiresAt?: number;
+  // ABOV3-specific: Persona toggle (enabled by default)
+  enableABOV3Personas?: boolean;
+  // ABOV3-specific: Proprietary protection toggle (enabled by default)
+  enableProprietaryProtection?: boolean;
 }
 
 export const ModelVendorABOV3: IModelVendor<DABOV3ServiceSettings, ABOV3AccessSchema> = {
@@ -36,6 +40,10 @@ export const ModelVendorABOV3: IModelVendor<DABOV3ServiceSettings, ABOV3AccessSc
     oauthAccessToken: partialSetup?.oauthAccessToken || null,
     oauthRefreshToken: partialSetup?.oauthRefreshToken || null,
     oauthExpiresAt: partialSetup?.oauthExpiresAt || null,
+    // ABOV3-specific: Persona toggle (enabled by default)
+    enableABOV3Personas: partialSetup?.enableABOV3Personas ?? true,
+    // ABOV3-specific: Proprietary protection toggle (enabled by default)
+    enableProprietaryProtection: partialSetup?.enableProprietaryProtection ?? true,
   }),
 
 

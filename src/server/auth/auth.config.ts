@@ -2,7 +2,6 @@ import type { NextAuthConfig } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import Resend from 'next-auth/providers/resend';
 import { PrismaAdapter } from '@auth/prisma-adapter';
-import bcrypt from 'bcryptjs';
 import { z } from 'zod/v4';
 
 import { prismaDb } from '../prisma/prismaDb';
@@ -107,7 +106,8 @@ export const authConfig: NextAuthConfig = {
             return null; // User doesn't exist or hasn't set a password
           }
 
-          // Verify password
+          // Verify password - use dynamic import to avoid Edge Runtime bundling issues
+          const bcrypt = await import('bcryptjs').then(m => m.default);
           const isValidPassword = await bcrypt.compare(password, user.password);
 
           if (!isValidPassword) {

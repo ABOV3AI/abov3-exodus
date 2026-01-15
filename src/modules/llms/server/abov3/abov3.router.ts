@@ -112,8 +112,8 @@ function _abov3Headers(modelId?: string, isOAuth?: boolean): HeadersInit {
 
 // Mappers
 
-async function abov3GETOrThrow<TOut extends object>(access: ABOV3AccessSchema, abov3ModelIdForBetaFeatures: undefined | string, apiPath: string /*, signal?: AbortSignal*/): Promise<TOut> {
-  const { headers, url } = abov3Access(access, abov3ModelIdForBetaFeatures, apiPath);
+async function abov3GETOrThrow<TOut extends object>(access: ABOV3AccessSchema, antModelIdForBetaFeatures: undefined | string, apiPath: string /*, signal?: AbortSignal*/): Promise<TOut> {
+  const { headers, url } = abov3Access(access, antModelIdForBetaFeatures, apiPath);
 
   // Apply OAuth interceptor to ensure proper headers
   const { headers: finalHeaders } = await abov3OAuthInterceptor(access, url, headers, {});
@@ -139,6 +139,16 @@ export async function abov3OAuthInterceptor(
   // Check if token needs refresh (refresh 1 minute before expiry)
   const needsRefresh = !access.oauthExpiresAt || access.oauthExpiresAt < Date.now() + 60000;
 
+  // DEBUG: Log incoming headers for ABOV3 OAuth request
+  console.log('[ABOV3 OAuth] Interceptor called with incoming headers:', {
+    url,
+    tokenPresent: !!access.oauthAccessToken,
+    tokenExpiry: access.oauthExpiresAt ? new Date(access.oauthExpiresAt).toISOString() : 'none',
+    needsRefresh,
+    incomingHeaderKeys: Object.keys(headers as Record<string, string>),
+    incomingHeaders: headers,
+  });
+
   // Create new headers object
   const newHeaders: Record<string, string> = {};
 
@@ -155,6 +165,15 @@ export async function abov3OAuthInterceptor(
 
   // CRITICAL: The anthropic-beta header from abov3Access() already includes
   // oauth-2025-04-20 when OAuth is active, so we preserve it above
+
+  // DEBUG: Log final headers being sent
+  console.log('[ABOV3 OAuth] Final headers after interceptor:', {
+    finalHeaderKeys: Object.keys(newHeaders),
+    finalHeaders: newHeaders,
+    hasXApp: newHeaders['x-app'],
+    hasBeta: newHeaders['anthropic-beta'],
+    hasUserAgent: newHeaders['User-Agent'],
+  });
 
   return {
     headers: newHeaders,
@@ -198,20 +217,20 @@ function _generateClaudeCodeUserAgent(): string {
   return 'Claude-Code/2.1.0 (Windows NT 10.0; Win64; x64)';
 }
 
-export function abov3Access(access: ABOV3AccessSchema, abov3ModelIdForBetaFeatures: undefined | string, apiPath: string): { headers: HeadersInit, url: string } {
+export function abov3Access(access: ABOV3AccessSchema, antModelIdForBetaFeatures: undefined | string, apiPath: string): { headers: HeadersInit, url: string } {
   // Check for OAuth access token first (Pro/Max users)
   const hasOAuth = access.oauthAccessToken && access.oauthRefreshToken;
 
   // API key (fallback for non-OAuth users)
-  const abov3Key = access.abov3Key || env.ANTHROPIC_API_KEY || '';
+  const abov3Key = access.abov3Key || env.ABOV3_API_KEY || '';
 
   // Require either OAuth or API key (only on default host)
-  if (!hasOAuth && !abov3Key && !(access.abov3Host || env.ANTHROPIC_API_HOST))
+  if (!hasOAuth && !abov3Key && !(access.abov3Host || env.ABOV3_API_HOST))
     throw new Error('Missing ABOV3 credentials. Either login with Pro/Max or add an API Key on the UI (Models Setup) or server side (your deployment).');
 
   // API host - Use standard api.anthropic.com for both OAuth and API key
   // OAuth works on the standard endpoint when oauth-2025-04-20 beta header is included
-  let abov3Host = fixupHost(access.abov3Host || env.ANTHROPIC_API_HOST || DEFAULT_ABOV3_HOST, apiPath);
+  let abov3Host = fixupHost(access.abov3Host || env.ABOV3_API_HOST || DEFAULT_ABOV3_HOST, apiPath);
 
   // Helicone for ABOV3
   // https://docs.helicone.ai/getting-started/integration-method/anthropic
@@ -228,18 +247,18 @@ export function abov3Access(access: ABOV3AccessSchema, abov3ModelIdForBetaFeatur
   if (hasOAuth) {
     // OAuth Pro/Max authentication - DO NOT include API key
     // CRITICAL: Must identify as Claude Code or Anthropic will reject the request
-    const oauthHeaders = _abov3Headers(abov3ModelIdForBetaFeatures, true) as Record<string, string>;
+    const oauthHeaders = _abov3Headers(antModelIdForBetaFeatures, true) as Record<string, string>;
     authHeaders['Authorization'] = `Bearer ${access.oauthAccessToken}`;
     authHeaders['anthropic-beta'] = oauthHeaders['anthropic-beta'];
     authHeaders['x-app'] = 'claude-code';  // Identify as Claude Code
   } else if (abov3Key) {
     // Standard API key authentication - only if we have a key and NOT using OAuth
-    const apiKeyHeaders = _abov3Headers(abov3ModelIdForBetaFeatures, false) as Record<string, string>;
+    const apiKeyHeaders = _abov3Headers(antModelIdForBetaFeatures, false) as Record<string, string>;
     authHeaders['X-API-Key'] = abov3Key;
     authHeaders['anthropic-beta'] = apiKeyHeaders['anthropic-beta'];
   } else {
     // No authentication provided (may work with custom host)
-    const defaultHeaders = _abov3Headers(abov3ModelIdForBetaFeatures, false) as Record<string, string>;
+    const defaultHeaders = _abov3Headers(antModelIdForBetaFeatures, false) as Record<string, string>;
     authHeaders['anthropic-beta'] = defaultHeaders['anthropic-beta'];
   }
 
@@ -275,6 +294,10 @@ export const abov3AccessSchema = z.object({
   oauthAccessToken: z.string().nullable().optional(),
   oauthRefreshToken: z.string().nullable().optional(),
   oauthExpiresAt: z.number().nullable().optional(),
+  // ABOV3-specific: Persona toggle (disabled by default for OAuth compatibility)
+  enableABOV3Personas: z.boolean().optional(),
+  // ABOV3-specific: Proprietary protection toggle
+  enableProprietaryProtection: z.boolean().optional(),
 });
 export type ABOV3AccessSchema = z.infer<typeof abov3AccessSchema>;
 
@@ -315,7 +338,7 @@ export const llmABOV3Router = createTRPCRouter({
         }, [] as ModelDescriptionSchema[]);
 
       } else {
-        // API Key users: fetch from ABOV3 API
+        // API Key users: fetch from Anthropic API
         const wireModels = await abov3GETOrThrow(access, undefined, '/v1/models?limit=1000');
         const { data: availableModels } = ABOV3Wire_API_Models_List.Response_schema.parse(wireModels);
 
