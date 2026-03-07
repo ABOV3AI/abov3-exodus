@@ -9,6 +9,7 @@ import { findModelVendor, ModelVendorId } from '../vendors/vendors.registry';
 import { ABOV3ServiceSetup } from '../vendors/abov3/ABOV3ServiceSetup';
 import { AlibabaServiceSetup } from '../vendors/alibaba/AlibabaServiceSetup';
 import { AnthropicServiceSetup } from '../vendors/anthropic/AnthropicServiceSetup';
+import { ArkSLMServiceSetup } from '../vendors/ark-slm/ArkSLMServiceSetup';
 import { AzureServiceSetup } from '../vendors/azure/AzureServiceSetup';
 import { DeepseekAIServiceSetup } from '../vendors/deepseek/DeepseekAIServiceSetup';
 import { GeminiServiceSetup } from '../vendors/gemini/GeminiServiceSetup';
@@ -34,6 +35,7 @@ const vendorSetupComponents: Record<ModelVendorId, React.ComponentType<{ service
   abov3: ABOV3ServiceSetup,
   alibaba: AlibabaServiceSetup,
   anthropic: AnthropicServiceSetup,
+  'ark-slm': ArkSLMServiceSetup,
   azure: AzureServiceSetup,
   deepseek: DeepseekAIServiceSetup,
   googleai: GeminiServiceSetup,

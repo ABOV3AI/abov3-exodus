@@ -8,13 +8,14 @@
  */
 import { createTRPCClient, httpBatchStreamLink, httpLink, loggerLink } from '@trpc/client';
 import { createTRPCNext } from '@trpc/next';
+import { createTRPCReact } from '@trpc/react-query';
 
 import type { AppRouterEdge } from '~/server/trpc/trpc.router-edge';
 import type { AppRouterCloud } from '~/server/trpc/trpc.router-cloud';
 import { transformer } from '~/server/trpc/trpc.transformer';
 
 import { getBaseUrl } from './urlUtils';
-import { reactQueryClientSingleton } from '../app.queryclient';
+import { reactQueryClientSingleton, reactQueryClientCloudSingleton } from '../app.queryclient';
 
 
 // configuration
@@ -97,7 +98,32 @@ export const apiStream = createTRPCClient<AppRouterEdge>({
 });
 
 
-/// Node.js runtime APIs
+/// Node.js runtime APIs (Cloud Router)
+
+/**
+ * Typesafe React Query hooks for the tRPC Cloud API (admin, browse, trade, etc.)
+ * Uses createTRPCReact instead of createTRPCNext to avoid context conflicts
+ * when using multiple tRPC routers.
+ */
+export const apiQueryCloud = createTRPCReact<AppRouterCloud>();
+
+/** Get the cloud tRPC client links configuration */
+export function getCloudClientConfig() {
+  return {
+    links: [
+      loggerLink({ enabled: enableLoggerLink }),
+      httpLink({
+        url: `${getBaseUrl()}/api/cloud`,
+        transformer: transformer,
+      }),
+    ],
+  };
+}
+
+/** Get the shared cloud query client */
+export function getCloudQueryClient() {
+  return reactQueryClientCloudSingleton();
+}
 
 /** Node/Immediate API: Typesafe async/await hooks for the the Node functions API */
 export const apiAsyncNode = createTRPCClient<AppRouterCloud>({

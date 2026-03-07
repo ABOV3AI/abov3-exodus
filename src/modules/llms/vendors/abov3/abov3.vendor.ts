@@ -19,6 +19,8 @@ interface DABOV3ServiceSettings {
   enableABOV3Personas?: boolean;
   // ABOV3-specific: Proprietary protection toggle (enabled by default)
   enableProprietaryProtection?: boolean;
+  // ABOV3-specific: Local tools toggle for OAuth users (enabled by default)
+  enableLocalTools?: boolean;
 }
 
 export const ModelVendorABOV3: IModelVendor<DABOV3ServiceSettings, ABOV3AccessSchema> = {
@@ -44,6 +46,8 @@ export const ModelVendorABOV3: IModelVendor<DABOV3ServiceSettings, ABOV3AccessSc
     enableABOV3Personas: partialSetup?.enableABOV3Personas ?? true,
     // ABOV3-specific: Proprietary protection toggle (enabled by default)
     enableProprietaryProtection: partialSetup?.enableProprietaryProtection ?? true,
+    // ABOV3-specific: Local tools toggle for OAuth users (enabled by default)
+    enableLocalTools: partialSetup?.enableLocalTools ?? true,
   }),
 
 

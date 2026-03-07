@@ -17,6 +17,7 @@ import {
   createFile,
   createDirectory,
 } from '~/modules/fileops/fileops.ui-operations';
+import { useProjectsStore } from '../store-projects';
 
 
 interface FileEntry {
@@ -34,11 +35,13 @@ interface FileTreeNodeProps {
   parentHandle?: FileSystemDirectoryHandle;
   onRefresh?: () => void;
   readOnly?: boolean;
+  externalRefreshCounter?: number; // When this changes, the node should refresh
 }
 
-function FileTreeNode({ entry, depth, onFileClick, onFileEdit, parentHandle, onRefresh, readOnly = false }: FileTreeNodeProps) {
+function FileTreeNode({ entry, depth, onFileClick, onFileEdit, parentHandle, onRefresh, readOnly = false, externalRefreshCounter = 0 }: FileTreeNodeProps) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [children, setChildren] = React.useState<FileEntry[]>([]);
+  const prevRefreshCounterRef = React.useRef(externalRefreshCounter);
   const [loading, setLoading] = React.useState(false);
   const [isRenaming, setIsRenaming] = React.useState(false);
   const [newName, setNewName] = React.useState(entry.name);
@@ -246,6 +249,24 @@ function FileTreeNode({ entry, depth, onFileClick, onFileEdit, parentHandle, onR
     }
   };
 
+  // Watch for external refresh trigger (from AI tool operations)
+  React.useEffect(() => {
+    if (externalRefreshCounter !== prevRefreshCounterRef.current) {
+      prevRefreshCounterRef.current = externalRefreshCounter;
+      // Refresh if this is an expanded directory OR if this is the root node (depth 0)
+      if (entry.kind === 'directory') {
+        if (depth === 0) {
+          // Root node: auto-expand and load children
+          setIsExpanded(true);
+          loadChildren();
+        } else if (isExpanded) {
+          // Non-root: only refresh if already expanded
+          loadChildren();
+        }
+      }
+    }
+  }, [externalRefreshCounter, entry.kind, isExpanded, depth]);
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -420,6 +441,7 @@ function FileTreeNode({ entry, depth, onFileClick, onFileEdit, parentHandle, onR
           parentHandle={entry.handle as FileSystemDirectoryHandle}
           onRefresh={handleRefreshNode}
           readOnly={readOnly}
+          externalRefreshCounter={externalRefreshCounter}
         />
       ))}
     </>
@@ -435,6 +457,18 @@ interface ProjectFileTreeProps {
 }
 
 export function ProjectFileTree({ projectHandle, onFileClick, onFileEdit, readOnly = false }: ProjectFileTreeProps) {
+  // Subscribe to file tree refresh counter (triggers when AI tools modify files)
+  const fileTreeRefreshCounter = useProjectsStore((state) => state.fileTreeRefreshCounter);
+
+  // Create a stable key for this project handle to force re-render when project changes
+  // We use the handle's name combined with a ref to detect handle changes
+  const [projectKey, setProjectKey] = React.useState(() => projectHandle.name + '_' + Date.now());
+
+  // Reset state when projectHandle changes
+  React.useEffect(() => {
+    setProjectKey(projectHandle.name + '_' + Date.now());
+  }, [projectHandle]);
+
   const rootEntry: FileEntry = {
     name: projectHandle.name,
     path: projectHandle.name,
@@ -443,14 +477,16 @@ export function ProjectFileTree({ projectHandle, onFileClick, onFileEdit, readOn
   };
 
   return (
-    <Box sx={{ width: '100%', height: '100%', overflow: 'auto' }}>
+    <Box sx={{ width: '100%' }}>
       <List size="sm" sx={{ py: 0.5, px: 0 }}>
         <FileTreeNode
+          key={projectKey}
           entry={rootEntry}
           depth={0}
           onFileClick={onFileClick}
           onFileEdit={onFileEdit}
           readOnly={readOnly}
+          externalRefreshCounter={fileTreeRefreshCounter}
         />
       </List>
     </Box>

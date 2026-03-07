@@ -3,7 +3,7 @@ import { getImageAsset } from '~/common/stores/blob/dblobs-portability';
 
 import { DLLM, LLM_IF_HOTFIX_NoStream, LLM_IF_HOTFIX_StripImages, LLM_IF_HOTFIX_StripSys0, LLM_IF_HOTFIX_Sys0ToUsr0 } from '~/common/stores/llms/llms.types';
 import { DMessage, DMessageRole, DMetaReferenceItem, MESSAGE_FLAG_AIX_SKIP, MESSAGE_FLAG_VND_ANT_CACHE_AUTO, MESSAGE_FLAG_VND_ANT_CACHE_USER, messageHasUserFlag } from '~/common/stores/chat/chat.message';
-import { DMessageFragment, DMessageImageRefPart, DMessageZyncAssetReferencePart, isContentOrAttachmentFragment, isToolResponseFunctionCallPart, isVoidThinkingFragment } from '~/common/stores/chat/chat.fragments';
+import { DMessageFragment, DMessageImageRefPart, DMessageZyncAssetReferencePart, getToolResponseResultAsString, isContentOrAttachmentFragment, isToolResponseFunctionCallPart, isVoidThinkingFragment } from '~/common/stores/chat/chat.fragments';
 import { Is } from '~/common/util/pwaUtils';
 import { convert_Base64WithMimeType_To_Blob, convert_Blob_To_Base64 } from '~/common/util/blobUtils';
 import { imageBlobResizeIfNeeded, LLMImageResizeMode } from '~/common/util/imageUtils';
@@ -360,7 +360,7 @@ export async function aixCGR_ChatSequence_FromDMessagesOrThrow(
 
           // Tool response - this should be included for user messages containing tool results
           case 'tool_response':
-            uMsg.parts.push(uFragment.part);
+            uMsg.parts.push(_convertToolResponseForAix(uFragment.part));
             break;
 
           // skipped (non-user)
@@ -500,14 +500,16 @@ export async function aixCGR_ChatSequence_FromDMessagesOrThrow(
             break;
 
           case 'tool_response':
-            // Valiation of DMessageToolResponsePart of response.type: 'function_call'
+            // Convert and validate tool response for AIX wire format
             // - NOTE: for now we make the large assumption that responses are JSON objects, not arrays, not strings
             // - This was done for Gemini as the response needs to be an object; however we will need to decide:
             // TODO: decide the responses policy: do we allow only objects? if not, then what's the rule to convert objects to Gemini's inputs?
+            const convertedPart = _convertToolResponseForAix(aFragment.part);
             if (isToolResponseFunctionCallPart(aFragment.part)) {
+              const resultString = getToolResponseResultAsString(aFragment.part);
               let resultObject: any;
               try {
-                resultObject = JSON.parse(aFragment.part.response.result);
+                resultObject = JSON.parse(resultString);
               } catch (error: any) {
                 throw new Error('[AIX validation] expecting `tool_response` to be parseable');
               }
@@ -516,7 +518,7 @@ export async function aixCGR_ChatSequence_FromDMessagesOrThrow(
               if (Array.isArray(resultObject))
                 throw new Error('[AIX validation for Gemini] expecting `tool_response` to not be an array');
             }
-            toolMessage.parts.push(aFragment.part);
+            toolMessage.parts.push(convertedPart);
             break;
 
           default:
@@ -617,6 +619,40 @@ export async function aixConvertImageRefToInlineImageOrThrow(imageRefPart: DMess
   }
 
   return _clientCreateAixInlineImagePart(base64Data, mimeType || dataRef.mimeType);
+}
+
+/**
+ * Convert a DMessageToolResponsePart to AIX wire format.
+ * Converts MCPToolResultContentItem[] to string representation.
+ */
+function _convertToolResponseForAix(part: import('~/common/stores/chat/chat.fragments').DMessageToolResponsePart): {
+  pt: 'tool_response';
+  id: string;
+  response: { type: 'function_call'; result: string; _name?: string } | { type: 'code_execution'; result: string };
+  error?: string | boolean;
+} {
+  if (part.response.type === 'function_call') {
+    return {
+      pt: 'tool_response',
+      id: part.id,
+      response: {
+        type: 'function_call',
+        result: getToolResponseResultAsString(part),
+        _name: part.response.name,
+      },
+      error: part.error,
+    };
+  }
+  // code_execution response
+  return {
+    pt: 'tool_response',
+    id: part.id,
+    response: {
+      type: 'code_execution',
+      result: part.response.result,
+    },
+    error: part.error,
+  };
 }
 
 function _clientCreateAixInlineImagePart(base64: string, mimeType: string): AixParts_InlineImagePart {

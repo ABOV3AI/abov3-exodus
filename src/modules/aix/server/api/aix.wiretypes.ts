@@ -5,6 +5,7 @@ import type { DMessageToolResponsePart } from '~/common/stores/chat/chat.fragmen
 
 import { abov3AccessSchema } from '~/modules/llms/server/abov3/abov3.router';
 import { anthropicAccessSchema } from '~/modules/llms/server/anthropic/anthropic.router';
+import { arkSLMAccessSchema } from '~/modules/llms/server/ark-slm/ark-slm.router';
 import { geminiAccessSchema } from '~/modules/llms/server/gemini/gemini.router';
 import { ollamaAccessSchema } from '~/modules/llms/server/ollama/ollama.router';
 import { openAIAccessSchema } from '~/modules/llms/server/openai/openai.router';
@@ -72,8 +73,8 @@ export namespace OpenAPI_Schema {
 
     // [object] properties (recursively)
     properties: z.record(z.string(), z.any() /* could refer to self using z.lazy().... */).optional(),
-    // [object] required properties
-    required: z.array(z.string()).optional(),
+    // [object] required properties (nullable to handle MCP tools that send null)
+    required: z.array(z.string()).nullish(),
 
     // [array] schema of the items
     items: z.any().optional(), // could refer to self using z.lazy()....
@@ -319,7 +320,7 @@ export namespace AixWire_Tooling {
     input_schema: z.object({
       // type: z.literal('object'), // Note: every protocol adapter adds this in the structure, here's we're just opting to not add it
       properties: z.record(z.string(), OpenAPI_Schema.Object_schema),
-      required: z.array(z.string()).optional(),
+      required: z.array(z.string()).nullish(), // nullable to handle MCP tools that send null
     }).optional(),
   });
 
@@ -393,6 +394,7 @@ export namespace AixWire_API {
   export const Access_schema = z.discriminatedUnion('dialect', [
     abov3AccessSchema,
     anthropicAccessSchema,
+    arkSLMAccessSchema,
     geminiAccessSchema,
     ollamaAccessSchema,
     openAIAccessSchema,

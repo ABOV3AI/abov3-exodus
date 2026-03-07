@@ -77,6 +77,10 @@ export function optimaActions(): Omit<OptimaActions,
   return useLayoutOptimaStore.getState();
 }
 
+export function optimaOpenAdminPanel() {
+  useLayoutOptimaStore.getState().openAdminPanel();
+}
+
 export function optimaOpenModels() {
   useLayoutOptimaStore.getState().openModels();
 }
@@ -85,8 +89,13 @@ export function optimaOpenPreferences(changeTab?: PreferencesTabId) {
   useLayoutOptimaStore.getState().openPreferences(changeTab);
 }
 
+export function optimaOpenUserProfile() {
+  useLayoutOptimaStore.getState().openUserProfile();
+}
+
 export function useOptimaModals() {
   return useLayoutOptimaStore(useShallow(state => ({
+    showAdminPanel: state.showAdminPanel,
     showAIXDebugger: state.showAIXDebugger,
     showKeyboardShortcuts: state.showKeyboardShortcuts,
     showLogger: state.showLogger,
@@ -94,6 +103,7 @@ export function useOptimaModals() {
     showModels: state.showModels,
     showPreferences: state.showPreferences,
     preferencesTab: state.preferencesTab,
+    showUserProfile: state.showUserProfile,
   })));
 }
 

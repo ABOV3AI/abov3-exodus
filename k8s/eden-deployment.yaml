@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: abov3-eden
+  labels:
+    app: abov3-eden
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: abov3-eden
+  template:
+    metadata:
+      labels:
+        app: abov3-eden
+    spec:
+      containers:
+        - name: eden
+          image: ghcr.io/abov3ai/eden:beta
+          ports:
+            - containerPort: 3100
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: EDEN_HOST
+              value: "0.0.0.0"
+            - name: EDEN_PORT
+              value: "3100"
+            - name: EDEN_CORS_ORIGINS
+              value: "https://exodus.abov3.ai"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3100
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3100
+            initialDelaySeconds: 5
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: abov3-eden
+spec:
+  selector:
+    app: abov3-eden
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3100
+  type: ClusterIP

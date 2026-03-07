@@ -13,6 +13,10 @@ import ImageIcon from '@mui/icons-material/Image';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import IosShareIcon from '@mui/icons-material/IosShare';
 import IosShareOutlinedIcon from '@mui/icons-material/IosShareOutlined';
+import SchoolIcon from '@mui/icons-material/School';
+import SchoolOutlinedIcon from '@mui/icons-material/SchoolOutlined';
+import Diversity3Icon from '@mui/icons-material/Diversity3';
+import Diversity3OutlinedIcon from '@mui/icons-material/Diversity3Outlined';
 // Link icons
 import GitHubIcon from '@mui/icons-material/GitHub';
 import { DiscordIcon } from '~/common/components/icons/3rdparty/DiscordIcon';
@@ -26,6 +30,12 @@ import { ChatPrismIcon } from '~/common/components/icons/ChatPrismIcon';
 import { PhChats } from '~/common/components/icons/phosphor/PhChats';
 import { PhChatsDuotone } from '~/common/components/icons/phosphor/PhChatsDuotone';
 import { hasNoChatLinkItems } from '~/modules/trade/link/store-share-link';
+import { useUserFeatures } from '~/common/stores/store-user-features';
+
+// Feature visibility helpers - check if user has access to beta features
+const hideIfNoNepheshAccess = () => !useUserFeatures.getState().hasFeature('NEPHESH');
+const hideIfNoTrainAccess = () => !useUserFeatures.getState().hasFeature('TRAIN');
+const hideIfNoFlowCoreAccess = () => !useUserFeatures.getState().hasFeature('FLOWCORE');
 
 
 // enable to show all items, for layout development
@@ -106,6 +116,30 @@ export const navItems: {
       fullWidth: true,
     },
     {
+      name: 'Train',
+      mobileName: 'Train',
+      barTitle: 'Model Training',
+      tooltip: 'Train and distill custom models',
+      icon: SchoolOutlinedIcon,
+      iconActive: SchoolIcon,
+      type: 'app',
+      route: '/train',
+      hideIcon: hideIfNoTrainAccess,
+      hideNav: hideIfNoTrainAccess,
+    },
+    {
+      name: 'Nephesh',
+      mobileName: 'Agents',
+      barTitle: 'Autonomous Agents',
+      tooltip: 'Manage AI agent profiles',
+      icon: Diversity3OutlinedIcon,
+      iconActive: Diversity3Icon,
+      type: 'app',
+      route: '/nephesh',
+      hideIcon: hideIfNoNepheshAccess,
+      hideNav: hideIfNoNepheshAccess,
+    },
+    {
       name: 'FlowCore',
       barTitle: 'Workflow Builder',
       tooltip: 'Visual workflow automation',
@@ -116,6 +150,8 @@ export const navItems: {
       hideDrawer: true,
       panelAsMenu: true,
       fullWidth: true,
+      hideIcon: hideIfNoFlowCoreAccess,
+      hideNav: hideIfNoFlowCoreAccess,
     },
     // {
     //   name: 'Draw',

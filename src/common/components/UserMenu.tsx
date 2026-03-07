@@ -14,15 +14,22 @@ import {
   Typography,
 } from '@mui/joy';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
-import PersonIcon from '@mui/icons-material/Person';
 import SettingsIcon from '@mui/icons-material/Settings';
+
+import { optimaOpenAdminPanel, optimaOpenUserProfile } from '~/common/layout/optima/useOptima';
+import { useUserFeatures } from '~/common/stores/store-user-features';
 
 export function UserMenu(props: { variant?: 'button' | 'icon' }) {
   const { variant = 'icon' } = props;
   const { data: session, status } = useSession();
   const router = useRouter();
+
+  // Get avatar from store (fetched from DB, not JWT cookie)
+  const avatarFromStore = useUserFeatures((state) => state.avatar);
+  const nameFromStore = useUserFeatures((state) => state.name);
 
   const handleSignOut = async () => {
     await signOut({ redirect: false });
@@ -70,8 +77,12 @@ export function UserMenu(props: { variant?: 'button' | 'icon' }) {
   }
 
   // Signed in - show user menu
-  const userInitial = session.user?.name?.charAt(0)?.toUpperCase() || session.user?.email?.charAt(0)?.toUpperCase() || 'U';
-  const userDisplay = session.user?.name || session.user?.email || 'User';
+  // Prefer store values (from DB) over session values (from JWT)
+  const displayName = nameFromStore || session.user?.name;
+  const userInitial = displayName?.charAt(0)?.toUpperCase() || session.user?.email?.charAt(0)?.toUpperCase() || 'U';
+  const userDisplay = displayName || session.user?.email || 'User';
+  // Use avatar from store (DB) since session can't hold large base64 images
+  const avatarSrc = avatarFromStore || session.user?.image || undefined;
 
   return (
     <Dropdown>
@@ -87,7 +98,7 @@ export function UserMenu(props: { variant?: 'button' | 'icon' }) {
       >
         <Avatar
           size='sm'
-          src={session.user?.image || undefined}
+          src={avatarSrc}
           alt={userDisplay}
         >
           {userInitial}
@@ -122,15 +133,15 @@ export function UserMenu(props: { variant?: 'button' | 'icon' }) {
         <ListDivider />
 
         {/* Account Settings */}
-        <MenuItem onClick={() => router.push('/settings')}>
+        <MenuItem onClick={() => optimaOpenUserProfile()}>
           <SettingsIcon fontSize='small' />
-          <Box sx={{ ml: 1 }}>Settings</Box>
+          <Box sx={{ ml: 1 }}>Account Settings</Box>
         </MenuItem>
 
         {/* Admin Panel (if user is admin) */}
         {(session.user as any)?.isAdmin && (
-          <MenuItem onClick={() => router.push('/admin')}>
-            <PersonIcon fontSize='small' />
+          <MenuItem onClick={() => optimaOpenAdminPanel()}>
+            <AdminPanelSettingsIcon fontSize='small' />
             <Box sx={{ ml: 1 }}>Admin Panel</Box>
           </MenuItem>
         )}

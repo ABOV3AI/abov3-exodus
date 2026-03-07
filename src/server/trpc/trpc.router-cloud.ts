@@ -1,5 +1,6 @@
 import { createTRPCRouter } from './trpc.server';
 
+import { backendRouter } from '~/modules/backend/backend.router';
 import { browseRouter } from '~/modules/browse/browse.router';
 import { tradeRouter } from '~/modules/trade/server/trade.router';
 import { adminRouter } from './routers/admin.router';
@@ -10,6 +11,9 @@ import { flowcoreRouter } from '../api/routers/flowcore.router';
  * NOTE: at the time of writing, the location is aws|us-east-1
  */
 export const appRouterCloud = createTRPCRouter({
+  // NOTE: backend is duplicated here from edge router due to React Query context issues
+  // where apiQuery calls sometimes route to cloud instead of edge
+  backend: backendRouter,
   browse: browseRouter,
   trade: tradeRouter,
   admin: adminRouter,

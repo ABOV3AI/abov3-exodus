@@ -13,17 +13,19 @@ import { LogViewerDialog } from '~/common/logger/viewer/LoggerViewerDialog';
 import { ShortcutsModal } from '../../../apps/settings-modal/ShortcutsModal';
 
 // Lazy-loaded Modals
+const AdminModalLazy = React.lazy(() => import('../../../apps/admin/AdminModal').then(module => ({ default: module.AdminModal })));
 const ModelsModalsLazy = React.lazy(() => import('~/modules/llms/models-modal/ModelsModals').then(module => ({ default: module.ModelsModals })));
 const SettingsModalLazy = React.lazy(() => import('../../../apps/settings-modal/SettingsModal').then(module => ({ default: module.SettingsModal })));
+const UserProfileModalLazy = React.lazy(() => import('../../../apps/auth/components/UserProfileModal').then(module => ({ default: module.UserProfileModal })));
 
 
 export function Modals(props: { suspendAutoModelsSetup?: boolean }) {
 
   // external state
-  const { preferencesTab, showAIXDebugger, showKeyboardShortcuts, showLogger, showPreferences, showModels, showModelOptions } = useOptimaModals();
+  const { preferencesTab, showAdminPanel, showAIXDebugger, showKeyboardShortcuts, showLogger, showPreferences, showModels, showModelOptions, showUserProfile } = useOptimaModals();
 
   // derived state
-  const { closeAIXDebugger, closeKeyboardShortcuts, closeLogger, closePreferences, openKeyboardShortcuts } = optimaActions();
+  const { closeAdminPanel, closeAIXDebugger, closeKeyboardShortcuts, closeLogger, closePreferences, closeUserProfile, openKeyboardShortcuts } = optimaActions();
 
 
   // [effect] Auto-open the configurator - anytime no service is selected
@@ -36,6 +38,16 @@ export function Modals(props: { suspendAutoModelsSetup?: boolean }) {
 
 
   return <>
+
+    {/* Overlay - Admin Panel Modal */}
+    {showAdminPanel && (
+      <React.Suspense fallback={null}>
+        <AdminModalLazy
+          open={showAdminPanel}
+          onClose={closeAdminPanel}
+        />
+      </React.Suspense>
+    )}
 
     {/* Overlay - Preferences Modal */}
     {showPreferences && (
@@ -66,6 +78,16 @@ export function Modals(props: { suspendAutoModelsSetup?: boolean }) {
     {/* Overlay Shortcuts */}
     {showKeyboardShortcuts && (
       <ShortcutsModal onClose={closeKeyboardShortcuts} />
+    )}
+
+    {/* Overlay - User Profile Modal */}
+    {showUserProfile && (
+      <React.Suspense fallback={null}>
+        <UserProfileModalLazy
+          open={showUserProfile}
+          onClose={closeUserProfile}
+        />
+      </React.Suspense>
     )}
 
   </>;

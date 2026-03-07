@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useRouter } from 'next/router';
+import { useSession } from 'next-auth/react';
 
 import { getChatTokenCountingMethod } from '../../apps/chat/store-app-chat';
 
@@ -14,12 +15,48 @@ import { initializeAnthropicOAuthRefresh } from '~/modules/llms/vendors/anthropi
 import { initializeABOV3OAuthRefresh } from '~/modules/llms/vendors/abov3/abov3.token-refresh';
 import { useMCPServersStore } from '~/common/stores/store-mcp-servers';
 import { useProjectsStore } from '~/apps/projects/store-projects';
+import { useUserFeatures } from '~/common/stores/store-user-features';
+import { apiQueryCloud } from '~/common/util/trpc.client';
 
 
 export function ProviderBootstrapLogic(props: { children: React.ReactNode }) {
 
   // external state
   const { route, events } = useRouter();
+  const { data: session, status: authStatus } = useSession();
+
+  // user features store
+  const { setFeatures, setUserInfo, clearFeatures, isLoaded: featuresLoaded } = useUserFeatures();
+
+  // [user features] fetch user's feature permissions when authenticated
+  const { data: userFeaturesData } = apiQueryCloud.admin.getMyFeatures.useQuery(
+    undefined,
+    {
+      enabled: authStatus === 'authenticated' && !!session?.user && !featuresLoaded,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnWindowFocus: false,
+    }
+  );
+
+  // Update user features store when data is fetched
+  React.useEffect(() => {
+    if (userFeaturesData) {
+      setFeatures(userFeaturesData.features);
+      setUserInfo({
+        isAdmin: userFeaturesData.isAdmin,
+        isMasterDev: userFeaturesData.isMasterDev,
+        avatar: userFeaturesData.avatar,
+        name: userFeaturesData.name,
+      });
+    }
+  }, [userFeaturesData, setFeatures, setUserInfo]);
+
+  // Clear features when user logs out
+  React.useEffect(() => {
+    if (authStatus === 'unauthenticated') {
+      clearFeatures();
+    }
+  }, [authStatus, clearFeatures]);
 
   // AUTO-LOG events from this scope on; note that we are past the Sherpas
   useClientLoggerInterception(true, false);
@@ -100,9 +137,13 @@ export function ProviderBootstrapLogic(props: { children: React.ReactNode }) {
   React.useEffect(() => {
     const initializeMCP = async () => {
       try {
-        await useMCPServersStore.getState().initializeRuntime();
+        console.log('[MCP Init] Starting MCP runtime initialization...');
+        const store = useMCPServersStore.getState();
+        console.log('[MCP Init] Servers in store:', store.servers.length, store.servers.map(s => `${s.name} (enabled: ${s.enabled})`));
+        await store.initializeRuntime();
+        console.log('[MCP Init] MCP runtime initialized successfully');
       } catch (error) {
-        console.error('Failed to initialize MCP runtime:', error);
+        console.error('[MCP Init] Failed to initialize MCP runtime:', error);
       }
     };
     void initializeMCP();

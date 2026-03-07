@@ -128,7 +128,7 @@ function validateAndFixToolSequencing(messages: TRequest['messages']): void {
   }
 }
 
-export function aixToABOV3MessageCreate(model: AixAPI_Model, _chatGenerate: AixAPIChatGenerate_Request, streaming: boolean, isOAuth: boolean = false, enableABOV3Personas: boolean = false, enableProprietaryProtection: boolean = false): TRequest {
+export function aixToABOV3MessageCreate(model: AixAPI_Model, _chatGenerate: AixAPIChatGenerate_Request, streaming: boolean, isOAuth: boolean = false, enableABOV3Personas: boolean = false, enableProprietaryProtection: boolean = false, enableLocalTools: boolean = false, projectMode: 'chat' | 'research' | 'coding' = 'chat', projectPath?: string): TRequest {
 
   // Pre-process CGR - approximate spill of System to User message
   const chatGenerate = aixSpillSystemToUser(_chatGenerate);
@@ -203,6 +203,217 @@ export function aixToABOV3MessageCreate(model: AixAPI_Model, _chatGenerate: AixA
       systemMessage = [claudeCodeMessage, ...systemMessage];
     } else {
       systemMessage = [claudeCodeMessage];
+    }
+  }
+
+  // Add local tool instructions for OAuth users (since API tools are blocked)
+  // Tool availability depends on the project mode:
+  // - Chat mode: No tools available (pure conversation)
+  // - Research mode: Read-only tools (read_file, list_files)
+  // - Coding mode: Full tool access (read, write, list, create_directory)
+  if (isOAuth && enableLocalTools && projectMode !== 'chat') {
+    let toolInstructions: string;
+
+    if (projectMode === 'research') {
+      // Research mode: Read-only file access + web search
+      toolInstructions = `## Research Mode - Read-Only Tool Access
+
+You are in RESEARCH MODE with read-only access to the user's project directory and web search capabilities. You can explore files, search the web, and analyze information but CANNOT modify files.
+
+Available tools:
+
+### File Operations (read-only)
+\`\`\`tool:read_file
+{"path": "relative/path/to/file.ts"}
+\`\`\`
+
+\`\`\`tool:list_files
+{"path": ".", "recursive": false}
+\`\`\`
+
+### Web Search & Fetch
+\`\`\`tool:search_web
+{"query": "your search query", "num_results": 10}
+\`\`\`
+
+\`\`\`tool:fetch_webpage
+{"url": "https://example.com/page", "format": "text"}
+\`\`\`
+
+After outputting a tool block, STOP and wait for the result. The system will execute the tool and provide the output in the next message.
+
+Important rules:
+- Output ONE tool block at a time, then stop immediately
+- Wait for tool results before continuing
+- All file paths are relative to the user's project directory
+- You are in READ-ONLY mode - you cannot create, modify, or delete any files
+- Use web search to find documentation, examples, and current information
+- Focus on analysis, exploration, and providing insights`;
+    } else {
+      // Coding mode: Full access
+      toolInstructions = `## Coding Mode - Full Tool Access
+
+You are in CODING MODE with full access to the user's project directory. You can read, write, modify files, and search the web.
+
+Available tools:
+
+### File Operations
+\`\`\`tool:read_file
+{"path": "relative/path/to/file.ts"}
+\`\`\`
+
+\`\`\`tool:write_file
+{"path": "relative/path/to/file.ts", "content": "file contents here"}
+\`\`\`
+
+\`\`\`tool:list_files
+{"path": ".", "recursive": false}
+\`\`\`
+
+\`\`\`tool:create_directory
+{"path": "new/directory/path"}
+\`\`\`
+
+### Web Search & Fetch
+\`\`\`tool:search_web
+{"query": "your search query", "num_results": 10}
+\`\`\`
+
+\`\`\`tool:fetch_webpage
+{"url": "https://example.com/page", "format": "text"}
+\`\`\`
+
+### Document Generation (Professional)
+
+**PowerPoint Presentations** - Supports themes, tables, charts, shapes, images:
+\`\`\`tool:create_presentation
+{
+  "path": "output/presentation.pptx",
+  "title": "Presentation Title",
+  "author": "Author Name",
+  "theme": {
+    "backgroundColor": "1a1a2e",
+    "primaryColor": "eaeaea",
+    "textColor": "cccccc",
+    "accentColor": "4a9eff"
+  },
+  "slides": [
+    { "title": "Welcome", "subtitle": "Introduction", "layout": "title" },
+    { "title": "Key Points", "content": ["Point 1", "Point 2", "Point 3"], "layout": "content" },
+    { "title": "Comparison", "content": ["Option A", "Option B", "Pro 1", "Pro 2", "Con 1", "Con 2"], "layout": "comparison" }
+  ]
+}
+\`\`\`
+Theme colors are hex without #. Layouts: title, content, two-column, section, comparison, blank.
+Advanced: Add tables, charts, shapes, images to slides.
+
+**Word Documents** - Supports tables, lists, images, headers/footers:
+\`\`\`tool:create_document
+{
+  "path": "output/document.docx",
+  "title": "Document Title",
+  "author": "Author Name",
+  "content": [
+    { "text": "Introduction", "style": "heading1" },
+    { "text": "This is the first paragraph.", "style": "normal" }
+  ],
+  "footer": { "includePageNumbers": true }
+}
+\`\`\`
+Styles: heading1-4, title, subtitle, normal, quote, caption.
+
+**PDF Documents** - Supports sections, tables, TOC, headers/footers:
+\`\`\`tool:create_pdf
+{
+  "path": "output/document.pdf",
+  "title": "PDF Title",
+  "author": "Author Name",
+  "sections": [
+    { "heading": "Section 1", "headingLevel": 1, "paragraphs": ["First paragraph.", "Second paragraph."] }
+  ],
+  "tableOfContents": { "title": "Contents" },
+  "footer": { "includePageNumbers": true, "pageNumberFormat": "Page X of Y" }
+}
+\`\`\`
+
+After outputting a tool block, STOP and wait for the result. The system will execute the tool and provide the output in the next message. Then continue your response based on the result.
+
+Important rules:
+- Output ONE tool block at a time, then stop immediately
+- Wait for tool results before continuing
+- All file paths are relative to the user's project directory
+- Do not assume file contents - always read first if you need to modify
+- Use web search to find documentation, solutions, or current information
+- For presentations: ALWAYS use the theme object to set colors (backgroundColor, primaryColor, textColor, accentColor)
+- Theme colors must be 6-character hex codes WITHOUT the # prefix (e.g., "1a1a2e" not "#1a1a2e")`;
+    }
+
+    const toolInstructionsBlock = ABOV3Wire_Blocks.TextBlock(toolInstructions);
+    if (systemMessage && systemMessage.length) {
+      systemMessage.push(toolInstructionsBlock);
+    } else {
+      systemMessage = [toolInstructionsBlock];
+    }
+  }
+
+  // Add MCP tool instructions when project path is available and MCP tools exist
+  const hasMCPTools = chatGenerate.tools?.some(t => t.type === 'function_call' && t.function_call?.name.startsWith('mcp_'));
+  if (hasMCPTools && projectMode !== 'chat') {
+    // Check if we have a proper full path (contains path separator) or just a folder name
+    const isFullPath = projectPath && (projectPath.includes('/') || projectPath.includes('\\'));
+
+    // MCP file tools are intercepted and executed locally using the browser's File System Access API
+    // This means paths are relative to the project root (the selected folder in Exodus)
+    let mcpInstructions: string;
+
+    if (isFullPath) {
+      mcpInstructions = `## MCP Tools - Project Context
+
+You have access to MCP file tools for working with the user's project files.
+
+**Active Project:** \`${projectPath}\`
+**Working Directory:** All commands and file operations run in this directory.
+
+When using MCP file tools (mcp_*_read_file, mcp_*_write_file, mcp_*_list_directory, etc.):
+- Use paths RELATIVE to the project root
+- Example: To create "hello.py" in the project root, use path: "hello.py"
+- Example: To create in a subfolder, use path: "src/main.py"
+- Example: To list the project root, use path: "." or omit the path
+- Always use forward slashes (/) in paths
+
+When executing commands (mcp_*_execute_command):
+- Commands run with the project root as the working directory
+- Write Python code that uses relative paths, they will resolve to the project root
+- Example: If you create a script at "script.py", you can run it with: python script.py
+
+${projectMode === 'research' ? '**Mode: RESEARCH (read-only)** - You can only read files, not write or modify them.' : '**Mode: CODING** - You have full read/write access to files in the project.'}`;
+    } else {
+      // Folder name only - Eden will auto-resolve it
+      mcpInstructions = `## MCP Tools - Project Context
+
+You have access to MCP file tools for working with the user's project files.
+
+**Active Project:** \`${projectPath || 'Unknown'}\`
+
+When using MCP file tools (mcp_*_read_file, mcp_*_write_file, mcp_*_list_directory, etc.):
+- Use paths RELATIVE to the project root
+- Example: path: "hello.py" for files in the root
+- Example: path: "src/main.py" for files in subdirectories
+- Always use forward slashes (/) in paths
+
+When executing commands (mcp_*_execute_command):
+- Commands run with the project folder as the working directory
+- Use relative paths in your scripts - they will resolve to the project root
+- Example: If you create "script.py", run it with: python script.py
+
+${projectMode === 'research' ? '**Mode: RESEARCH (read-only)** - You can only read files, not write or modify them.' : '**Mode: CODING** - You have full read/write access to files in the project.'}`;
+    }
+
+    const mcpInstructionsBlock = ABOV3Wire_Blocks.TextBlock(mcpInstructions);
+    if (systemMessage && systemMessage.length) {
+      systemMessage.push(mcpInstructionsBlock);
+    } else {
+      systemMessage = [mcpInstructionsBlock];
     }
   }
 
@@ -341,7 +552,19 @@ export function aixToABOV3MessageCreate(model: AixAPI_Model, _chatGenerate: AixA
     model: model.id,
     system: systemMessage,
     messages: chatMessages,
-    tools: !isOAuth && chatGenerate.tools ? _toABOV3Tools(chatGenerate.tools) : undefined,
+    // For OAuth users: only pass MCP tools (they start with 'mcp_'), keep native tools as text-based
+    // For non-OAuth users: pass all tools
+    tools: (() => {
+      if (!chatGenerate.tools) return undefined;
+      const toolsToPass = isOAuth
+        ? chatGenerate.tools.filter(t => t.type === 'function_call' && t.function_call?.name.startsWith('mcp_'))
+        : chatGenerate.tools;
+      if (toolsToPass.length > 0) {
+        console.log(`[ABOV3 Tools] isOAuth: ${isOAuth}, passing ${toolsToPass.length} tools:`, toolsToPass.map(t => t.type === 'function_call' ? t.function_call?.name : t.type).join(', '));
+        return _toABOV3Tools(toolsToPass);
+      }
+      return undefined;
+    })(),
     tool_choice: !isOAuth && chatGenerate.toolsPolicy ? _toABOV3ToolChoice(chatGenerate.toolsPolicy) : undefined,
     // metadata: { user_id: ... }
     // stop_sequences: undefined,
@@ -435,6 +658,43 @@ function* _generateABOV3MessagesContentBlocks({ parts, role }: AixMessages_ChatM
 
           case 'meta_cache_control':
             yield { set_cache_control: part.control };
+            break;
+
+          // Handle tool_response in user messages (from MCP tool execution)
+          case 'tool_response':
+            const toolErrorPrefix = part.error ? (typeof part.error === 'string' ? `[ERROR] ${part.error} - ` : '[ERROR] ') : '';
+            switch (part.response.type) {
+              case 'function_call':
+                // Handle structured content with images or plain string
+                const fcResult = part.response.result;
+                const fcContentParts: ReturnType<typeof ABOV3Wire_Blocks.TextBlock>[] = [];
+                if (Array.isArray(fcResult)) {
+                  // Structured content - can contain text and images
+                  for (const item of fcResult) {
+                    if (item.type === 'text') {
+                      fcContentParts.push(ABOV3Wire_Blocks.TextBlock((toolErrorPrefix && fcContentParts.length === 0 ? toolErrorPrefix : '') + item.text));
+                    } else if (item.type === 'image') {
+                      // Add image to tool result for vision LLM analysis
+                      fcContentParts.push(ABOV3Wire_Blocks.ImageBlock(item.mimeType, item.data) as any);
+                    }
+                  }
+                  // If we only had error prefix with no content, add empty text
+                  if (fcContentParts.length === 0 && toolErrorPrefix) {
+                    fcContentParts.push(ABOV3Wire_Blocks.TextBlock(toolErrorPrefix));
+                  }
+                } else {
+                  // Plain string result (backward compatibility)
+                  fcContentParts.push(ABOV3Wire_Blocks.TextBlock(toolErrorPrefix + fcResult));
+                }
+                yield { role: 'user', content: ABOV3Wire_Blocks.ToolResultBlock(part.id, fcContentParts, part.error ? true : undefined) };
+                break;
+              case 'code_execution':
+                const ceTextParts = [ABOV3Wire_Blocks.TextBlock(toolErrorPrefix + part.response.result)];
+                yield { role: 'user', content: ABOV3Wire_Blocks.ToolResultBlock(part.id, ceTextParts, part.error ? true : undefined) };
+                break;
+              default:
+                throw new Error(`Unsupported tool response type in User message: ${(part.response as any).type}`);
+            }
             break;
 
           default:

@@ -115,11 +115,13 @@ export const authConfig: NextAuthConfig = {
           }
 
           // Return user object (password excluded)
+          // Don't include image if it's a large base64 data URL (would overflow JWT cookie)
+          const imageForToken = user.image?.startsWith('data:') ? null : user.image;
           return {
             id: user.id,
             email: user.email,
             name: user.name,
-            image: user.image,
+            image: imageForToken,
             emailVerified: user.emailVerified,
           };
         } catch (error) {
@@ -225,3 +227,24 @@ export const authConfig: NextAuthConfig = {
   // Debug mode
   debug: process.env.NODE_ENV === 'development',
 };
+
+/**
+ * Check if public signups are enabled
+ * Returns false if AdminSettings has allowSignups = false
+ */
+export async function areSignupsEnabled(): Promise<boolean> {
+  try {
+    const adminSettings = await prismaDb.adminSettings.findFirst();
+    // Default to true if no settings exist
+    return adminSettings?.allowSignups ?? true;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Beta mode: Signups should be disabled
+ * Set this in AdminSettings table during deployment
+ */
+export const BETA_SIGNUPS_DISABLED_MESSAGE =
+  'Registration is currently closed for beta testing. Contact the administrator to request access.';

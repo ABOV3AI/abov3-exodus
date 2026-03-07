@@ -1,0 +1,52 @@
+# Local Ingress for VM Simulation
+# Uses *.abov3.local domains (add to host machine's /etc/hosts)
+#
+# Usage:
+#   kubectl apply -f k8s/ingress-local.yaml
+#
+# Host machine hosts file:
+#   <VM_IP>  exodus.abov3.local pauline.abov3.local eden.abov3.local
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: abov3-ingress-local
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  rules:
+    # Exodus - Main Next.js Application
+    - host: exodus.abov3.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: exodus
+                port:
+                  number: 3000
+
+    # Pauline - TTS Service
+    - host: pauline.abov3.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pauline
+                port:
+                  number: 8004
+
+    # Eden - MCP Server
+    - host: eden.abov3.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: eden
+                port:
+                  number: 3100

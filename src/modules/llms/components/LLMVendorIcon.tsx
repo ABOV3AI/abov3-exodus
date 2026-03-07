@@ -37,6 +37,7 @@ const vendorIcons: Record<ModelVendorId, React.FunctionComponent<SvgIconProps>> 
   abov3: ABOV3Icon,
   alibaba: AlibabaCloudIcon,
   anthropic: AnthropicIcon,
+  'ark-slm': ABOV3Icon, // ABOV3 Ark-SLM uses ABOV3 icon
   azure: AzureIcon,
   deepseek: DeepseekIcon,
   googleai: GeminiIcon,

@@ -278,7 +278,7 @@ export namespace GeminiWire_ToolDeclarations {
        * For stricter validation, use the OpenAPI_Schema.Object_schema
        */
       properties: z.json().optional(), // FC-DEF params schema
-      required: z.array(z.string()).optional(),
+      required: z.array(z.string()).nullish(), // nullable to handle MCP tools that send null
     }).optional(),
 
     /**

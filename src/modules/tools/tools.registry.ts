@@ -136,7 +136,7 @@ export function getEnabledAIXTools(options?: {
 
   if (options?.modelId) {
     // Per-model MCP filtering
-    const { findLLMOrThrow } = require('~/common/stores/llms/llms.hooks');
+    const { findLLMOrThrow } = require('~/common/stores/llms/store-llms');
     const { LLM_IF_OAI_Fn } = require('~/common/stores/llms/llms.types');
 
     try {
@@ -144,13 +144,21 @@ export function getEnabledAIXTools(options?: {
       const mcpEnabled = llm.userMcpEnabled !== false; // undefined = enabled
       const hasFunctionCalls = llm.interfaces.includes(LLM_IF_OAI_Fn);
 
+      console.log('[MCP Tools] Model:', options.modelId, 'mcpEnabled:', mcpEnabled, 'hasFunctionCalls:', hasFunctionCalls);
+
       if (mcpEnabled && hasFunctionCalls) {
         const mcpRuntime = getMCPRuntime();
         mcpTools = mcpRuntime.getAvailableTools();
+        console.log('[MCP Tools] Retrieved', mcpTools.length, 'MCP tools');
+        if (mcpTools.length > 0) {
+          console.log('[MCP Tools] Tool names:', mcpTools.map(t => t.type === 'function_call' ? t.function_call?.name : t.type).join(', '));
+        }
+      } else {
+        console.log('[MCP Tools] Skipped - mcpEnabled:', mcpEnabled, 'hasFunctionCalls:', hasFunctionCalls);
       }
     } catch (error) {
       // Model not found or error - fall back to including MCP tools
-      console.warn('Error filtering MCP tools by model:', error);
+      console.warn('[MCP Tools] Error filtering by model:', error);
       const mcpRuntime = getMCPRuntime();
       mcpTools = mcpRuntime.getAvailableTools();
     }
@@ -158,8 +166,10 @@ export function getEnabledAIXTools(options?: {
     // No modelId specified - include all MCP tools (backwards compatibility)
     const mcpRuntime = getMCPRuntime();
     mcpTools = mcpRuntime.getAvailableTools();
+    console.log('[MCP Tools] No modelId - retrieved', mcpTools.length, 'tools');
   }
 
+  console.log('[Tools] Returning', aixTools.length, 'AIX tools +', mcpTools.length, 'MCP tools');
   return [...aixTools, ...mcpTools];
 }
 
@@ -201,16 +211,25 @@ export function initializeToolRegistry(): void {
     return;
   }
 
-  // Import and register all tool modules
-  import('../fileops/fileops.executor').then(module => {
-    module.FILE_OPERATION_TOOLS.forEach(tool => registerTool(tool));
-  });
+  // Import and register all tool modules with error handling
+  import('../fileops/fileops.executor')
+    .then(module => {
+      module.FILE_OPERATION_TOOLS.forEach(tool => registerTool(tool));
+    })
+    .catch(err => console.warn('[Tools] Failed to load fileops tools:', err));
 
-  import('../web-tools/web-tools.executor').then(module => {
-    module.WEB_TOOLS.forEach(tool => registerTool(tool));
-  });
+  import('../web-tools/web-tools.executor')
+    .then(module => {
+      module.WEB_TOOLS.forEach(tool => registerTool(tool));
+    })
+    .catch(err => console.warn('[Tools] Failed to load web tools:', err));
 
-  // More tool modules will be added here as we build them
+  // Document generation tools (PPTX, DOCX, PDF)
+  import('../documents/documents.executor')
+    .then(module => {
+      module.DOCUMENT_TOOL_DEFINITIONS.forEach(tool => registerTool(tool));
+    })
+    .catch(err => console.warn('[Tools] Failed to load document tools:', err));
 
   if (process.env.NODE_ENV === 'development') {
     // Log after a short delay to let imports complete

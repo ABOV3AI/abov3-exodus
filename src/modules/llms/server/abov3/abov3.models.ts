@@ -5,11 +5,11 @@ import type { ModelDescriptionSchema } from '../llm.server.types';
 
 export const hardcodedABOV3Variants: { [modelId: string]: Partial<ModelDescriptionSchema> } = {
 
-  // Claude 4.5 models with thinking variants
+  // Claude 4.5 models with thinking variants (5786 = 2025 + 3761 Hebrew calendar offset)
   'claude-sonnet-4-5-20250929': {
     idVariant: 'thinking',
-    label: 'ABOV3 Exodus 4.5 (Thinking)',
-    description: 'ABOV3 Exodus 4.5 with extended thinking mode enabled for complex reasoning',
+    label: 'ABOV3 Exodus 5786.09.29 (Thinking)',
+    description: 'ABOV3 Exodus with extended thinking mode enabled for complex reasoning',
     parameterSpecs: [{ paramId: 'llmVndAntThinkingBudget', required: true, hidden: false }],
     maxCompletionTokens: 64000,
     interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Vision, LLM_IF_OAI_Fn, LLM_IF_ANT_PromptCaching, LLM_IF_OAI_Reasoning],
@@ -18,8 +18,8 @@ export const hardcodedABOV3Variants: { [modelId: string]: Partial<ModelDescripti
 
   'claude-haiku-4-5-20251001': {
     idVariant: 'thinking',
-    label: 'ABOV3 Solomon 4.5 (Thinking)',
-    description: 'ABOV3 Solomon 4.5 with extended thinking mode - first Solomon model with reasoning capabilities',
+    label: 'ABOV3 Solomon 5786.10.01 (Thinking)',
+    description: 'ABOV3 Solomon with extended thinking mode - first Solomon model with reasoning capabilities',
     parameterSpecs: [{ paramId: 'llmVndAntThinkingBudget', required: true, hidden: false }],
     maxCompletionTokens: 64000,
     interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Vision, LLM_IF_OAI_Fn, LLM_IF_ANT_PromptCaching, LLM_IF_OAI_Reasoning],
@@ -28,8 +28,8 @@ export const hardcodedABOV3Variants: { [modelId: string]: Partial<ModelDescripti
   // Claude 4.1 models with thinking variants
   'claude-opus-4-1-20250805': {
     idVariant: 'thinking',
-    label: 'ABOV3 Genesis 4.1 (Thinking)',
-    description: 'ABOV3 Genesis 4.1 with extended thinking mode enabled for complex reasoning',
+    label: 'ABOV3 Genesis 5786.08.05 (Thinking)',
+    description: 'ABOV3 Genesis with extended thinking mode enabled for complex reasoning',
     parameterSpecs: [{ paramId: 'llmVndAntThinkingBudget', required: true, hidden: false }],
     maxCompletionTokens: 32000,
     interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Vision, LLM_IF_OAI_Fn, LLM_IF_ANT_PromptCaching, LLM_IF_OAI_Reasoning],
@@ -38,10 +38,10 @@ export const hardcodedABOV3Variants: { [modelId: string]: Partial<ModelDescripti
 
   // Claude 4 models with thinking variants
   'claude-opus-4-20250514': {
-    hidden: true, // superseded by 4.1
+    hidden: true, // superseded by 5786.08.05
     idVariant: 'thinking',
-    label: 'ABOV3 Genesis 4 (Thinking)',
-    description: 'ABOV3 Genesis 4 with extended thinking mode enabled for complex reasoning',
+    label: 'ABOV3 Genesis 5786.05.14 (Thinking)',
+    description: 'ABOV3 Genesis with extended thinking mode enabled for complex reasoning',
     parameterSpecs: [{ paramId: 'llmVndAntThinkingBudget', required: true, hidden: false }],
     maxCompletionTokens: 32000,
     interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Vision, LLM_IF_OAI_Fn, LLM_IF_ANT_PromptCaching, LLM_IF_OAI_Reasoning],
@@ -50,8 +50,8 @@ export const hardcodedABOV3Variants: { [modelId: string]: Partial<ModelDescripti
 
   'claude-sonnet-4-20250514': {
     idVariant: 'thinking',
-    label: 'ABOV3 Exodus 4 (Thinking)',
-    description: 'ABOV3 Exodus 4 with extended thinking mode enabled for complex reasoning',
+    label: 'ABOV3 Exodus 5786.05.14 (Thinking)',
+    description: 'ABOV3 Exodus with extended thinking mode enabled for complex reasoning',
     parameterSpecs: [{ paramId: 'llmVndAntThinkingBudget', required: true, hidden: false }],
     maxCompletionTokens: 64000,
     interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Vision, LLM_IF_OAI_Fn, LLM_IF_ANT_PromptCaching, LLM_IF_OAI_Reasoning],
@@ -61,8 +61,8 @@ export const hardcodedABOV3Variants: { [modelId: string]: Partial<ModelDescripti
   // Changes to the thinking variant (same model ID) for the Claude Sonnet 3.7 model
   'claude-3-7-sonnet-20250219': {
     idVariant: 'thinking',
-    label: 'ABOV3 Exodus 3.7 (Thinking)',
-    description: 'ABOV3 Exodus 3.7 with extended thinking mode enabled for complex reasoning',
+    label: 'ABOV3 Exodus 5786.02.19 (Thinking)',
+    description: 'ABOV3 Exodus with extended thinking mode enabled for complex reasoning',
     parameterSpecs: [{ paramId: 'llmVndAntThinkingBudget', required: true, hidden: false }],
     maxCompletionTokens: 64000,
     interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Vision, LLM_IF_OAI_Fn, LLM_IF_ANT_PromptCaching, LLM_IF_OAI_Reasoning],
@@ -74,10 +74,10 @@ export const hardcodedABOV3Variants: { [modelId: string]: Partial<ModelDescripti
 
 export const hardcodedABOV3Models: (ModelDescriptionSchema & { isLegacy?: boolean })[] = [
 
-  // Claude 4.5 models
+  // Latest models (5786 = 2025 + 3761 Hebrew calendar offset, 5785 = 2024 + 3761)
   {
     id: 'claude-sonnet-4-5-20250929', // Active
-    label: 'ABOV3 Exodus 4.5', // 🌟
+    label: 'ABOV3 Exodus 5786.09.29', // 🌟
     description: 'Best model for complex agents and coding, with the highest intelligence across most tasks',
     contextWindow: 200000,
     maxCompletionTokens: 64000,
@@ -89,7 +89,7 @@ export const hardcodedABOV3Models: (ModelDescriptionSchema & { isLegacy?: boolea
   },
   {
     id: 'claude-haiku-4-5-20251001', // Active
-    label: 'ABOV3 Solomon 4.5', // 🌟
+    label: 'ABOV3 Solomon 5786.10.01', // 🌟
     description: 'Fastest model with exceptional speed and performance',
     contextWindow: 200000,
     maxCompletionTokens: 64000,
@@ -98,10 +98,10 @@ export const hardcodedABOV3Models: (ModelDescriptionSchema & { isLegacy?: boolea
     chatPrice: { input: 1, output: 5, cache: { cType: 'ant-bp', read: 0.10, write: 1.25, duration: 300 } },
   },
 
-  // Claude 4.1 models
+  // Genesis flagship
   {
     id: 'claude-opus-4-1-20250805', // Active
-    label: 'ABOV3 Genesis 4.1', // 🌟
+    label: 'ABOV3 Genesis 5786.08.05', // 🌟
     description: 'Exceptional model for specialized complex tasks requiring advanced reasoning',
     contextWindow: 200000,
     maxCompletionTokens: 32000,
@@ -111,11 +111,11 @@ export const hardcodedABOV3Models: (ModelDescriptionSchema & { isLegacy?: boolea
     benchmark: { cbaElo: 1438 }, // claude-opus-4-1-20250805
   },
 
-  // Claude 4 models
+  // Previous versions
   {
-    hidden: true, // superseded by 4.1
+    hidden: true, // superseded by 5786.08.05
     id: 'claude-opus-4-20250514', // Active
-    label: 'ABOV3 Genesis 4',
+    label: 'ABOV3 Genesis 5786.05.14',
     description: 'Previous flagship model',
     contextWindow: 200000,
     maxCompletionTokens: 32000,
@@ -126,7 +126,7 @@ export const hardcodedABOV3Models: (ModelDescriptionSchema & { isLegacy?: boolea
   },
   {
     id: 'claude-sonnet-4-20250514', // Active
-    label: 'ABOV3 Exodus 4', // 🌟
+    label: 'ABOV3 Exodus 5786.05.14', // 🌟
     description: 'High-performance model',
     contextWindow: 200000,
     maxCompletionTokens: 64000,
@@ -136,10 +136,10 @@ export const hardcodedABOV3Models: (ModelDescriptionSchema & { isLegacy?: boolea
     benchmark: { cbaElo: 1386 }, // claude-sonnet-4-20250514
   },
 
-  // Claude 3.7 models
+  // Extended thinking pioneer
   {
     id: 'claude-3-7-sonnet-20250219', // Active | Guaranteed Until: February 2026
-    label: 'ABOV3 Exodus 3.7',
+    label: 'ABOV3 Exodus 5786.02.19',
     description: 'High-performance model with early extended thinking',
     contextWindow: 200000,
     maxCompletionTokens: 64000,
@@ -149,10 +149,10 @@ export const hardcodedABOV3Models: (ModelDescriptionSchema & { isLegacy?: boolea
     benchmark: { cbaElo: 1369 }, // claude-3-7-sonnet-20250219
   },
 
-  // Claude 3.5 models
+  // 5785 models (2024)
   {
     id: 'claude-3-5-sonnet-20241022', // Deprecated | Deprecated: August 13, 2025 | Retiring: October 22, 2025
-    label: 'ABOV3 Exodus 3.5 [Deprecated]',
+    label: 'ABOV3 Exodus 5785.10.22 [Deprecated]',
     description: 'High level of intelligence and capability. Deprecated August 13, 2025, retiring October 22, 2025.',
     contextWindow: 200000,
     maxCompletionTokens: 8192,
@@ -165,8 +165,8 @@ export const hardcodedABOV3Models: (ModelDescriptionSchema & { isLegacy?: boolea
   },
   {
     id: 'claude-3-5-sonnet-20240620', // Deprecated | Deprecated: August 13, 2025 | Retiring: October 22, 2025
-    label: 'ABOV3 Exodus 3.5 (previous) [Deprecated]',
-    description: 'Previous version of ABOV3 Exodus 3.5. Deprecated August 13, 2025, retiring October 22, 2025.',
+    label: 'ABOV3 Exodus 5785.06.20 [Deprecated]',
+    description: 'Previous version of ABOV3 Exodus. Deprecated August 13, 2025, retiring October 22, 2025.',
     contextWindow: 200000,
     maxCompletionTokens: 8192,
     trainingDataCutoff: 'Apr 2024',
@@ -178,7 +178,7 @@ export const hardcodedABOV3Models: (ModelDescriptionSchema & { isLegacy?: boolea
   },
   {
     id: 'claude-3-5-haiku-20241022', // Active | Guaranteed Until: October 2025
-    label: 'ABOV3 Solomon 3.5',
+    label: 'ABOV3 Solomon 5785.10.22',
     description: 'Intelligence at blazing speeds',
     contextWindow: 200000,
     maxCompletionTokens: 8192,
@@ -188,10 +188,10 @@ export const hardcodedABOV3Models: (ModelDescriptionSchema & { isLegacy?: boolea
     benchmark: { cbaElo: 1319, cbaMmlu: 75.2 }, // claude-3-5-haiku-20241022
   },
 
-  // Claude 3 models
+  // Legacy models
   {
     id: 'claude-3-opus-20240229', // Deprecated | Deprecated: June 30, 2025 | Retiring: January 5, 2026
-    label: 'ABOV3 Genesis 3 [Deprecated]',
+    label: 'ABOV3 Genesis 5785.02.29 [Deprecated]',
     description: 'Powerful model for complex tasks. Deprecated June 30, 2025, retiring January 5, 2026.',
     contextWindow: 200000,
     maxCompletionTokens: 4096,
@@ -204,7 +204,7 @@ export const hardcodedABOV3Models: (ModelDescriptionSchema & { isLegacy?: boolea
   },
   {
     id: 'claude-3-haiku-20240307', // Active
-    label: 'ABOV3 Solomon 3',
+    label: 'ABOV3 Solomon 5785.03.07',
     description: 'Fast and compact model for near-instant responsiveness',
     contextWindow: 200000,
     maxCompletionTokens: 4096,
@@ -214,10 +214,10 @@ export const hardcodedABOV3Models: (ModelDescriptionSchema & { isLegacy?: boolea
     benchmark: { cbaElo: 1263, cbaMmlu: 75.1 },
   },
 
-  // Legacy/Retired models
+  // Retired models
   {
     id: 'claude-3-sonnet-20240229', // Retired | Retired: July 21, 2025
-    label: 'ABOV3 Exodus 3 [Retired]',
+    label: 'ABOV3 Exodus 5785.02.29 [Retired]',
     description: 'Balance of intelligence and speed. Retired July 21, 2025.',
     contextWindow: 200000,
     maxCompletionTokens: 4096,
@@ -230,7 +230,7 @@ export const hardcodedABOV3Models: (ModelDescriptionSchema & { isLegacy?: boolea
   },
   {
     id: 'claude-2.1', // Retired | Retired: July 21, 2025
-    label: 'Claude 2.1 [Retired]',
+    label: 'ABOV3 Legacy 2.1 [Retired]',
     description: 'Updated version of Claude 2 with improved accuracy. Retired July 21, 2025.',
     contextWindow: 200000,
     maxCompletionTokens: 4096,
@@ -243,7 +243,7 @@ export const hardcodedABOV3Models: (ModelDescriptionSchema & { isLegacy?: boolea
   },
   {
     id: 'claude-2.0', // Retired | Retired: July 21, 2025
-    label: 'Claude 2 [Retired]',
+    label: 'ABOV3 Legacy 2.0 [Retired]',
     description: 'Predecessor to Claude 3, offering strong all-round performance. Retired July 21, 2025.',
     contextWindow: 100000,
     maxCompletionTokens: 4096,

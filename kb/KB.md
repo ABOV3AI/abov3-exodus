@@ -14,6 +14,9 @@ Internal documentation for ABOV3 Exodus architecture and systems, for use by AI 
 - **[AIX.md](modules/AIX.md)** - AIX streaming architecture documentation
 - **[AIX-callers-analysis.md](modules/AIX-callers-analysis.md)** - Analysis of AIX entry points, call chains, common and different rendering, error handling, etc.
 
+#### Ark-SLM - Local Inference Server
+- **[ARK-SLM.md](modules/ARK-SLM.md)** - Local SLM inference server integration with llama.cpp
+
 ### Systems Documentation
 
 #### Core Platform Systems

@@ -5,7 +5,8 @@ import { persist } from 'zustand/middleware';
 export interface Project {
   id: string;
   name: string;
-  path: string; // Display path for UI
+  path: string; // Display path for UI (folder name from browser)
+  fullPath?: string; // Full absolute path for MCP tools (user-configured)
   addedAt: number;
   // FileSystemDirectoryHandle can't be serialized, so we store it separately
   // It will be requested again when needed via showDirectoryPicker with the same directory
@@ -105,6 +106,9 @@ interface ProjectsState {
 
   // FileSystemDirectoryHandle storage (in-memory only, not persisted)
   projectHandles: Map<string, FileSystemDirectoryHandle>;
+
+  // Counter to signal file tree should refresh (incremented when AI tools modify files)
+  fileTreeRefreshCounter: number;
 }
 
 interface ProjectsActions {
@@ -113,6 +117,9 @@ interface ProjectsActions {
 
   // Remove a project
   removeProject: (id: string) => void;
+
+  // Update a project's properties (e.g., fullPath)
+  updateProject: (id: string, updates: Partial<Pick<Project, 'name' | 'fullPath'>>) => void;
 
   // Set active project
   setActiveProject: (id: string | null) => void;
@@ -133,6 +140,9 @@ interface ProjectsActions {
   setMode: (mode: ProjectMode) => void;
   toggleMode: () => void;
   getMode: () => ProjectMode;
+
+  // File tree refresh (called when AI tools modify files)
+  triggerFileTreeRefresh: () => void;
 }
 
 type ProjectsStore = ProjectsState & ProjectsActions;
@@ -154,6 +164,7 @@ export const useProjectsStore = create<ProjectsStore>()(
       lastCodingProjectId: null,
       lastResearchProjectId: null,
       projectHandles: new Map(),
+      fileTreeRefreshCounter: 0,
 
       // Actions
       addProject: async (handle: FileSystemDirectoryHandle) => {
@@ -206,6 +217,14 @@ export const useProjectsStore = create<ProjectsStore>()(
             activeProjectId: state.activeProjectId === id ? null : state.activeProjectId,
           };
         });
+      },
+
+      updateProject: (id: string, updates: Partial<Pick<Project, 'name' | 'fullPath'>>) => {
+        set((state) => ({
+          projects: state.projects.map((p) =>
+            p.id === id ? { ...p, ...updates } : p
+          ),
+        }));
       },
 
       setActiveProject: (id: string | null) => {
@@ -276,28 +295,21 @@ export const useProjectsStore = create<ProjectsStore>()(
         // Save current project to the current mode's memory before switching
         const updates: Partial<ProjectsState> = { mode };
 
-        if (state.mode === 'coding') {
+        // Save current project to coding memory (coding and research share the same project)
+        if (state.mode === 'coding' || state.mode === 'research') {
           updates.lastCodingProjectId = state.activeProjectId;
-        } else if (state.mode === 'research') {
-          updates.lastResearchProjectId = state.activeProjectId;
         }
 
         if (mode === 'chat') {
-          // Switching to chat mode: deactivate project
+          // Switching to chat mode: deactivate project (no tools in chat mode)
           updates.activeProjectId = null;
-        } else if (mode === 'coding') {
-          // Switching to coding mode: restore last coding project
+        } else if (mode === 'coding' || mode === 'research') {
+          // Coding and Research modes share the same project folder
+          // Research mode = read-only access, Coding mode = full access
           const projectToRestore = state.lastCodingProjectId
             && state.projects.find(p => p.id === state.lastCodingProjectId)
             ? state.lastCodingProjectId
-            : null;
-          updates.activeProjectId = projectToRestore;
-        } else if (mode === 'research') {
-          // Switching to research mode: restore last research project
-          const projectToRestore = state.lastResearchProjectId
-            && state.projects.find(p => p.id === state.lastResearchProjectId)
-            ? state.lastResearchProjectId
-            : null;
+            : (state.activeProjectId || null);  // Keep current if available
           updates.activeProjectId = projectToRestore;
         }
 
@@ -311,6 +323,12 @@ export const useProjectsStore = create<ProjectsStore>()(
 
       getMode: () => {
         return get().mode;
+      },
+
+      triggerFileTreeRefresh: () => {
+        set((state) => ({
+          fileTreeRefreshCounter: state.fileTreeRefreshCounter + 1,
+        }));
       },
     }),
     {

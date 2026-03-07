@@ -58,8 +58,9 @@ RUN npm prune --production
 FROM base AS runner
 WORKDIR /app
 
-# Install wget for health checks
-RUN apk add --no-cache wget
+# Install wget for health checks and link ssl3 for Prisma
+RUN apk add --no-cache wget && \
+    sh -c '[ ! -e /lib/libssl.so.3 ] && ln -s /usr/lib/libssl.so.3 /lib/libssl.so.3 || echo "Link already exists"'
 
 # As user
 RUN addgroup --system --gid 1001 nodejs

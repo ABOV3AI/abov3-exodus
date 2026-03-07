@@ -216,7 +216,7 @@ export namespace OpenAIWire_Tools {
        * For stricter validation, use the OpenAPI_Schema.Object_schema
        */
       properties: z.json().optional(), // FC-DEF params schema
-      required: z.array(z.string()).optional(),
+      required: z.array(z.string()).nullish(), // nullable to handle MCP tools that send null
     }).optional(),
     /**
      * [OpenAI Structured Outputs, 2024-08-06]
@@ -1196,7 +1196,7 @@ export namespace OpenAIWire_Responses_Tools {
     parameters: z.object({
       type: z.literal('object'),
       properties: z.json().optional(), // FC-DEF params schema (Responses)
-      required: z.array(z.string()).optional(),
+      required: z.array(z.string()).nullish(), // nullable to handle MCP tools that send null
     }).optional(),
     strict: z.boolean().optional(), // enforce strict parameter validation
   });

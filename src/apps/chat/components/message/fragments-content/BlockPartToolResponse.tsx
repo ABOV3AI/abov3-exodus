@@ -4,6 +4,7 @@ import { BlocksContainer } from '~/modules/blocks/BlocksContainers';
 
 import type { ContentScaling } from '~/common/app.theme';
 import type { DMessageToolResponsePart } from '~/common/stores/chat/chat.fragments';
+import { mcpToolResultToString } from '~/common/stores/chat/chat.fragments';
 
 import { KeyValueData, KeyValueGrid } from './BlockPartToolInvocation';
 
@@ -22,7 +23,7 @@ export function BlockPartToolResponse(props: {
         return [
           { label: 'Id', value: part.id },
           { label: 'Name', value: <strong>{part.response.name}</strong> },
-          { label: 'Response', value: part.response.result, asCode: true },
+          { label: 'Response', value: mcpToolResultToString(part.response.result), asCode: true },
           ...(!part.error ? [] : [{ label: 'Error', value: part.error }]),
           { label: 'Environment', value: part.environment },
         ];

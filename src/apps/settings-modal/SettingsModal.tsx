@@ -8,6 +8,7 @@ import LanguageRoundedIcon from '@mui/icons-material/LanguageRounded';
 import MicIcon from '@mui/icons-material/Mic';
 import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
 import ScienceIcon from '@mui/icons-material/Science';
+import SchoolIcon from '@mui/icons-material/School';
 import SearchIcon from '@mui/icons-material/Search';
 import TerminalOutlinedIcon from '@mui/icons-material/TerminalOutlined';
 
@@ -29,8 +30,10 @@ import { useIsMobile } from '~/common/components/useMatchMedia';
 
 import { AppChatSettingsAI } from './AppChatSettingsAI';
 import { AppChatSettingsUI } from './settings-ui/AppChatSettingsUI';
+import { EdenServerSettings, TrainingDefaultSettings, TrainingExportSettings } from './TrainSettings';
 import { UxLabsSettings } from './UxLabsSettings';
 import { VoiceSettings } from './VoiceSettings';
+import { useUserFeatures } from '~/common/stores/store-user-features';
 
 
 // configuration
@@ -197,6 +200,7 @@ export function SettingsModal(props: {
 
   // external state
   const isMobile = useIsMobile();
+  const hasTrainAccess = useUserFeatures((state) => state.hasFeature('TRAIN'));
 
   // handlers
 
@@ -252,6 +256,7 @@ export function SettingsModal(props: {
           <Tab value='voice' disableIndicator sx={_styles.tabsListTab}>Voice</Tab>
           <Tab value='draw' disableIndicator sx={_styles.tabsListTab}>Draw</Tab>
           <Tab value='tools' disableIndicator sx={_styles.tabsListTab}>Tools</Tab>
+          {hasTrainAccess && <Tab value='train' disableIndicator sx={_styles.tabsListTab}>Train</Tab>}
         </TabList>
 
         <TabPanel value='chat' variant='outlined' sx={_styles.tabPanel}>
@@ -309,6 +314,22 @@ export function SettingsModal(props: {
             </Topic>
           </Topics>
         </TabPanel>
+
+        {hasTrainAccess && (
+          <TabPanel value='train' variant='outlined' sx={_styles.tabPanel}>
+            <Topics>
+              <Topic icon={<CloudIcon />} title='Eden Training Server'>
+                <EdenServerSettings />
+              </Topic>
+              <Topic icon={<SchoolIcon />} title='Default Training Options' startCollapsed>
+                <TrainingDefaultSettings />
+              </Topic>
+              <Topic icon='📦' title='Model Export Settings' startCollapsed>
+                <TrainingExportSettings />
+              </Topic>
+            </Topics>
+          </TabPanel>
+        )}
       </Tabs>
 
       {/*<Divider />*/}

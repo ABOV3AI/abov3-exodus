@@ -298,6 +298,12 @@ export const abov3AccessSchema = z.object({
   enableABOV3Personas: z.boolean().optional(),
   // ABOV3-specific: Proprietary protection toggle
   enableProprietaryProtection: z.boolean().optional(),
+  // ABOV3-specific: Local tools toggle for OAuth users
+  enableLocalTools: z.boolean().optional(),
+  // Project mode: 'chat' (no tools), 'research' (read-only), 'coding' (full access)
+  projectMode: z.enum(['chat', 'research', 'coding']).optional(),
+  // Project path: absolute path to the user's selected project folder (for MCP file operations)
+  projectPath: z.string().nullish(),
 });
 export type ABOV3AccessSchema = z.infer<typeof abov3AccessSchema>;
 

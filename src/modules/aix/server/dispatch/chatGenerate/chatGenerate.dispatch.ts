@@ -1,5 +1,6 @@
 import { abov3Access } from '~/modules/llms/server/abov3/abov3.router';
 import { anthropicAccess } from '~/modules/llms/server/anthropic/anthropic.router';
+import { arkSLMAccess } from '~/modules/llms/server/ark-slm/ark-slm.router';
 import { geminiAccess } from '~/modules/llms/server/gemini/gemini.router';
 import { ollamaAccess } from '~/modules/llms/server/ollama/ollama.router';
 import { openAIAccess } from '~/modules/llms/server/openai/openai.router';
@@ -42,12 +43,15 @@ export function createChatGenerateDispatch(access: AixAPI_Access, model: AixAPI_
     case 'abov3': {
       const enablePersonas = (access as any).enableABOV3Personas ?? false;
       const enableProtection = (access as any).enableProprietaryProtection ?? false;
+      const enableLocalTools = (access as any).enableLocalTools ?? false;
+      const projectMode = (access as any).projectMode ?? 'chat';
+      const projectPath = (access as any).projectPath ?? undefined;
       const isOAuth = !!(access as any).oauthAccessToken && !!(access as any).oauthRefreshToken;
 
       return {
         request: {
           ...abov3Access(access, model.id, '/v1/messages'),
-          body: aixToABOV3MessageCreate(model, chatGenerate, streaming, isOAuth, enablePersonas, enableProtection),
+          body: aixToABOV3MessageCreate(model, chatGenerate, streaming, isOAuth, enablePersonas, enableProtection, enableLocalTools, projectMode, projectPath),
         },
         demuxerFormat: streaming ? 'fast-sse' : null,
         chatGenerateParse: streaming ? createABOV3MessageParser() : createABOV3MessageParserNS(),
@@ -100,6 +104,19 @@ export function createChatGenerateDispatch(access: AixAPI_Access, model: AixAPI_
         // demuxerFormat: streaming ? 'json-nl' : null,
         demuxerFormat: streaming ? 'fast-sse' : null,
         // chatGenerateParse: createDispatchParserOllama(),
+        chatGenerateParse: streaming ? createOpenAIChatCompletionsChunkParser() : createOpenAIChatCompletionsParserNS(),
+      };
+
+    /**
+     * ABOV3 Ark-SLM - Local SLM inference server using OpenAI-compatible API
+     */
+    case 'ark-slm':
+      return {
+        request: {
+          ...arkSLMAccess(access, '/v1/chat/completions'),
+          body: aixToOpenAIChatCompletions('openai', model, chatGenerate, false, streaming),
+        },
+        demuxerFormat: streaming ? 'fast-sse' : null,
         chatGenerateParse: streaming ? createOpenAIChatCompletionsChunkParser() : createOpenAIChatCompletionsParserNS(),
       };
 

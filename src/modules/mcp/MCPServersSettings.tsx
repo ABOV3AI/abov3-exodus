@@ -12,6 +12,7 @@ import CloudOffIcon from '@mui/icons-material/CloudOff';
 
 import { FormLabelStart } from '~/common/components/forms/FormLabelStart';
 import { useMCPServersStore } from '~/common/stores/store-mcp-servers';
+import { MCPToolsManager } from './MCPToolsManager';
 
 
 export function MCPServersSettings() {
@@ -216,6 +217,16 @@ export function MCPServersSettings() {
         >
           Add MCP Server
         </Button>
+      )}
+
+      {/* Tools Manager - with search filter */}
+      {servers.some(s => s.enabled) && (
+        <Box sx={{ mt: 2 }}>
+          <Typography level="title-sm" sx={{ mb: 1.5 }}>
+            Manage Tools
+          </Typography>
+          <MCPToolsManager />
+        </Box>
       )}
 
       {/* Info Box */}

@@ -4,6 +4,7 @@
  */
 
 import type { AixTools_ToolDefinition } from '../aix/server/api/aix.wiretypes';
+import type { MCPToolResultContentItem } from '~/common/stores/chat/chat.fragments';
 
 
 export type ToolCategory =
@@ -28,7 +29,7 @@ export interface ToolExecutionContext {
 
 
 export interface ToolExecutionResult {
-  result?: string;
+  result?: string | MCPToolResultContentItem[];  // String for backward compat, or structured content with images
   error?: string;
   metadata?: {
     executionTime?: number;

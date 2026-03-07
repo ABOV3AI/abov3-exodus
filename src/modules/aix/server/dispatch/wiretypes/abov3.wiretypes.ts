@@ -491,7 +491,7 @@ export namespace ABOV3Wire_Tools {
     input_schema: z.looseObject({
       type: z.literal('object'),
       properties: z.record(z.string(), z.any()).nullish(), // FC-DEF params schema - WAS: z.json().nullable(),
-      required: z.array(z.string()).optional(), // 2025-02-24: seems to be removed; we may still have this, but it may also be within the 'properties' object
+      required: z.array(z.string()).nullish(), // nullable to handle MCP tools that send null
     }),
   });
 

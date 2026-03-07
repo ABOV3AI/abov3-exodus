@@ -78,7 +78,7 @@ export function ABOV3ServiceSetup(props: { serviceId: DModelsServiceId }) {
   const { autoVndAntBreakpoints, setAutoVndAntBreakpoints } = useChatAutoAI();
 
   // derived state
-  const { abov3Key, abov3Host, heliconeKey, oauthAccessToken, oauthExpiresAt, enableABOV3Personas, enableProprietaryProtection } = serviceAccess;
+  const { abov3Key, abov3Host, heliconeKey, oauthAccessToken, oauthExpiresAt, enableABOV3Personas, enableProprietaryProtection, enableLocalTools } = serviceAccess;
   const needsUserKey = !serviceHasCloudTenantConfig;
   const isOAuthLoggedIn = !!oauthAccessToken;
   const isOAuthExpired = oauthExpiresAt ? Date.now() > oauthExpiresAt : false;
@@ -342,6 +342,14 @@ export function ABOV3ServiceSetup(props: { serviceId: DModelsServiceId }) {
       description={enableProprietaryProtection ? <>Active protection</> : 'Disabled'}
       checked={enableProprietaryProtection ?? true}
       onChange={(checked) => updateSettings({ enableProprietaryProtection: checked })}
+    />
+
+    <FormSwitchControl
+      title='Local Tools' on='Enabled' off='Disabled'
+      tooltip='Enable local file operations (read, write, list, create) via text-based tool parsing. Works with OAuth - select a project folder first.'
+      description={enableLocalTools ? <>File read/write/list active</> : 'Disabled'}
+      checked={enableLocalTools ?? true}
+      onChange={(checked) => updateSettings({ enableLocalTools: checked })}
     />
 
     <FormSwitchControl

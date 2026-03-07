@@ -148,6 +148,9 @@ interface AixClientOptions {
   // LLM parameter configuration layers: full replacement of user params and/or overrides of a set of individual params
   llmUserParametersReplacement?: DModelParameterValues; // can replace the 'global' llm user configuration with an alternate config (e.g. persona, or per-chat)
   llmOptionsOverride?: Omit<DModelParameterValues, 'llmRef'>; // overrides (sets/replaces) individual LLM parameters
+
+  // Access overrides: runtime values that override the transport access (e.g., projectMode)
+  accessOverrides?: Record<string, unknown>;
 }
 
 
@@ -445,7 +448,12 @@ export async function aixChatGenerateContent_DMessage<TServiceSettings extends o
 
   // Aix Access
   const llm = findLLMOrThrow(llmId);
-  const { transportAccess: aixAccess, vendor: llmVendor, serviceSettings: llmServiceSettings } = findServiceAccessOrThrow<TServiceSettings, TAccess>(llm.sId);
+  const { transportAccess: _aixAccess, vendor: llmVendor, serviceSettings: llmServiceSettings } = findServiceAccessOrThrow<TServiceSettings, TAccess>(llm.sId);
+
+  // Merge access overrides if provided (e.g., projectMode for ABOV3)
+  const aixAccess = clientOptions.accessOverrides
+    ? { ..._aixAccess, ...clientOptions.accessOverrides } as TAccess
+    : _aixAccess;
 
   // Aix Model
   const llmParameters = getAllModelParameterValues(llm.initialParameters, clientOptions?.llmUserParametersReplacement ?? llm.userParameters);

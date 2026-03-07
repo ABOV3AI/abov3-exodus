@@ -18,6 +18,7 @@ import { getInstantAppChatPanesCount } from '../components/panes/store-panes-man
 import { useProjectsStore } from '~/apps/projects/store-projects';
 import { getEnabledAIXTools } from '~/modules/tools/tools.registry';
 import { executeToolCall } from '~/modules/tools/tools.executor';
+import { parseToolInvocationsFromText, hasToolInvocations } from '~/modules/tools/tools.text-parser';
 import type { AixTools_ToolDefinition } from '~/modules/aix/server/api/aix.wiretypes';
 import { create_FunctionCallResponse_ContentFragment, createTextContentFragment } from '~/common/stores/chat/chat.fragments';
 
@@ -126,7 +127,16 @@ export async function runPersonaOnConversationHead(
     chatHistory,
     'conversation',
     conversationId,
-    { abortSignal: abortController.signal, throttleParallelThreads: parallelViewCount },
+    {
+      abortSignal: abortController.signal,
+      throttleParallelThreads: parallelViewCount,
+      // Pass projectMode and projectPath to the API for mode-aware tool instructions
+      // Use fullPath (user-configured absolute path) if available, fallback to path (folder name)
+      accessOverrides: {
+        projectMode,
+        projectPath: activeProject?.fullPath || activeProject?.path || undefined,
+      },
+    },
     (messageOverwrite: AixChatGenerateContent_DMessage, messageComplete: boolean) => {
 
       // Note: there was an abort check here, but it removed the last packet, which contained the cause and final text.
@@ -170,7 +180,85 @@ export async function runPersonaOnConversationHead(
     AudioGenerator.chatNotifyResponse();
   }
 
-  // Handle tool invocations if present (unified system for all tools)
+  // Handle TEXT-BASED tool invocations (for OAuth users - tools in response text)
+  // This parses tool blocks like ```tool:read_file {"path": "..."} ``` from Claude's response
+  if (lastDeepCopy.fragments) {
+    // Check text fragments for tool invocation patterns
+    const textFragments = lastDeepCopy.fragments.filter(frag =>
+      frag.part.pt === 'text'
+    );
+
+    for (const textFrag of textFragments) {
+      const part = textFrag.part;
+      if (part.pt !== 'text') continue;
+
+      const text = part.text;
+      if (!hasToolInvocations(text)) continue;
+
+      // Parse tool invocations from text
+      const textTools = parseToolInvocationsFromText(text);
+
+      if (textTools.length > 0) {
+        console.log('[Text Tool Parser] Found', textTools.length, 'tool invocation(s) in text');
+
+        // Execute the first tool (one at a time as instructed in system prompt)
+        const firstTool = textTools[0];
+
+        try {
+          // Execute using unified tool system
+          const result = await executeToolCall(
+            firstTool.name,
+            JSON.stringify(firstTool.args),
+            {
+              projectHandle: activeProject?.handle || undefined,
+              conversationId,
+              messageId: assistantMessageId,
+              abortSignal: abortController.signal,
+            }
+          );
+
+          // For text-based tools, send result as plain text (not structured tool_response)
+          // This is because OAuth doesn't support API tools, so we use text-based communication
+          const resultText = result.error
+            ? `[Tool Error: ${firstTool.name}]\n${result.error}`
+            : `[Tool Result: ${firstTool.name}]\n${result.result || 'Success'}`;
+
+          // Create plain text response message
+          const toolResponseMessage = createDMessageFromFragments('user', [
+            createTextContentFragment(resultText)
+          ]);
+          await cHandler.messageAppend(toolResponseMessage);
+
+          // Trigger file tree refresh if this was a file-modifying operation
+          if (['write_file', 'create_directory', 'delete_file', 'delete_directory'].includes(firstTool.name)) {
+            useProjectsStore.getState().triggerFileTreeRefresh();
+          }
+
+          // Small delay to ensure the message is properly persisted
+          await new Promise(resolve => setTimeout(resolve, 100));
+
+          // Continue conversation to let Claude see the tool result
+          await runPersonaOnConversationHead(assistantLlmId, conversationId);
+          return true; // Return early as the recursive call will handle the rest
+
+        } catch (error: any) {
+          console.error('[Text Tool Parser] Tool execution failed:', error);
+
+          // Create plain text error message
+          const errorText = `[Tool Error: ${firstTool.name}]\n${error.message || 'Tool execution failed'}`;
+          const errorMessage = createDMessageFromFragments('user', [
+            createTextContentFragment(errorText)
+          ]);
+          await cHandler.messageAppend(errorMessage);
+          await new Promise(resolve => setTimeout(resolve, 100));
+          await runPersonaOnConversationHead(assistantLlmId, conversationId);
+          return true;
+        }
+      }
+    }
+  }
+
+  // Handle STRUCTURED tool invocations if present (unified system for all tools)
   if (lastDeepCopy.fragments) {
     // Count how many tool invocations we have
     const toolInvocations = lastDeepCopy.fragments.filter(frag => {
@@ -255,6 +343,18 @@ export async function runPersonaOnConversationHead(
         // Append tool response message and wait for it to be saved
         // This ensures the tool_result is in the conversation history before continuing
         await cHandler.messageAppend(toolResponseMessage);
+
+        // Trigger file tree refresh if any of the tools were file-modifying operations
+        const fileModifyingTools = ['write_file', 'create_directory', 'delete_file', 'delete_directory'];
+        const hasFileModifyingTool = toolInvocations.some(frag => {
+          const part = frag.part;
+          return part.pt === 'tool_invocation' &&
+                 part.invocation.type === 'function_call' &&
+                 fileModifyingTools.includes(part.invocation.name);
+        });
+        if (hasFileModifyingTool) {
+          useProjectsStore.getState().triggerFileTreeRefresh();
+        }
 
         // Small delay to ensure the message is properly persisted
         await new Promise(resolve => setTimeout(resolve, 100));

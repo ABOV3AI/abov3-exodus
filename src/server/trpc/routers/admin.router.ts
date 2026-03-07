@@ -1,9 +1,18 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import nodemailer from 'nodemailer';
+import bcrypt from 'bcryptjs';
 
-import { adminProcedure, publicProcedure, createTRPCRouter } from '../trpc.server';
+import { adminProcedure, protectedProcedure, createTRPCRouter } from '../trpc.server';
 import { prismaDb } from '../../prisma/prismaDb';
+import {
+  canModifyUserPermissions,
+  getUserFeatures,
+  setFeaturePermission,
+  type FeatureFlag,
+} from '../../auth/permissions';
+
+const featureFlagSchema = z.enum(['NEPHESH', 'TRAIN', 'FLOWCORE', 'ADMIN_PANEL']);
 
 
 const smtpConfigSchema = z.object({
@@ -221,13 +230,246 @@ export const adminRouter = createTRPCRouter({
     .input(z.object({
       userId: z.string(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      // Check if trying to delete self
+      if (input.userId === ctx.userId) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Cannot delete your own account',
+        });
+      }
+
+      // Check if target is master developer
+      const target = await prismaDb.user.findUnique({
+        where: { id: input.userId },
+        select: { isMasterDev: true },
+      });
+
+      if (target?.isMasterDev) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Cannot delete Master Developer account',
+        });
+      }
+
       // Delete user (cascade will handle related records)
       await prismaDb.user.delete({
         where: { id: input.userId },
       });
 
       return { success: true };
+    }),
+
+
+  // Create a new user (admin only - for when signups are disabled)
+  createUser: adminProcedure
+    .input(z.object({
+      email: z.string().email(),
+      password: z.string().min(8),
+      name: z.string().optional(),
+      features: z.array(featureFlagSchema).optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // Check if user already exists
+      const existing = await prismaDb.user.findUnique({
+        where: { email: input.email.toLowerCase() },
+      });
+
+      if (existing) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: 'User with this email already exists',
+        });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(input.password, 12);
+
+      // Create user
+      const user = await prismaDb.user.create({
+        data: {
+          email: input.email.toLowerCase(),
+          password: hashedPassword,
+          name: input.name || null,
+          storageMode: 'LOCAL_ONLY',
+          isAdmin: false,
+          role: 'USER',
+        },
+      });
+
+      // Create default user settings
+      await prismaDb.userSettings.create({
+        data: {
+          userId: user.id,
+          autoBackup: false,
+          llmSettings: {},
+          uiSettings: {},
+        },
+      });
+
+      // Grant requested features
+      if (input.features && input.features.length > 0) {
+        await Promise.all(
+          input.features.map((feature) =>
+            prismaDb.userPermission.create({
+              data: {
+                userId: user.id,
+                feature,
+                granted: true,
+                grantedBy: ctx.userId,
+              },
+            })
+          )
+        );
+      }
+
+      return {
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+        },
+      };
+    }),
+
+
+  // List users with their permissions
+  listUsersWithPermissions: adminProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(100).default(50),
+      offset: z.number().min(0).default(0),
+      search: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const where = input.search
+        ? {
+            OR: [
+              { email: { contains: input.search, mode: 'insensitive' as const } },
+              { name: { contains: input.search, mode: 'insensitive' as const } },
+            ],
+          }
+        : {};
+
+      const users = await prismaDb.user.findMany({
+        where,
+        take: input.limit,
+        skip: input.offset,
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          isAdmin: true,
+          isMasterDev: true,
+          role: true,
+          createdAt: true,
+          permissions: {
+            select: {
+              feature: true,
+              granted: true,
+              grantedAt: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      const total = await prismaDb.user.count({ where });
+
+      return {
+        users: users.map((u) => ({
+          ...u,
+          features: u.permissions.filter((p) => p.granted).map((p) => p.feature),
+        })),
+        total,
+        hasMore: input.offset + input.limit < total,
+      };
+    }),
+
+
+  // Update a user's feature permission
+  updateUserPermission: adminProcedure
+    .input(z.object({
+      userId: z.string(),
+      feature: featureFlagSchema,
+      granted: z.boolean(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const result = await setFeaturePermission(
+        ctx.userId,
+        input.userId,
+        input.feature as FeatureFlag,
+        input.granted
+      );
+
+      if (!result.success) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: result.error || 'Failed to update permission',
+        });
+      }
+
+      return { success: true };
+    }),
+
+
+  // Bulk update permissions for multiple users
+  bulkUpdatePermissions: adminProcedure
+    .input(z.object({
+      userIds: z.array(z.string()),
+      feature: featureFlagSchema,
+      granted: z.boolean(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const results = await Promise.all(
+        input.userIds.map(async (userId) => {
+          const canModify = await canModifyUserPermissions(ctx.userId, userId);
+          if (!canModify) {
+            return { userId, success: false, error: 'Cannot modify this user' };
+          }
+
+          const result = await setFeaturePermission(
+            ctx.userId,
+            userId,
+            input.feature as FeatureFlag,
+            input.granted
+          );
+
+          return { userId, ...result };
+        })
+      );
+
+      const successful = results.filter((r) => r.success).length;
+      const failed = results.filter((r) => !r.success);
+
+      return {
+        successful,
+        failed: failed.length,
+        errors: failed,
+      };
+    }),
+
+
+  // Get current user's features (for client-side store initialization)
+  getMyFeatures: protectedProcedure
+    .query(async ({ ctx }) => {
+      const features = await getUserFeatures(ctx.userId);
+
+      const user = await prismaDb.user.findUnique({
+        where: { id: ctx.userId },
+        select: { isAdmin: true, isMasterDev: true, role: true, image: true, name: true },
+      });
+
+      return {
+        features,
+        isAdmin: user?.isAdmin || user?.isMasterDev || user?.role === 'ADMIN' || user?.role === 'MASTER',
+        isMasterDev: user?.isMasterDev || false,
+        // Avatar from database (not in JWT to avoid cookie size issues)
+        avatar: user?.image || null,
+        name: user?.name || null,
+      };
     }),
 
 });

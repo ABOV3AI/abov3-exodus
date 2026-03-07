@@ -8,7 +8,7 @@ import { navItems } from '~/common/app.nav';
 import { OPTIMA_OPEN_DEBOUNCE, OPTIMA_PEEK_HOVER_ENTER_DELAY, OPTIMA_PEEK_HOVER_ENTER_DELAY_PANEL, OPTIMA_PEEK_HOVER_TIMEOUT } from './optima.config';
 
 
-export type PreferencesTabId = 'chat' | 'voice' | 'draw' | 'tools' | undefined;
+export type PreferencesTabId = 'chat' | 'voice' | 'draw' | 'tools' | 'train' | undefined;
 
 
 interface OptimaState {
@@ -23,6 +23,7 @@ interface OptimaState {
   panelIsPeeking: boolean;
 
   // modals
+  showAdminPanel: boolean;
   showAIXDebugger: boolean;
   showKeyboardShortcuts: boolean;
   showLogger: boolean;
@@ -30,6 +31,7 @@ interface OptimaState {
   showModels: boolean;
   showPreferences: boolean;
   preferencesTab: PreferencesTabId;
+  showUserProfile: boolean;
 
   // timing for panels
   lastDrawerOpenTime: number;
@@ -47,12 +49,14 @@ function initialDrawerOpen() {
 }
 
 const modalsClosedState = {
+  showAdminPanel: false,
   showAIXDebugger: false,
   showKeyboardShortcuts: false,
   showLogger: false,
   showModelOptions: false,
   showModels: false,
   showPreferences: false,
+  showUserProfile: false,
 } as const;
 
 const initialState: OptimaState = {
@@ -91,6 +95,9 @@ export interface OptimaActions {
   peekPanelEnter: () => void;
   peekPanelLeave: () => void;
 
+  closeAdminPanel: () => void;
+  openAdminPanel: () => void;
+
   closeAIXDebugger: () => void;
   openAIXDebugger: () => void;
 
@@ -108,6 +115,9 @@ export interface OptimaActions {
 
   closePreferences: () => void;
   openPreferences: (changeTab?: PreferencesTabId) => void;
+
+  closeUserProfile: () => void;
+  openUserProfile: () => void;
 
 }
 
@@ -193,6 +203,9 @@ export const useLayoutOptimaStore = create<OptimaState & OptimaActions>((_set, _
   peekPanelEnter: () => panelPeek.enter(_get, _set),
   peekPanelLeave: () => panelPeek.leave(_get, _set),
 
+  closeAdminPanel: () => _set({ showAdminPanel: false }),
+  openAdminPanel: () => _set({ ...modalsClosedState, showAdminPanel: true }),
+
   closeAIXDebugger: () => _set({ showAIXDebugger: false }),
   openAIXDebugger: () => _set({ ...modalsClosedState, showAIXDebugger: true }),
 
@@ -210,5 +223,8 @@ export const useLayoutOptimaStore = create<OptimaState & OptimaActions>((_set, _
 
   closePreferences: () => _set({ showPreferences: false }),
   openPreferences: (tab) => _set({ showPreferences: true, ...(tab !== undefined && { preferencesTab: tab }) }),
+
+  closeUserProfile: () => _set({ showUserProfile: false }),
+  openUserProfile: () => _set({ ...modalsClosedState, showUserProfile: true }),
 
 }));

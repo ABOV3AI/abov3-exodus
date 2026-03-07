@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: exodus-postgres
+    environment:
+      POSTGRES_USER: exodus
+      POSTGRES_PASSWORD: exodus_local_dev
+      POSTGRES_DB: exodus
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U exodus"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  exodus:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: exodus-app
+    ports:
+      - "4000:3000"
+    environment:
+      - NODE_ENV=production
+      - POSTGRES_PRISMA_URL=postgresql://exodus:exodus_local_dev@postgres:5432/exodus
+      - POSTGRES_URL_NON_POOLING=postgresql://exodus:exodus_local_dev@postgres:5432/exodus
+      - NEXTAUTH_SECRET=local-dev-secret-min-32-characters-long
+      - NEXTAUTH_URL=http://localhost:4000
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

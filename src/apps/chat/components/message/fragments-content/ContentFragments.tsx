@@ -6,7 +6,7 @@ import { ScaledTextBlockRenderer } from '~/modules/blocks/ScaledTextBlockRendere
 
 import type { ContentScaling, UIComplexityMode } from '~/common/app.theme';
 import type { DMessageRole } from '~/common/stores/chat/chat.message';
-import { DMessageContentFragment, DMessageFragmentId, isTextPart } from '~/common/stores/chat/chat.fragments';
+import { DMessageContentFragment, DMessageFragmentId, isTextPart, mcpToolResultToString } from '~/common/stores/chat/chat.fragments';
 
 import type { ChatMessageTextPartEditState } from '../ChatMessage';
 import { BlockEdit_TextFragment } from './BlockEdit_TextFragment';
@@ -125,7 +125,7 @@ export function ContentFragments(props: {
         }
       } else if (part.pt === 'tool_response') {
         if (!part.error) {
-          editText = part.response.result;
+          editText = part.response.type === 'function_call' ? mcpToolResultToString(part.response.result) : part.response.result;
           editLabel = `[Response]: ${part.response.type === 'function_call' ? 'Function Call' : 'Code Execution'}: \`${part.id}\``;
         }
       }

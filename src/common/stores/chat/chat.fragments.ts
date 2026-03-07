@@ -182,6 +182,14 @@ export type DMessageToolInvocationPart = {
   }
 };
 
+/**
+ * Structured content item for MCP tool results
+ * Allows tools to return images alongside text for vision LLM analysis
+ */
+export type MCPToolResultContentItem =
+  | { type: 'text'; text: string }
+  | { type: 'image'; data: string; mimeType: string };
+
 export type DMessageToolResponsePart = {
   pt: 'tool_response',
   id: string,
@@ -189,7 +197,7 @@ export type DMessageToolResponsePart = {
   response: {
     type: 'function_call';
     name: string;             // Name of the function that produced the result
-    result: string;           // The output
+    result: string | readonly MCPToolResultContentItem[];  // The output - string for backward compat, or structured content with images
   } | {
     type: 'code_execution';
     result: string;           // The output
@@ -322,6 +330,29 @@ export function isToolResponseFunctionCallPart(part: DMessageContentFragment['pa
   return part.pt === 'tool_response' && part.response.type === 'function_call';
 }
 
+/**
+ * Convert MCPToolResultContentItem[] to a string representation for AIX wire format.
+ * Text items are joined, images are represented as placeholders.
+ */
+export function mcpToolResultToString(result: string | readonly MCPToolResultContentItem[]): string {
+  if (typeof result === 'string') return result;
+  return result.map(item => {
+    if (item.type === 'text') return item.text;
+    if (item.type === 'image') return `[Image: ${item.mimeType}]`;
+    return '[Unknown content]';
+  }).join('\n');
+}
+
+/**
+ * Get a tool response result as a string (for AIX compatibility)
+ */
+export function getToolResponseResultAsString(part: DMessageToolResponsePart): string {
+  if (part.response.type === 'function_call') {
+    return mcpToolResultToString(part.response.result);
+  }
+  return part.response.result;
+}
+
 export function isAnnotationsPart(part: DMessageVoidFragment['part']) {
   return part.pt === 'annotations';
 }
@@ -357,7 +388,7 @@ export function create_CodeExecutionInvocation_ContentFragment(id: string, langu
   return _createContentFragment(_create_CodeExecutionInvocation_Part(id, language, code, author));
 }
 
-export function create_FunctionCallResponse_ContentFragment(id: string, error: boolean | string, name: string, result: string, environment: DMessageToolEnvironment): DMessageContentFragment {
+export function create_FunctionCallResponse_ContentFragment(id: string, error: boolean | string, name: string, result: string | readonly MCPToolResultContentItem[], environment: DMessageToolEnvironment): DMessageContentFragment {
   return _createContentFragment(_create_FunctionCallResponse_Part(id, error, name, result, environment));
 }
 
@@ -489,7 +520,7 @@ function _create_CodeExecutionInvocation_Part(id: string, language: string, code
   return { pt: 'tool_invocation', id, invocation: { type: 'code_execution', language, code, author } };
 }
 
-function _create_FunctionCallResponse_Part(id: string, error: boolean | string, name: string, result: string, environment: DMessageToolEnvironment): DMessageToolResponsePart {
+function _create_FunctionCallResponse_Part(id: string, error: boolean | string, name: string, result: string | readonly MCPToolResultContentItem[], environment: DMessageToolEnvironment): DMessageToolResponsePart {
   return { pt: 'tool_response', id, error, response: { type: 'function_call', name, result }, environment };
 }
 
@@ -587,9 +618,14 @@ function _duplicate_Part<TPart extends (DMessageContentFragment | DMessageAttach
         : _create_CodeExecutionInvocation_Part(part.id, part.invocation.language, part.invocation.code, part.invocation.author) as TPart;
 
     case 'tool_response':
-      return part.response.type === 'function_call'
-        ? _create_FunctionCallResponse_Part(part.id, part.error, part.response.name, part.response.result, part.environment) as TPart
-        : _create_CodeExecutionResponse_Part(part.id, part.error, part.response.result, part.response.executor, part.environment) as TPart;
+      if (part.response.type === 'function_call') {
+        // Deep copy result if it's structured content (array), otherwise pass string directly
+        const resultCopy = Array.isArray(part.response.result)
+          ? part.response.result.map(item => ({ ...item }))
+          : part.response.result;
+        return _create_FunctionCallResponse_Part(part.id, part.error, part.response.name, resultCopy, part.environment) as TPart;
+      }
+      return _create_CodeExecutionResponse_Part(part.id, part.error, part.response.result, part.response.executor, part.environment) as TPart;
 
     case '_pt_sentinel':
       return _create_Sentinel_Part() as TPart;

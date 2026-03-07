@@ -47,12 +47,19 @@ let nextConfig: NextConfig = {
   // NOTE: we may not be needing this anymore, as we use '@cloudflare/puppeteer'
   serverExternalPackages: ['puppeteer-core', 'mongodb', 'nodemailer', 'mysql2', 'pg', 'sqlite3'],
 
-  webpack: (config: any, { isServer }: { isServer: boolean }) => {
+  webpack: (config: any, { isServer, nextRuntime }: { isServer: boolean; nextRuntime?: 'edge' | 'nodejs' }) => {
     // @mui/joy: anything material gets redirected to Joy
     config.resolve.alias['@mui/material'] = '@mui/joy';
 
+    // [Edge Runtime] bcryptjs requires Node.js crypto module which isn't available in Edge
+    // Stub it out for edge bundles - auth is handled differently there
+    if (nextRuntime === 'edge') {
+      config.resolve.alias['bcryptjs'] = false;
+    }
+
     // [mongodb] Fix: Prevent client-side bundling of server-only modules
     // MongoDB's client-side encryption tries to use Node.js APIs in browser context
+    // [pptxgenjs] Also handle node: prefixed imports for document generation libraries
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -65,6 +72,22 @@ let nextConfig: NextConfig = {
         'net': false,
         'tls': false,
         'os': false,
+      };
+
+      // Handle node: prefixed imports (used by pptxgenjs and other modern libraries)
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'node:fs': false,
+        'node:path': false,
+        'node:stream': false,
+        'node:util': false,
+        'node:os': false,
+        'node:crypto': false,
+        'node:buffer': false,
+        'node:child_process': false,
+        'node:http': false,
+        'node:https': false,
+        'node:zlib': false,
       };
     }
 

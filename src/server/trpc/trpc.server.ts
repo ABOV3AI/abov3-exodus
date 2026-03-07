@@ -10,7 +10,11 @@ import type { FetchCreateContextFnOptions } from '@trpc/server/adapters/fetch';
 import * as z from 'zod/v4';
 import { initTRPC, TRPCError } from '@trpc/server';
 import { transformer } from '~/server/trpc/trpc.transformer';
-import { auth } from '~/server/auth/auth';
+
+// NOTE: Auth is imported dynamically in createTRPCFetchContext to avoid bcryptjs bundling in Edge Runtime
+// import { auth } from '~/server/auth/auth';
+
+import type { FeatureFlag } from '~/server/auth/permissions';
 
 
 /**
@@ -27,6 +31,10 @@ export type ChatGenerateContentContext = Awaited<ReturnType<typeof createTRPCFet
  * These allow you to access things when processing a request, like the database, the session, etc.
  */
 export const createTRPCFetchContext = async ({ req }: FetchCreateContextFnOptions) => {
+  // Dynamic import to avoid bcryptjs bundling in Edge Runtime
+  // This context is used by Cloud routes (Node.js runtime) only
+  const { auth } = await import('~/server/auth/auth');
+
   // Get session from NextAuth
   const session = await auth();
 
@@ -141,6 +149,61 @@ const enforceUserIsAdmin = t.middleware(({ ctx, next }) => {
 });
 
 export const adminProcedure = t.procedure.use(enforceUserIsAdmin);
+
+/**
+ * Feature-gated procedure factory
+ *
+ * Creates a procedure that requires the user to have access to a specific beta feature.
+ * This is used for Nephesh, Train, FlowCore, etc.
+ */
+const createFeatureProcedure = (feature: FeatureFlag) => {
+  const enforceFeatureAccess = t.middleware(async ({ ctx, next }) => {
+    if (!ctx.session || !ctx.userId) {
+      throw new TRPCError({ code: 'UNAUTHORIZED', message: 'You must be signed in to perform this action' });
+    }
+
+    // Dynamic import to avoid bundling issues in Edge Runtime
+    const { hasFeatureAccess } = await import('~/server/auth/permissions');
+    const hasAccess = await hasFeatureAccess(ctx.userId, feature);
+    if (!hasAccess) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: `No access to ${feature} feature. Contact admin for access.`,
+      });
+    }
+
+    return next({
+      ctx: {
+        ...ctx,
+        session: ctx.session,
+        userId: ctx.userId,
+      },
+    });
+  });
+
+  return t.procedure.use(enforceFeatureAccess);
+};
+
+/**
+ * Nephesh procedure
+ *
+ * Requires NEPHESH feature access for autonomous agent operations.
+ */
+export const nepheshProcedure = createFeatureProcedure('NEPHESH');
+
+/**
+ * Train procedure
+ *
+ * Requires TRAIN feature access for model training operations.
+ */
+export const trainProcedure = createFeatureProcedure('TRAIN');
+
+/**
+ * FlowCore procedure
+ *
+ * Requires FLOWCORE feature access for workflow builder operations.
+ */
+export const flowcoreProcedure = createFeatureProcedure('FLOWCORE');
 
 // /**
 //  * Create a server-side caller

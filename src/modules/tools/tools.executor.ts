@@ -11,6 +11,211 @@ import { getMCPRuntime } from '~/modules/mcp/mcp.runtime';
 // Rate limiting: Track executions per minute
 const executionLog = new Map<string, number[]>();
 
+// MCP file tools that can be intercepted and executed locally using browser's File System Access API
+const MCP_FILE_TOOLS = [
+  'read_file',
+  'write_file',
+  'list_directory',
+  'create_directory',
+  'delete_file',
+  'file_info',
+  'append_file',
+];
+
+/**
+ * Extract the base tool name from an MCP tool ID
+ * e.g., "mcp_ABOV3_Eden_read_file" -> "read_file"
+ */
+function extractMCPToolName(toolId: string): string | null {
+  for (const toolName of MCP_FILE_TOOLS) {
+    if (toolId.endsWith(`_${toolName}`)) {
+      return toolName;
+    }
+  }
+  return null;
+}
+
+/**
+ * Execute MCP file tools locally using browser's File System Access API
+ */
+async function executeLocalFileOperation(
+  toolName: string,
+  args: Record<string, unknown>,
+  projectHandle: FileSystemDirectoryHandle
+): Promise<ToolExecutionResult> {
+  try {
+    switch (toolName) {
+      case 'read_file': {
+        const filePath = args.path as string;
+        if (!filePath) return { error: 'Missing required argument: path' };
+
+        const fileHandle = await getFileHandle(projectHandle, filePath, false);
+        if (!fileHandle) return { error: `File not found: ${filePath}` };
+
+        const file = await fileHandle.getFile();
+        const content = await file.text();
+        return { result: content };
+      }
+
+      case 'write_file': {
+        const filePath = args.path as string;
+        const content = args.content as string;
+        if (!filePath) return { error: 'Missing required argument: path' };
+        if (content === undefined) return { error: 'Missing required argument: content' };
+
+        const fileHandle = await getFileHandle(projectHandle, filePath, true);
+        if (!fileHandle) return { error: `Could not create file: ${filePath}` };
+
+        const writable = await fileHandle.createWritable();
+        await writable.write(content);
+        await writable.close();
+        return { result: `Successfully wrote ${content.length} characters to ${filePath}` };
+      }
+
+      case 'list_directory': {
+        const dirPath = (args.path as string) || '.';
+        const includeHidden = args.includeHidden as boolean ?? false;
+
+        const dirHandle = dirPath === '.' ? projectHandle : await getDirectoryHandle(projectHandle, dirPath, false);
+        if (!dirHandle) return { error: `Directory not found: ${dirPath}` };
+
+        const entries: Array<{ name: string; type: string }> = [];
+        for await (const [name, handle] of (dirHandle as any).entries()) {
+          if (!includeHidden && name.startsWith('.')) continue;
+          entries.push({
+            name,
+            type: handle.kind === 'directory' ? 'directory' : 'file',
+          });
+        }
+
+        return { result: JSON.stringify({ path: dirPath, entries, count: entries.length }, null, 2) };
+      }
+
+      case 'create_directory': {
+        const dirPath = args.path as string;
+        if (!dirPath) return { error: 'Missing required argument: path' };
+
+        const dirHandle = await getDirectoryHandle(projectHandle, dirPath, true);
+        if (!dirHandle) return { error: `Could not create directory: ${dirPath}` };
+
+        return { result: `Successfully created directory: ${dirPath}` };
+      }
+
+      case 'delete_file': {
+        const filePath = args.path as string;
+        if (!filePath) return { error: 'Missing required argument: path' };
+
+        const parts = filePath.split('/').filter(p => p);
+        const fileName = parts.pop()!;
+        const parentPath = parts.join('/');
+
+        const parentHandle = parentPath ? await getDirectoryHandle(projectHandle, parentPath, false) : projectHandle;
+        if (!parentHandle) return { error: `Parent directory not found: ${parentPath}` };
+
+        await parentHandle.removeEntry(fileName);
+        return { result: `Successfully deleted: ${filePath}` };
+      }
+
+      case 'file_info': {
+        const filePath = args.path as string;
+        if (!filePath) return { error: 'Missing required argument: path' };
+
+        const fileHandle = await getFileHandle(projectHandle, filePath, false);
+        if (!fileHandle) return { error: `File not found: ${filePath}` };
+
+        const file = await fileHandle.getFile();
+        const info = {
+          path: filePath,
+          type: 'file',
+          size: file.size,
+          lastModified: new Date(file.lastModified).toISOString(),
+        };
+        return { result: JSON.stringify(info, null, 2) };
+      }
+
+      case 'append_file': {
+        const filePath = args.path as string;
+        const content = args.content as string;
+        if (!filePath) return { error: 'Missing required argument: path' };
+        if (content === undefined) return { error: 'Missing required argument: content' };
+
+        // Read existing content first
+        let existingContent = '';
+        const fileHandle = await getFileHandle(projectHandle, filePath, true);
+        if (!fileHandle) return { error: `Could not access file: ${filePath}` };
+
+        try {
+          const file = await fileHandle.getFile();
+          existingContent = await file.text();
+        } catch {
+          // File might not exist, start with empty content
+        }
+
+        // Write combined content
+        const writable = await fileHandle.createWritable();
+        await writable.write(existingContent + content);
+        await writable.close();
+        return { result: `Successfully appended ${content.length} characters to ${filePath}` };
+      }
+
+      default:
+        return { error: `Unknown file operation: ${toolName}` };
+    }
+  } catch (error: any) {
+    return { error: `File operation failed: ${error.message}` };
+  }
+}
+
+/**
+ * Navigate to a file in the directory tree, optionally creating it
+ */
+async function getFileHandle(
+  rootHandle: FileSystemDirectoryHandle,
+  filePath: string,
+  create: boolean
+): Promise<FileSystemFileHandle | null> {
+  const parts = filePath.split('/').filter(p => p);
+  const fileName = parts.pop();
+  if (!fileName) return null;
+
+  let currentDir = rootHandle;
+  for (const part of parts) {
+    try {
+      currentDir = await currentDir.getDirectoryHandle(part, { create });
+    } catch {
+      return null;
+    }
+  }
+
+  try {
+    return await currentDir.getFileHandle(fileName, { create });
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Navigate to a directory in the directory tree, optionally creating it
+ */
+async function getDirectoryHandle(
+  rootHandle: FileSystemDirectoryHandle,
+  dirPath: string,
+  create: boolean
+): Promise<FileSystemDirectoryHandle | null> {
+  const parts = dirPath.split('/').filter(p => p);
+  let currentDir = rootHandle;
+
+  for (const part of parts) {
+    try {
+      currentDir = await currentDir.getDirectoryHandle(part, { create });
+    } catch {
+      return null;
+    }
+  }
+
+  return currentDir;
+}
+
 
 /**
  * Check if tool is within rate limit
@@ -75,13 +280,63 @@ export async function executeToolCall(
 
     if (isMCPTool) {
       // MCP tool execution path
-      const args = JSON.parse(argsJson);
+      // Handle empty/undefined/null args - some tools don't require arguments
+      console.log(`[MCP Execute] toolId: ${toolId}, argsJson type: ${typeof argsJson}, argsJson: "${argsJson}"`);
+      let args: Record<string, unknown> = {};
+      if (argsJson && typeof argsJson === 'string' && argsJson.trim()) {
+        try {
+          args = JSON.parse(argsJson);
+        } catch (parseError) {
+          console.warn(`[MCP Execute] Failed to parse argsJson, using empty object. Error:`, parseError);
+        }
+      }
 
       if (settings.logToolCalls) {
         console.log(`[Tools] Executing MCP tool: ${toolId}`, args);
       }
 
-      const result = await mcpRuntime.executeTool(toolId, args);
+      // Check if this is a file operation that can be executed locally
+      const localToolName = extractMCPToolName(toolId);
+      if (localToolName && context.projectHandle) {
+        console.log(`[MCP Execute] Intercepting file operation "${localToolName}" to execute locally with project handle`);
+
+        // Execute locally using browser's File System Access API
+        const localResult = await executeLocalFileOperation(localToolName, args, context.projectHandle);
+
+        trackToolExecution(toolId);
+
+        // Trigger file tree refresh for file-modifying operations
+        const fileModifyingTools = ['write_file', 'create_directory', 'delete_file', 'append_file'];
+        if (fileModifyingTools.includes(localToolName) && !localResult.error) {
+          // Dynamic import to avoid circular dependencies
+          import('~/apps/projects/store-projects').then(({ useProjectsStore }) => {
+            useProjectsStore.getState().triggerFileTreeRefresh();
+          });
+        }
+
+        return {
+          ...localResult,
+          metadata: {
+            executionTime: Date.now() - startTime,
+            toolId,
+            toolName: localToolName,
+            source: 'local-intercept',
+          },
+        };
+      }
+
+      // Otherwise, execute via MCP server (Eden)
+      // Get the workspace path from the active project to pass to Eden
+      const { useProjectsStore } = await import('~/apps/projects/store-projects');
+      const activeProject = useProjectsStore.getState().getActiveProject();
+      // Pass fullPath if available, otherwise pass the folder name so Eden can search for it
+      const workspacePath = activeProject?.fullPath || activeProject?.name || undefined;
+
+      if (workspacePath) {
+        console.log(`[MCP Execute] Using workspace path: ${workspacePath}`);
+      }
+
+      const result = await mcpRuntime.executeTool(toolId, args, workspacePath);
 
       trackToolExecution(toolId);
 
@@ -92,6 +347,7 @@ export async function executeToolCall(
           toolId,
           toolName: toolId,
           source: 'mcp',
+          workspacePath,
         },
       };
     }

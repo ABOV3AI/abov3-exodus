@@ -14,7 +14,8 @@
 //  - multi-device synchronization
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -82,6 +83,13 @@ model User {
   // User preferences
   isAdmin       Boolean   @default(false)
 
+  // Enhanced role system for beta features
+  role          UserRole  @default(USER)
+  permissions   UserPermission[]
+
+  // Master account flag (cannot be modified by other admins)
+  isMasterDev   Boolean   @default(false)
+
   // Relations
   accounts      Account[]
   sessions      Session[]
@@ -90,6 +98,37 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// User roles for access control
+enum UserRole {
+  USER        // Regular beta tester - no beta features by default
+  DEVELOPER   // Developer with specific feature access
+  ADMIN       // Full admin access to all features
+  MASTER      // Master developer - cannot be modified
+}
+
+// Feature-level permissions for beta access control
+model UserPermission {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  feature   FeatureFlag
+  granted   Boolean  @default(false)
+  grantedBy String?  // User ID who granted this permission
+  grantedAt DateTime @default(now())
+
+  @@unique([userId, feature])
+  @@index([userId])
+}
+
+// Beta features that require explicit permission
+enum FeatureFlag {
+  NEPHESH      // Autonomous Agents
+  TRAIN        // Model Training
+  FLOWCORE     // Workflow Builder
+  ADMIN_PANEL  // Admin settings access
 }
 
 model Account {
@@ -219,4 +258,177 @@ model AdminSettings {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+//
+// Nephesh - Autonomous AI Agent System
+//
+
+// Autonomous AI agent profiles with independent configurations
+model NepheshProfile {
+  id              String   @id @default(uuid())
+  userId          String
+  name            String
+  description     String?
+  systemMessage   String   @db.Text // Core persona instructions
+
+  // Execution configuration
+  enabled         Boolean  @default(true)
+  llmId           String   // User's configured DLLMId
+  temperature     Float    @default(0.7)
+  maxTokens       Int      @default(2048)
+
+  // Skills & Tools
+  enabledSkills   String[] // Skill IDs
+  enabledTools    Json     // { fileOps: true, web: false, ... }
+
+  // Memory configuration
+  memoryEnabled   Boolean  @default(true)
+  memoryMaxItems  Int      @default(1000)
+
+  // Multi-channel bindings
+  channelBindings Json     // { telegram: { chatId: "..." }, ... }
+
+  // Subscription tier
+  tier            SubscriptionTier @default(FREE)
+
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  jobs            NepheshJob[]
+  memories        NepheshMemory[]
+  channels        ChannelIntegration[]
+
+  @@index([userId])
+  @@index([userId, enabled])
+}
+
+// Background task execution with scheduling and monitoring
+model NepheshJob {
+  id              String   @id @default(uuid())
+  profileId       String
+  profile         NepheshProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  name            String
+  type            JobType  // 'heartbeat' | 'scheduled' | 'triggered' | 'manual'
+  schedule        String?  // Cron expression
+
+  status          JobStatus // 'idle' | 'queued' | 'running' | 'completed' | 'error'
+  progress        Int      @default(0)
+  currentStep     String?
+
+  inputPrompt     String?  @db.Text
+  resultMessages  Json?    // DMessage[]
+
+  heartbeatSkill  String?  // Skill ID for heartbeat tasks
+  lastHeartbeat   DateTime?
+  nextHeartbeat   DateTime?
+
+  logs            Json     @default("[]")
+  executionCount  Int      @default(0)
+  totalTokens     Int      @default(0)
+
+  error           String?  @db.Text
+  retryCount      Int      @default(0)
+  maxRetries      Int      @default(3)
+
+  createdAt       DateTime @default(now())
+  startedAt       DateTime?
+  completedAt     DateTime?
+
+  @@index([profileId])
+  @@index([status])
+  @@index([nextHeartbeat])
+}
+
+// Vector memory for persistent agent context (Phase 4)
+model NepheshMemory {
+  id              String   @id @default(uuid())
+  profileId       String
+  profile         NepheshProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  content         String   @db.Text
+  summary         String?
+
+  // Note: pgvector extension required for vector type
+  // embedding       Unsupported("vector(1536)")?  // OpenAI dimensions
+
+  source          String?  // 'conversation' | 'user_note'
+  importance      Int      @default(5)  // 1-10 scale
+
+  timestamp       DateTime @default(now())
+  expiresAt       DateTime?
+  lastAccessedAt  DateTime?
+
+  conversationId  String?
+
+  @@index([profileId])
+  @@index([profileId, timestamp])
+}
+
+// Multi-channel integrations (Phase 5)
+model ChannelIntegration {
+  id              String   @id @default(uuid())
+  profileId       String
+  profile         NepheshProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  platform        ChannelPlatform // 'telegram' | 'whatsapp' | 'slack' | 'discord'
+
+  config          Json     // Platform-specific settings
+  accessToken     String?  @db.Text
+
+  incomingWebhook String?
+  enabled         Boolean  @default(true)
+
+  @@unique([profileId, platform])
+}
+
+// Markdown-based skill definitions (Phase 2)
+model NepheshSkill {
+  id              String   @id @default(uuid())
+  name            String   @unique
+  version         String
+  description     String?
+
+  markdown        String   @db.Text  // Full skill content
+  manifest        Json     // Parsed YAML frontmatter
+
+  installedBy     String[] // User IDs
+  permissions     String[] // ['file:read', 'web:fetch']
+  requiredEnvVars String[]
+
+  verified        Boolean  @default(false)
+  installCount    Int      @default(0)
+
+  @@index([name, version])
+}
+
+// Enums
+enum SubscriptionTier {
+  FREE        // 1 profile
+  COMMERCIAL  // 10 profiles
+  ENTERPRISE  // 50 profiles
+}
+
+enum JobType {
+  HEARTBEAT   // Autonomous recurring task
+  SCHEDULED   // Cron-based task
+  TRIGGERED   // Event-based task
+  MANUAL      // User-initiated task
+}
+
+enum JobStatus {
+  IDLE        // Not yet started
+  QUEUED      // In job queue
+  RUNNING     // Currently executing
+  COMPLETED   // Successfully finished
+  ERROR       // Failed with error
+}
+
+enum ChannelPlatform {
+  TELEGRAM
+  WHATSAPP
+  SLACK
+  DISCORD
 }

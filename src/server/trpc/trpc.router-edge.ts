@@ -7,11 +7,13 @@ import { paulineRouter } from '~/modules/pauline/pauline.router';
 import { googleSearchRouter } from '~/modules/google/search.router';
 import { llmABOV3Router } from '~/modules/llms/server/abov3/abov3.router';
 import { llmAnthropicRouter } from '~/modules/llms/server/anthropic/anthropic.router';
+import { llmArkSLMRouter } from '~/modules/llms/server/ark-slm/ark-slm.router';
 import { llmGeminiRouter } from '~/modules/llms/server/gemini/gemini.router';
 import { llmOllamaRouter } from '~/modules/llms/server/ollama/ollama.router';
 import { llmOpenAIRouter } from '~/modules/llms/server/openai/openai.router';
 import { youtubeRouter } from '~/modules/youtube/youtube.router';
 import { webToolsRouter } from '~/modules/web-tools/web-tools.router';
+import { nepheshRouter } from '~/modules/nephesh/server/nephesh.router';
 
 /**
  * Primary rooter, and will be sitting on an Edge Runtime.
@@ -24,11 +26,13 @@ export const appRouterEdge = createTRPCRouter({
   googleSearch: googleSearchRouter,
   llmAbov3: llmABOV3Router,
   llmAnthropic: llmAnthropicRouter,
+  llmArkSLM: llmArkSLMRouter,
   llmGemini: llmGeminiRouter,
   llmOllama: llmOllamaRouter,
   llmOpenAI: llmOpenAIRouter,
   youtube: youtubeRouter,
   webTools: webToolsRouter,
+  nephesh: nepheshRouter,
 });
 
 // export type definition of API

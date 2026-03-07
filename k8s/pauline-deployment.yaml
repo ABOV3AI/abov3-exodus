@@ -1,0 +1,105 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: abov3-pauline
+  labels:
+    app: abov3-pauline
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: abov3-pauline
+  template:
+    metadata:
+      labels:
+        app: abov3-pauline
+    spec:
+      containers:
+        - name: pauline
+          image: ghcr.io/abov3ai/abov3-pauline-tts:main
+          ports:
+            - containerPort: 8004
+          env:
+            - name: HF_HUB_ENABLE_HF_TRANSFER
+              value: "1"
+          volumeMounts:
+            - name: pauline-config
+              mountPath: /app/config.yaml
+              subPath: config.yaml
+            - name: pauline-voices
+              mountPath: /app/voices
+            - name: pauline-outputs
+              mountPath: /app/outputs
+            - name: pauline-hf-cache
+              mountPath: /app/hf_cache
+          resources:
+            # CPU mode - adjust based on actual usage
+            requests:
+              memory: "2Gi"
+              cpu: "500m"
+            limits:
+              memory: "8Gi"
+              cpu: "2000m"
+          livenessProbe:
+            httpGet:
+              path: /api/ui/initial-data
+              port: 8004
+            initialDelaySeconds: 180
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /api/ui/initial-data
+              port: 8004
+            initialDelaySeconds: 60
+            periodSeconds: 10
+      volumes:
+        - name: pauline-config
+          configMap:
+            name: pauline-config
+        - name: pauline-voices
+          persistentVolumeClaim:
+            claimName: pauline-voices-pvc
+        - name: pauline-outputs
+          persistentVolumeClaim:
+            claimName: pauline-outputs-pvc
+        - name: pauline-hf-cache
+          persistentVolumeClaim:
+            claimName: pauline-hf-cache-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: abov3-pauline
+spec:
+  selector:
+    app: abov3-pauline
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8004
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pauline-config
+data:
+  config.yaml: |
+    server:
+      host: 0.0.0.0
+      port: 8004
+      use_ngrok: false
+      use_auth: false
+    model:
+      repo_id: ResembleAI/chatterbox
+    tts_engine:
+      device: cpu  # CPU mode for beta - change to 'cuda' for GPU
+      predefined_voices_path: voices
+      reference_audio_path: reference_audio
+      default_voice_id: Emily.wav
+    generation_defaults:
+      temperature: 0.6
+      exaggeration: 0.8
+      cfg_weight: 0.7
+    ui:
+      title: ABOV3 Pauline TTS

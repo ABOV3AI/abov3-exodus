@@ -6,7 +6,9 @@
 import * as React from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
-import { Box, Checkbox, FormControl, FormHelperText, FormLabel, Option, Select, Switch, Typography } from '@mui/joy';
+import { Box, Checkbox, Chip, FormControl, FormHelperText, IconButton, Input, Option, Select, Typography } from '@mui/joy';
+import ClearIcon from '@mui/icons-material/Clear';
+import SearchIcon from '@mui/icons-material/Search';
 
 import { FormLabelStart } from '~/common/components/forms/FormLabelStart';
 import { useToolsStore } from '~/modules/tools/store-tools';
@@ -18,7 +20,95 @@ const _styleHelperText = {
 } as const;
 
 
+// Tool category definition
+interface ToolCategory {
+  id: string;
+  label: string;
+  description: string;
+  keywords: string[]; // Additional search keywords
+  isDangerous?: boolean;
+}
+
+// Define all tool categories with searchable keywords
+const TOOL_CATEGORIES: ToolCategory[] = [
+  {
+    id: 'fileOps',
+    label: 'File Operations',
+    description: 'Read, write, list, and create files/directories in active projects',
+    keywords: ['file', 'read', 'write', 'directory', 'folder', 'create', 'fs', 'filesystem'],
+  },
+  {
+    id: 'web',
+    label: 'Web Tools (No API keys required!)',
+    description: 'Search the web, fetch pages, extract links - works out of the box with free search engines',
+    keywords: ['web', 'search', 'fetch', 'http', 'url', 'link', 'scrape', 'browse', 'internet'],
+  },
+  {
+    id: 'image',
+    label: 'Image Tools',
+    description: 'Generate images, edit with canvas, OCR, color extraction',
+    keywords: ['image', 'picture', 'photo', 'ocr', 'canvas', 'color', 'resize', 'crop', 'generate'],
+  },
+  {
+    id: 'data',
+    label: 'Data & Visualization',
+    description: 'Query CSV/JSON, create charts, statistical analysis',
+    keywords: ['data', 'csv', 'json', 'chart', 'graph', 'statistics', 'analysis', 'visualization', 'plot'],
+  },
+  {
+    id: 'diagram',
+    label: 'Diagram Generation',
+    description: 'Create Mermaid diagrams, PlantUML, Graphviz, flowcharts',
+    keywords: ['diagram', 'mermaid', 'plantuml', 'graphviz', 'flowchart', 'uml', 'sequence', 'graph'],
+  },
+  {
+    id: 'codeExec',
+    label: 'Code Execution',
+    description: 'Run Python, JavaScript, SQL in browser sandbox',
+    keywords: ['code', 'execute', 'run', 'python', 'javascript', 'sql', 'sandbox', 'eval'],
+  },
+  {
+    id: 'office',
+    label: 'Office Documents',
+    description: 'Read/write DOCX, XLSX, PPTX, PDF, ODT files',
+    keywords: ['office', 'docx', 'xlsx', 'pptx', 'pdf', 'word', 'excel', 'powerpoint', 'document'],
+  },
+  {
+    id: 'git',
+    label: 'Git Operations (Experimental)',
+    description: 'Git status, log, diff, commit - browser-based via isomorphic-git',
+    keywords: ['git', 'version', 'control', 'commit', 'diff', 'log', 'status', 'branch', 'repository'],
+  },
+  {
+    id: 'testing',
+    label: 'Testing & Quality',
+    description: 'ESLint, Prettier, TypeScript checking, JSON validation',
+    keywords: ['test', 'lint', 'eslint', 'prettier', 'typescript', 'validate', 'format', 'quality'],
+  },
+];
+
+// Dangerous operations
+const DANGEROUS_OPERATIONS: ToolCategory[] = [
+  {
+    id: 'fileDeletion',
+    label: 'Allow file deletion',
+    description: '⚠️ Enables delete_file tool (cannot be undone)',
+    keywords: ['delete', 'remove', 'file', 'dangerous'],
+    isDangerous: true,
+  },
+  {
+    id: 'gitCommit',
+    label: 'Allow git commits',
+    description: '⚠️ Enables git_commit tool (modifies repository history)',
+    keywords: ['git', 'commit', 'push', 'dangerous'],
+    isDangerous: true,
+  },
+];
+
+
 export function ToolsSettings() {
+  // Local state for search
+  const [searchQuery, setSearchQuery] = React.useState('');
 
   // external state - main tools settings
   const {
@@ -81,8 +171,41 @@ export function ToolsSettings() {
     setSearxngInstance: state.setSearxngInstance,
   })));
 
+  // Map category IDs to their state and setters
+  const categoryStateMap: Record<string, { enabled: boolean; setEnabled: (v: boolean) => void }> = {
+    fileOps: { enabled: enableFileOps, setEnabled: setEnableFileOps },
+    web: { enabled: enableWeb, setEnabled: setEnableWeb },
+    image: { enabled: enableImage, setEnabled: setEnableImage },
+    data: { enabled: enableData, setEnabled: setEnableData },
+    diagram: { enabled: enableDiagram, setEnabled: setEnableDiagram },
+    codeExec: { enabled: enableCodeExec, setEnabled: setEnableCodeExec },
+    office: { enabled: enableOffice, setEnabled: setEnableOffice },
+    git: { enabled: enableGit, setEnabled: setEnableGit },
+    testing: { enabled: enableTesting, setEnabled: setEnableTesting },
+    fileDeletion: { enabled: allowFileDeletion, setEnabled: setAllowFileDeletion },
+    gitCommit: { enabled: allowGitCommit, setEnabled: setAllowGitCommit },
+  };
+
+  // Filter categories based on search
+  const filterCategories = (categories: ToolCategory[]) => {
+    if (!searchQuery.trim()) return categories;
+    const query = searchQuery.toLowerCase();
+    return categories.filter(cat =>
+      cat.label.toLowerCase().includes(query) ||
+      cat.description.toLowerCase().includes(query) ||
+      cat.keywords.some(kw => kw.toLowerCase().includes(query))
+    );
+  };
+
+  const filteredToolCategories = filterCategories(TOOL_CATEGORIES);
+  const filteredDangerousOps = filterCategories(DANGEROUS_OPERATIONS);
+
+  // Count enabled categories
+  const enabledCount = TOOL_CATEGORIES.filter(cat => categoryStateMap[cat.id]?.enabled).length;
+
   const handleSearchProviderChange = (_event: any, value: SearchProvider | null) => value && setSearchProvider(value);
   const handleSearxngInstanceChange = (_event: any, value: string | null) => value && setSearxngInstance(value);
+  const handleClearSearch = () => setSearchQuery('');
 
 
   return <>
@@ -91,121 +214,66 @@ export function ToolsSettings() {
       Configure which AI tools are available and how they execute. Tools allow AI models to search the web, manipulate files, execute code, and more - all safely in your browser.
     </Typography>
 
+    {/* Search Filter */}
+    <Box sx={{ mb: 2 }}>
+      <Input
+        placeholder="Search tools by name or keyword..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        startDecorator={<SearchIcon sx={{ color: 'neutral.500' }} />}
+        endDecorator={
+          searchQuery ? (
+            <IconButton size="sm" variant="plain" color="neutral" onClick={handleClearSearch}>
+              <ClearIcon />
+            </IconButton>
+          ) : null
+        }
+        size="sm"
+        sx={{ mb: 1 }}
+      />
+      {searchQuery && (
+        <Typography level="body-xs" sx={{ color: 'text.tertiary' }}>
+          Showing {filteredToolCategories.length + filteredDangerousOps.length} of {TOOL_CATEGORIES.length + DANGEROUS_OPERATIONS.length} categories
+        </Typography>
+      )}
+    </Box>
+
     {/* Tool Categories */}
-    <Typography level='title-sm' sx={{ mt: 2, mb: 1 }}>
-      Tool Categories
-    </Typography>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2, mb: 1 }}>
+      <Typography level='title-sm'>
+        Tool Categories
+      </Typography>
+      <Chip size="sm" variant="soft" color="primary">
+        {enabledCount}/{TOOL_CATEGORIES.length} enabled
+      </Chip>
+    </Box>
 
-    <FormControl>
-      <Checkbox
-        size='sm'
-        label='File Operations'
-        checked={enableFileOps}
-        onChange={(e) => setEnableFileOps(e.target.checked)}
-      />
-      <FormHelperText sx={_styleHelperText}>
-        Read, write, list, and create files/directories in active projects
-      </FormHelperText>
-    </FormControl>
-
-    <FormControl>
-      <Checkbox
-        size='sm'
-        label='Web Tools (No API keys required!)'
-        checked={enableWeb}
-        onChange={(e) => setEnableWeb(e.target.checked)}
-      />
-      <FormHelperText sx={_styleHelperText}>
-        Search the web, fetch pages, extract links - works out of the box with free search engines
-      </FormHelperText>
-    </FormControl>
-
-    <FormControl>
-      <Checkbox
-        size='sm'
-        label='Image Tools'
-        checked={enableImage}
-        onChange={(e) => setEnableImage(e.target.checked)}
-      />
-      <FormHelperText sx={_styleHelperText}>
-        Generate images, edit with canvas, OCR, color extraction
-      </FormHelperText>
-    </FormControl>
-
-    <FormControl>
-      <Checkbox
-        size='sm'
-        label='Data & Visualization'
-        checked={enableData}
-        onChange={(e) => setEnableData(e.target.checked)}
-      />
-      <FormHelperText sx={_styleHelperText}>
-        Query CSV/JSON, create charts, statistical analysis
-      </FormHelperText>
-    </FormControl>
-
-    <FormControl>
-      <Checkbox
-        size='sm'
-        label='Diagram Generation'
-        checked={enableDiagram}
-        onChange={(e) => setEnableDiagram(e.target.checked)}
-      />
-      <FormHelperText sx={_styleHelperText}>
-        Create Mermaid diagrams, PlantUML, Graphviz, flowcharts
-      </FormHelperText>
-    </FormControl>
-
-    <FormControl>
-      <Checkbox
-        size='sm'
-        label='Code Execution'
-        checked={enableCodeExec}
-        onChange={(e) => setEnableCodeExec(e.target.checked)}
-      />
-      <FormHelperText sx={_styleHelperText}>
-        Run Python, JavaScript, SQL in browser sandbox
-      </FormHelperText>
-    </FormControl>
-
-    <FormControl>
-      <Checkbox
-        size='sm'
-        label='Office Documents'
-        checked={enableOffice}
-        onChange={(e) => setEnableOffice(e.target.checked)}
-      />
-      <FormHelperText sx={_styleHelperText}>
-        Read/write DOCX, XLSX, PPTX, PDF, ODT files
-      </FormHelperText>
-    </FormControl>
-
-    <FormControl>
-      <Checkbox
-        size='sm'
-        label='Git Operations (Experimental)'
-        checked={enableGit}
-        onChange={(e) => setEnableGit(e.target.checked)}
-      />
-      <FormHelperText sx={_styleHelperText}>
-        Git status, log, diff, commit - browser-based via isomorphic-git
-      </FormHelperText>
-    </FormControl>
-
-    <FormControl>
-      <Checkbox
-        size='sm'
-        label='Testing & Quality'
-        checked={enableTesting}
-        onChange={(e) => setEnableTesting(e.target.checked)}
-      />
-      <FormHelperText sx={_styleHelperText}>
-        ESLint, Prettier, TypeScript checking, JSON validation
-      </FormHelperText>
-    </FormControl>
+    {filteredToolCategories.length === 0 && searchQuery ? (
+      <Typography level="body-sm" sx={{ color: 'text.tertiary', py: 2 }}>
+        No tool categories match &quot;{searchQuery}&quot;
+      </Typography>
+    ) : (
+      filteredToolCategories.map((category) => {
+        const state = categoryStateMap[category.id];
+        if (!state) return null;
+        return (
+          <FormControl key={category.id}>
+            <Checkbox
+              size='sm'
+              label={category.label}
+              checked={state.enabled}
+              onChange={(e) => state.setEnabled(e.target.checked)}
+            />
+            <FormHelperText sx={_styleHelperText}>
+              {category.description}
+            </FormHelperText>
+          </FormControl>
+        );
+      })
+    )}
 
     {/* Web Search Settings */}
-    {enableWeb && (
+    {enableWeb && !searchQuery && (
       <Box sx={{ mt: 2, p: 2, bgcolor: 'background.level1', borderRadius: 'md' }}>
         <Typography level='title-sm' sx={{ mb: 1 }}>
           Web Search Configuration
@@ -264,109 +332,116 @@ export function ToolsSettings() {
     )}
 
     {/* Dangerous Operations */}
-    <Typography level='title-sm' sx={{ mt: 3, mb: 1 }}>
-      Dangerous Operations
-    </Typography>
+    {(filteredDangerousOps.length > 0 || !searchQuery) && (
+      <>
+        <Typography level='title-sm' sx={{ mt: 3, mb: 1 }}>
+          Dangerous Operations
+        </Typography>
 
-    <FormControl>
-      <Checkbox
-        size='sm'
-        color='danger'
-        label='Allow file deletion'
-        checked={allowFileDeletion}
-        onChange={(e) => setAllowFileDeletion(e.target.checked)}
-      />
-      <FormHelperText sx={_styleHelperText}>
-        ⚠️ Enables delete_file tool (cannot be undone)
-      </FormHelperText>
-    </FormControl>
+        {filteredDangerousOps.length === 0 && searchQuery ? (
+          <Typography level="body-sm" sx={{ color: 'text.tertiary', py: 1 }}>
+            No dangerous operations match the search
+          </Typography>
+        ) : (
+          filteredDangerousOps.map((category) => {
+            const state = categoryStateMap[category.id];
+            if (!state) return null;
+            return (
+              <FormControl key={category.id}>
+                <Checkbox
+                  size='sm'
+                  color='danger'
+                  label={category.label}
+                  checked={state.enabled}
+                  onChange={(e) => state.setEnabled(e.target.checked)}
+                />
+                <FormHelperText sx={_styleHelperText}>
+                  {category.description}
+                </FormHelperText>
+              </FormControl>
+            );
+          })
+        )}
+      </>
+    )}
 
-    <FormControl>
-      <Checkbox
-        size='sm'
-        color='danger'
-        label='Allow git commits'
-        checked={allowGitCommit}
-        onChange={(e) => setAllowGitCommit(e.target.checked)}
-      />
-      <FormHelperText sx={_styleHelperText}>
-        ⚠️ Enables git_commit tool (modifies repository history)
-      </FormHelperText>
-    </FormControl>
+    {/* Execution Limits - only show when not searching */}
+    {!searchQuery && (
+      <>
+        <Typography level='title-sm' sx={{ mt: 3, mb: 1 }}>
+          Execution Limits
+        </Typography>
 
-    {/* Execution Limits */}
-    <Typography level='title-sm' sx={{ mt: 3, mb: 1 }}>
-      Execution Limits
-    </Typography>
+        <FormControl orientation='horizontal' sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
+          <FormLabelStart
+            title='Timeout'
+            description={`${executionTimeout}ms per tool`}
+          />
+          <Select
+            variant='outlined'
+            value={executionTimeout}
+            onChange={(_e, value) => value && setExecutionTimeout(value as number)}
+            slotProps={{
+              root: { sx: { minWidth: '120px' } },
+            }}
+          >
+            <Option value={2000}>2 seconds</Option>
+            <Option value={5000}>5 seconds</Option>
+            <Option value={10000}>10 seconds</Option>
+            <Option value={30000}>30 seconds</Option>
+          </Select>
+        </FormControl>
 
-    <FormControl orientation='horizontal' sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
-      <FormLabelStart
-        title='Timeout'
-        description={`${executionTimeout}ms per tool`}
-      />
-      <Select
-        variant='outlined'
-        value={executionTimeout}
-        onChange={(_e, value) => value && setExecutionTimeout(value as number)}
-        slotProps={{
-          root: { sx: { minWidth: '120px' } },
-        }}
-      >
-        <Option value={2000}>2 seconds</Option>
-        <Option value={5000}>5 seconds</Option>
-        <Option value={10000}>10 seconds</Option>
-        <Option value={30000}>30 seconds</Option>
-      </Select>
-    </FormControl>
+        <FormControl orientation='horizontal' sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
+          <FormLabelStart
+            title='Rate Limit'
+            description={`${rateLimit} calls/minute`}
+          />
+          <Select
+            variant='outlined'
+            value={rateLimit}
+            onChange={(_e, value) => value && setRateLimit(value as number)}
+            slotProps={{
+              root: { sx: { minWidth: '120px' } },
+            }}
+          >
+            <Option value={50}>50/min</Option>
+            <Option value={100}>100/min</Option>
+            <Option value={200}>200/min</Option>
+            <Option value={500}>500/min (high)</Option>
+          </Select>
+        </FormControl>
 
-    <FormControl orientation='horizontal' sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
-      <FormLabelStart
-        title='Rate Limit'
-        description={`${rateLimit} calls/minute`}
-      />
-      <Select
-        variant='outlined'
-        value={rateLimit}
-        onChange={(_e, value) => value && setRateLimit(value as number)}
-        slotProps={{
-          root: { sx: { minWidth: '120px' } },
-        }}
-      >
-        <Option value={50}>50/min</Option>
-        <Option value={100}>100/min</Option>
-        <Option value={200}>200/min</Option>
-        <Option value={500}>500/min (high)</Option>
-      </Select>
-    </FormControl>
+        {/* Debug Options */}
+        <Typography level='title-sm' sx={{ mt: 3, mb: 1 }}>
+          Debug & Monitoring
+        </Typography>
 
-    {/* Debug Options */}
-    <Typography level='title-sm' sx={{ mt: 3, mb: 1 }}>
-      Debug & Monitoring
-    </Typography>
+        <FormControl>
+          <Checkbox
+            size='sm'
+            label='Show tool execution progress'
+            checked={showProgress}
+            onChange={(e) => setShowProgress(e.target.checked)}
+          />
+          <FormHelperText sx={_styleHelperText}>
+            Display visual indicators when tools are executing
+          </FormHelperText>
+        </FormControl>
 
-    <FormControl>
-      <Checkbox
-        size='sm'
-        label='Show tool execution progress'
-        checked={showProgress}
-        onChange={(e) => setShowProgress(e.target.checked)}
-      />
-      <FormHelperText sx={_styleHelperText}>
-        Display visual indicators when tools are executing
-      </FormHelperText>
-    </FormControl>
-
-    <FormControl>
-      <Checkbox
-        size='sm'
-        label='Log tool calls to console'
-        checked={logToolCalls}
-        onChange={(e) => setLogToolCalls(e.target.checked)}
-      />
-      <FormHelperText sx={_styleHelperText}>
-        Developer mode: Log all tool executions to browser console
-      </FormHelperText>
-    </FormControl>
+        <FormControl>
+          <Checkbox
+            size='sm'
+            label='Log tool calls to console'
+            checked={logToolCalls}
+            onChange={(e) => setLogToolCalls(e.target.checked)}
+          />
+          <FormHelperText sx={_styleHelperText}>
+            Developer mode: Log all tool executions to browser console
+          </FormHelperText>
+        </FormControl>
+      </>
+    )}
 
   </>;
 }
