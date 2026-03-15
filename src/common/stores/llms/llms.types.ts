@@ -49,6 +49,7 @@ export interface DLLM {
   userHidden?: boolean;
   userStarred?: boolean;
   userMcpEnabled?: boolean;              // user wants MCP tools for this model (undefined = enabled if model supports function calls)
+  userToolsEnabled?: boolean;            // user wants built-in tools (API function calling) for this model (undefined/false = disabled by default)
   userParameters?: DModelParameterValues; // user has set these parameters
 }
 

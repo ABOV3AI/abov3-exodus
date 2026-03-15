@@ -43,11 +43,12 @@ export function ProfileEditor() {
   const [memoryEnabled, setMemoryEnabled] = React.useState(existingProfile?.memoryEnabled !== false);
   const [memoryMaxItems, setMemoryMaxItems] = React.useState(existingProfile?.memoryMaxItems || 1000);
 
-  // Tool permissions
-  const [fileOps, setFileOps] = React.useState(existingProfile?.enabledTools?.fileOps || false);
-  const [web, setWeb] = React.useState(existingProfile?.enabledTools?.web !== false);
-  const [codeExec, setCodeExec] = React.useState(existingProfile?.enabledTools?.codeExec || false);
-  const [mcp, setMcp] = React.useState(existingProfile?.enabledTools?.mcp || false);
+  // Tool permissions (type assertion for Prisma Json field)
+  const enabledTools = existingProfile?.enabledTools as { fileOps?: boolean; web?: boolean; codeExec?: boolean; mcp?: boolean } | undefined;
+  const [fileOps, setFileOps] = React.useState(enabledTools?.fileOps || false);
+  const [web, setWeb] = React.useState(enabledTools?.web !== false);
+  const [codeExec, setCodeExec] = React.useState(enabledTools?.codeExec || false);
+  const [mcp, setMcp] = React.useState(enabledTools?.mcp || false);
 
   // Mutations
   const createMutation = apiQuery.nephesh.createProfile.useMutation();

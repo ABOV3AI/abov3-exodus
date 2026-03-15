@@ -1,7 +1,7 @@
 :root {
     --AGI-Nav-width: 52px;
     /*noinspection CssInvalidFunction*/
-    --AGI-Desktop-Drawer-width: round(clamp(260px, 18vw, 350px), 1px);
+    --AGI-Desktop-Drawer-width: round(clamp(280px, 20vw, 380px), 1px);
     /*noinspection CssInvalidFunction*/
     --AGI-Desktop-Panel-width: round(clamp(260px, 18vw, 350px), 1px);
     --AGI-Mobile-Drawer-width: 320px;
@@ -15,7 +15,10 @@
     text-overflow: ellipsis;
 }
 
-/* Prevents pull-to-refresh on mobile, so it's not triggered while scrolling the chat inadvertently */
+/* Prevents pull-to-refresh on mobile */
 body {
     overscroll-behavior-y: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
 }

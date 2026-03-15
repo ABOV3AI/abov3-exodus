@@ -15,7 +15,7 @@ interface ModuleElevenlabsStore {
 
 }
 
-const useElevenlabsStore = create<ModuleElevenlabsStore>()(
+export const useElevenlabsStore = create<ModuleElevenlabsStore>()(
   persist(
     (set) => ({
 

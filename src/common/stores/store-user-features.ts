@@ -9,10 +9,10 @@
 import { create } from 'zustand';
 
 // Feature flags that can be granted to users
-export type FeatureFlag = 'NEPHESH' | 'TRAIN' | 'FLOWCORE' | 'ADMIN_PANEL';
+export type FeatureFlag = 'NEPHESH' | 'TRAIN' | 'FLOWCORE' | 'ADMIN_PANEL' | 'ABOV3_MODELS';
 
 // All available features (for admin UI)
-export const ALL_FEATURE_FLAGS: FeatureFlag[] = ['NEPHESH', 'TRAIN', 'FLOWCORE', 'ADMIN_PANEL'];
+export const ALL_FEATURE_FLAGS: FeatureFlag[] = ['NEPHESH', 'TRAIN', 'FLOWCORE', 'ADMIN_PANEL', 'ABOV3_MODELS'];
 
 // Human-readable labels for features
 export const FEATURE_LABELS: Record<FeatureFlag, string> = {
@@ -20,6 +20,7 @@ export const FEATURE_LABELS: Record<FeatureFlag, string> = {
   TRAIN: 'Train (Model Training)',
   FLOWCORE: 'FlowCore (Workflow Builder)',
   ADMIN_PANEL: 'Admin Panel',
+  ABOV3_MODELS: 'ABOV3 Models (Genesis, Exodus, Solomon)',
 };
 
 // Feature descriptions for UI
@@ -28,6 +29,7 @@ export const FEATURE_DESCRIPTIONS: Record<FeatureFlag, string> = {
   TRAIN: 'Train and fine-tune models using your own data',
   FLOWCORE: 'Build complex workflows with visual node-based editor',
   ADMIN_PANEL: 'Access administrative settings and user management',
+  ABOV3_MODELS: 'Access to ABOV3 proprietary AI models powered by advanced reasoning capabilities',
 };
 
 interface UserFeaturesState {

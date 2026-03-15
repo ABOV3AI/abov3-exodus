@@ -64,8 +64,19 @@ const MODEL_VENDOR_REGISTRY: Record<ModelVendorId, IModelVendor> = {
 } as Record<string, IModelVendor>;
 
 
-export function findAllModelVendors(): IModelVendor[] {
-  const modelVendors = Object.values(MODEL_VENDOR_REGISTRY);
+export function findAllModelVendors(options?: { userFeatures?: string[] }): IModelVendor[] {
+  let modelVendors = Object.values(MODEL_VENDOR_REGISTRY);
+
+  // Filter out vendors that require a feature the user doesn't have
+  if (options?.userFeatures) {
+    modelVendors = modelVendors.filter(vendor => {
+      // If vendor doesn't require a feature, include it
+      if (!vendor.requiredFeature) return true;
+      // Check if user has the required feature
+      return options.userFeatures!.includes(vendor.requiredFeature);
+    });
+  }
+
   modelVendors.sort((a, b) => a.displayRank - b.displayRank);
   return modelVendors;
 }

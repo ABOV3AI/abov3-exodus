@@ -2,6 +2,7 @@ import * as React from 'react';
 
 import { Alert, Box, Button, CircularProgress, FormControl, Input, Modal, ModalClose, ModalDialog, Sheet, Typography } from '@mui/joy';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import LockIcon from '@mui/icons-material/Lock';
 
 import { useChatAutoAI } from '../../../../apps/chat/store-app-chat';
 
@@ -16,6 +17,7 @@ import { InlineError } from '~/common/components/InlineError';
 import { Link } from '~/common/components/Link';
 import { SetupFormRefetchButton } from '~/common/components/forms/SetupFormRefetchButton';
 import { llmsStoreActions } from '~/common/stores/llms/store-llms';
+import { useHasFeature } from '~/common/stores/store-user-features';
 import { useToggleableBoolean } from '~/common/util/hooks/useToggleableBoolean';
 import { apiQuery } from '~/common/util/trpc.client';
 
@@ -63,6 +65,9 @@ function extractOAuthCode(text: string): string | null {
 
 export function ABOV3ServiceSetup(props: { serviceId: DModelsServiceId }) {
 
+  // Check feature access - ABOV3 models require explicit permission
+  const hasABOV3Access = useHasFeature('ABOV3_MODELS');
+
   // state
   const advanced = useToggleableBoolean();
   const [oauthDialogOpen, setOAuthDialogOpen] = React.useState(false);
@@ -74,6 +79,26 @@ export function ABOV3ServiceSetup(props: { serviceId: DModelsServiceId }) {
   // external state
   const { service, serviceAccess, serviceHasCloudTenantConfig, serviceHasLLMs, updateSettings } =
     useServiceSetup(props.serviceId, ModelVendorABOV3);
+
+  // If user doesn't have ABOV3_MODELS permission, show access denied message
+  if (!hasABOV3Access) {
+    return (
+      <Alert
+        variant='soft'
+        color='warning'
+        startDecorator={<LockIcon />}
+        sx={{ my: 2 }}
+      >
+        <Box>
+          <Typography level='title-md'>Access Restricted</Typography>
+          <Typography level='body-sm'>
+            ABOV3 proprietary models (Genesis, Exodus, Solomon) require special access.
+            Contact your administrator to enable this feature for your account.
+          </Typography>
+        </Box>
+      </Alert>
+    );
+  }
 
   const { autoVndAntBreakpoints, setAutoVndAntBreakpoints } = useChatAutoAI();
 

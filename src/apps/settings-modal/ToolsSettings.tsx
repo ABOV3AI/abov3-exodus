@@ -123,6 +123,7 @@ export function ToolsSettings() {
     enableTesting, setEnableTesting,
     allowFileDeletion, setAllowFileDeletion,
     allowGitCommit, setAllowGitCommit,
+    enableTextBasedTools, setEnableTextBasedTools,
     executionTimeout, setExecutionTimeout,
     rateLimit, setRateLimit,
     showProgress, setShowProgress,
@@ -150,6 +151,8 @@ export function ToolsSettings() {
     setAllowFileDeletion: state.setAllowFileDeletion,
     allowGitCommit: state.allowGitCommit,
     setAllowGitCommit: state.setAllowGitCommit,
+    enableTextBasedTools: state.enableTextBasedTools,
+    setEnableTextBasedTools: state.setEnableTextBasedTools,
     executionTimeout: state.executionTimeout,
     setExecutionTimeout: state.setExecutionTimeout,
     rateLimit: state.rateLimit,
@@ -213,6 +216,21 @@ export function ToolsSettings() {
     <Typography level='body-sm' sx={{ mb: 2 }}>
       Configure which AI tools are available and how they execute. Tools allow AI models to search the web, manipulate files, execute code, and more - all safely in your browser.
     </Typography>
+
+    {/* Text-Based Tools Toggle (MCP Fallback) */}
+    <Box sx={{ mb: 2, p: 2, bgcolor: 'background.level1', borderRadius: 'md' }}>
+      <FormControl>
+        <Checkbox
+          size='sm'
+          label='Text-Based Tools (MCP Mode)'
+          checked={enableTextBasedTools}
+          onChange={(e) => setEnableTextBasedTools(e.target.checked)}
+        />
+        <FormHelperText sx={_styleHelperText}>
+          Parse tool invocations from AI text responses for models without native function calling support (e.g., OpenRouter free models). When enabled, AI can use tools via code blocks like <code>```tool:read_file```</code>.
+        </FormHelperText>
+      </FormControl>
+    </Box>
 
     {/* Search Filter */}
     <Box sx={{ mb: 2 }}>

@@ -17,6 +17,12 @@ import { useMCPServersStore } from '~/common/stores/store-mcp-servers';
 import { useProjectsStore } from '~/apps/projects/store-projects';
 import { useUserFeatures } from '~/common/stores/store-user-features';
 import { apiQueryCloud } from '~/common/util/trpc.client';
+import { syncConversationsFromServer, enableAutoSync, disableAutoSync } from '~/common/stores/chat/sync-chats';
+import { syncLlmSettingsFromServer, enableLlmAutoSync, disableLlmAutoSync } from '~/common/stores/llms/sync-llms';
+import { syncUiSettingsFromServer, enableUiAutoSync, disableUiAutoSync } from '~/common/stores/sync-ui';
+import { syncAppSettingsFromServer, enableAppSettingsAutoSync, disableAppSettingsAutoSync } from '~/common/stores/sync-app-settings';
+import { syncWorkflowsFromServer, enableWorkflowAutoSync, disableWorkflowAutoSync } from '~/common/stores/sync-workflows';
+import { resetAllUserStores } from '~/common/stores/storeReset';
 
 
 export function ProviderBootstrapLogic(props: { children: React.ReactNode }) {
@@ -51,12 +57,50 @@ export function ProviderBootstrapLogic(props: { children: React.ReactNode }) {
     }
   }, [userFeaturesData, setFeatures, setUserInfo]);
 
-  // Clear features when user logs out
+  // Clear features and reset stores when user logs out
   React.useEffect(() => {
     if (authStatus === 'unauthenticated') {
       clearFeatures();
+      disableAutoSync();
+      disableLlmAutoSync();
+      disableUiAutoSync();
+      disableAppSettingsAutoSync();
+      disableWorkflowAutoSync();
+      // Reset all stores and clear IndexedDB (async, fire and forget)
+      void resetAllUserStores();
     }
   }, [authStatus, clearFeatures]);
+
+  // [sync] Sync user data from server when user authenticates
+  const [hasSynced, setHasSynced] = React.useState(false);
+  React.useEffect(() => {
+    if (authStatus === 'authenticated' && session?.user?.id && !hasSynced) {
+      setHasSynced(true);
+      console.log('[Bootstrap] User authenticated, syncing data from server...');
+
+      // Sync all user data in parallel
+      Promise.all([
+        syncConversationsFromServer(),
+        syncLlmSettingsFromServer(),
+        syncUiSettingsFromServer(),
+        syncAppSettingsFromServer(),
+        syncWorkflowsFromServer(),
+      ])
+        .then(() => {
+          console.log('[Bootstrap] User data sync complete');
+          enableAutoSync();
+          enableLlmAutoSync();
+          enableUiAutoSync();
+          enableAppSettingsAutoSync();
+          enableWorkflowAutoSync();
+        })
+        .catch(err => console.error('[Bootstrap] User data sync failed:', err));
+    }
+    // Reset sync flag when user changes
+    if (authStatus === 'unauthenticated') {
+      setHasSynced(false);
+    }
+  }, [authStatus, session?.user?.id, hasSynced]);
 
   // AUTO-LOG events from this scope on; note that we are past the Sherpas
   useClientLoggerInterception(true, false);

@@ -30,5 +30,8 @@ export function useLlmUpdateModels<TServiceSettings extends object>(
       return await llmsUpdateModelsForServiceOrThrow(service.id, true /*!discardUserEdits*/);
     },
     staleTime: Infinity,
+    // Enable retries for model loading - important for page refresh reliability
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000), // Exponential backoff: 1s, 2s, 4s, max 10s
   });
 }

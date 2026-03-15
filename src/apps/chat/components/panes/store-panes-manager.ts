@@ -59,7 +59,7 @@ interface AppChatPanesActions {
 }
 
 
-const useAppChatPanesStore = create<AppChatPanesState & AppChatPanesActions>()(persist(
+export const useAppChatPanesStore = create<AppChatPanesState & AppChatPanesActions>()(persist(
   (_set, _get) => ({
 
     // Initial state: no panes

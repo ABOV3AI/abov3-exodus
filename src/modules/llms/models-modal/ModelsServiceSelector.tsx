@@ -10,6 +10,7 @@ import { ConfirmationModal } from '~/common/components/modals/ConfirmationModal'
 import { TooltipOutlined } from '~/common/components/TooltipOutlined';
 import { llmsStoreActions } from '~/common/stores/llms/store-llms';
 import { themeZIndexOverMobileDrawer } from '~/common/app.theme';
+import { useAllFeatures } from '~/common/stores/store-user-features';
 import { useIsMobile } from '~/common/components/useMatchMedia';
 import { useOverlayComponents } from '~/common/layout/overlays/useOverlayComponents';
 
@@ -51,6 +52,7 @@ export function ModelsServiceSelector(props: {
 
   // external state
   const isMobile = useIsMobile();
+  const userFeatures = useAllFeatures(); // Get user's feature access for vendor filtering
 
   const { onSwitchToWizard } = props;
 
@@ -101,8 +103,8 @@ export function ModelsServiceSelector(props: {
   // vendor list items
   const vendorComponents = React.useMemo(() => {
 
-    // prepare the items
-    const vendorItems = findAllModelVendors()
+    // prepare the items - filter by user's feature access
+    const vendorItems = findAllModelVendors({ userFeatures })
       .filter(v => v.instanceLimit !== 0)
       .sort((a, b) => {
         // sort first by 'cloud' on top (vs. 'local'), then by name
@@ -170,7 +172,7 @@ export function ModelsServiceSelector(props: {
     // return components;
 
     return vendorItems.map(item => item.component);
-  }, [handleAddServiceForVendor, modelsServices]);
+  }, [handleAddServiceForVendor, modelsServices, userFeatures]);
 
   // service items
   const serviceItems: { service: DModelsService, icon: React.ReactNode, component: React.ReactNode }[] = React.useMemo(() =>

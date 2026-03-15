@@ -28,7 +28,7 @@ interface ModulePaulineStore {
 
 }
 
-const usePaulineStore = create<ModulePaulineStore>()(
+export const usePaulineStore = create<ModulePaulineStore>()(
   persist(
     (set) => ({
 

@@ -1,0 +1,217 @@
+# Prometheus ServiceMonitor
+# Configures Prometheus to scrape metrics from Nephesh worker pods
+#
+# Prerequisites:
+# - Prometheus Operator installed in cluster
+# - prometheus.io/scrape annotation on pods (already added in worker deployment)
+#
+# Metrics Collection:
+# - Scrape interval: 30 seconds
+# - Endpoint: /api/metrics on port 3000
+# - Automatically discovers all worker pods with matching labels
+#
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: abov3-nephesh-worker
+  labels:
+    app: abov3-nephesh-worker
+    prometheus: kube-prometheus
+spec:
+  selector:
+    matchLabels:
+      app: abov3-nephesh-worker
+
+  endpoints:
+    - port: metrics
+      path: /api/metrics
+      interval: 30s
+      scrapeTimeout: 10s
+
+      # Relabeling rules
+      relabelings:
+        # Add pod name as label
+        - sourceLabels: [__meta_kubernetes_pod_name]
+          targetLabel: pod
+        # Add namespace as label
+        - sourceLabels: [__meta_kubernetes_namespace]
+          targetLabel: namespace
+        # Add node name as label
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: node
+
+---
+# PrometheusRule
+# Alert rules for Nephesh worker monitoring
+#
+# Alerts:
+# - NepheshJobQueueBacklog: Queue depth > 500 for 5 minutes
+# - NepheshHighJobFailureRate: Failure rate > 10% for 15 minutes
+# - NepheshWorkerDown: No active workers for 2 minutes
+# - NepheshSchedulerDown: Scheduler stopped for 5 minutes
+#
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: abov3-nephesh-alerts
+  labels:
+    app: abov3-nephesh-worker
+    prometheus: kube-prometheus
+spec:
+  groups:
+    - name: nephesh.rules
+      interval: 30s
+      rules:
+
+        # Alert: Job queue backlog
+        - alert: NepheshJobQueueBacklog
+          expr: nephesh_job_queue_depth > 500
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Nephesh job queue has {{ $value }} jobs waiting"
+            description: "Job queue depth has been above 500 for more than 5 minutes. Consider scaling up workers."
+
+        # Alert: High job failure rate
+        - alert: NepheshHighJobFailureRate
+          expr: |
+            (
+              rate(nephesh_jobs_failed_total[15m]) /
+              (rate(nephesh_jobs_completed_total[15m]) + rate(nephesh_jobs_failed_total[15m]))
+            ) > 0.1
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Nephesh job failure rate is {{ $value | humanizePercentage }}"
+            description: "More than 10% of jobs are failing. Check worker logs for errors."
+
+        # Alert: No active workers
+        - alert: NepheshWorkerDown
+          expr: nephesh_active_jobs == 0 and nephesh_job_queue_depth > 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "No active Nephesh workers"
+            description: "There are {{ $value }} jobs in queue but no workers are processing them. Check worker deployment."
+
+        # Alert: Scheduler stopped
+        - alert: NepheshSchedulerDown
+          expr: nephesh_scheduler_heartbeat_running == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Nephesh scheduler is not running"
+            description: "The scheduler heartbeat has been stopped for more than 5 minutes. HEARTBEAT and SCHEDULED jobs will not execute."
+
+        # Alert: Worker memory usage high
+        - alert: NepheshWorkerHighMemory
+          expr: |
+            sum(container_memory_working_set_bytes{pod=~"abov3-nephesh-worker.*"}) /
+            sum(container_spec_memory_limit_bytes{pod=~"abov3-nephesh-worker.*"}) > 0.9
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Nephesh worker memory usage is {{ $value | humanizePercentage }}"
+            description: "Worker memory usage is above 90%. Consider increasing memory limits or scaling workers."
+
+        # Alert: Worker CPU usage high
+        - alert: NepheshWorkerHighCPU
+          expr: |
+            sum(rate(container_cpu_usage_seconds_total{pod=~"abov3-nephesh-worker.*"}[5m])) /
+            sum(container_spec_cpu_quota{pod=~"abov3-nephesh-worker.*"} / container_spec_cpu_period{pod=~"abov3-nephesh-worker.*"}) > 0.9
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Nephesh worker CPU usage is {{ $value | humanizePercentage }}"
+            description: "Worker CPU usage is above 90%. Consider increasing CPU limits or scaling workers."
+
+---
+# Grafana Dashboard ConfigMap
+# Pre-built dashboard for Nephesh monitoring
+#
+# To import into Grafana:
+# 1. Apply this ConfigMap to cluster
+# 2. Configure Grafana to auto-import dashboards from ConfigMaps
+# 3. Or manually import the JSON from the ConfigMap
+#
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nephesh-grafana-dashboard
+  labels:
+    grafana_dashboard: "1"
+data:
+  nephesh-dashboard.json: |
+    {
+      "dashboard": {
+        "title": "ABOV3 Nephesh Monitoring",
+        "tags": ["nephesh", "workers", "jobs"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "title": "Job Queue Depth",
+            "targets": [
+              {
+                "expr": "nephesh_job_queue_depth",
+                "legendFormat": "Queued Jobs"
+              }
+            ],
+            "type": "graph"
+          },
+          {
+            "title": "Active Jobs",
+            "targets": [
+              {
+                "expr": "nephesh_active_jobs",
+                "legendFormat": "Processing"
+              }
+            ],
+            "type": "graph"
+          },
+          {
+            "title": "Job Completion Rate",
+            "targets": [
+              {
+                "expr": "rate(nephesh_jobs_completed_total[5m])",
+                "legendFormat": "Completed/sec"
+              },
+              {
+                "expr": "rate(nephesh_jobs_failed_total[5m])",
+                "legendFormat": "Failed/sec"
+              }
+            ],
+            "type": "graph"
+          },
+          {
+            "title": "Worker Pods",
+            "targets": [
+              {
+                "expr": "count(kube_pod_info{pod=~\"abov3-nephesh-worker.*\"})",
+                "legendFormat": "Running Pods"
+              }
+            ],
+            "type": "stat"
+          },
+          {
+            "title": "Scheduler Status",
+            "targets": [
+              {
+                "expr": "nephesh_scheduler_heartbeat_running",
+                "legendFormat": "Heartbeat Active"
+              },
+              {
+                "expr": "nephesh_scheduler_scheduled_jobs",
+                "legendFormat": "Scheduled Jobs"
+              }
+            ],
+            "type": "stat"
+          }
+        ]
+      }
+    }

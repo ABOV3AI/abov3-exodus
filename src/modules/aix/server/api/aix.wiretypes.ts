@@ -405,6 +405,8 @@ export namespace AixWire_API {
   export const Model_schema = z.object({
     id: z.string(),
     acceptsOutputs: z.array(z.enum(['text', 'image', 'audio'])),
+    // IMPORTANT: If false/undefined, tools will NOT be sent to the API (prevents 404 on OpenRouter free models)
+    supportsFunctionCalling: z.boolean().optional(),
     temperature: z.number().min(0).max(2).optional()
       .nullable(), // [Deepseek, 2025-01-20] temperature unsupported, so we use 'null' to omit it from the request
     maxTokens: z.number().min(1).optional(),

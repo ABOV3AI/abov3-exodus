@@ -538,7 +538,11 @@ function ChatDrawer(props: {
         <ListItemDecorator>
           <DeleteOutlineIcon />
         </ListItemDecorator>
-        Delete {filteredChatsCount >= 2 ? `all ${filteredChatsCount} chats` : 'chat'}
+        {filteredChatsAreEmpty
+          ? 'No chats to delete'
+          : filteredChatsCount === 1
+            ? 'Delete chat'
+            : `Delete all ${filteredChatsCount} chats`}
       </ListItemButton>
 
     </OptimaDrawerList>

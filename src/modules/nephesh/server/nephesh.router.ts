@@ -1,26 +1,18 @@
 /**
  * Nephesh tRPC Router - API endpoints for autonomous agent profiles
  *
- * NOTE: Currently using in-memory mock data for development.
- * TODO: Replace with Prisma database calls once schema is migrated.
+ * Database-backed implementation using Prisma for persistent storage.
  */
 
 import * as z from 'zod/v4';
 import { TRPCError } from '@trpc/server';
 
 import { createTRPCRouter, nepheshProcedure } from '~/server/trpc/trpc.server';
-import { SUBSCRIPTION_LIMITS, type SubscriptionTier, type NepheshProfile, type NepheshJob } from '../nephesh.types';
-
-//
-// In-memory mock data store (replaced by Prisma later)
-//
-
-const mockProfiles: Map<string, NepheshProfile> = new Map();
-const mockJobs: Map<string, NepheshJob> = new Map();
-
-function generateId(): string {
-  return Math.random().toString(36).substring(2, 15);
-}
+import { prismaDb } from '~/server/prisma/prismaDb';
+import { SUBSCRIPTION_LIMITS, type SubscriptionTier } from '../nephesh.types';
+import { enqueueExecuteJob, getQueueStats } from '~/server/queue/job-queue';
+import { cancelActiveJob } from '~/server/workers/job-cancellation';
+import type { NepheshProfile as PrismaNepheshProfile, NepheshJob as PrismaNepheshJob, JobType, JobStatus } from '@prisma/client';
 
 //
 // Validation Schemas
@@ -67,11 +59,12 @@ export const nepheshRouter = createTRPCRouter({
    * List all profiles for the authenticated user
    */
   listProfiles: nepheshProcedure
-    .query(({ ctx }) => {
-      const userProfiles = Array.from(mockProfiles.values())
-        .filter(p => p.userId === ctx.userId)
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      return userProfiles;
+    .query(async ({ ctx }) => {
+      const profiles = await prismaDb.nepheshProfile.findMany({
+        where: { userId: ctx.userId },
+        orderBy: { createdAt: 'desc' },
+      });
+      return profiles;
     }),
 
   /**
@@ -79,15 +72,15 @@ export const nepheshRouter = createTRPCRouter({
    */
   getProfile: nepheshProcedure
     .input(z.object({ profileId: z.string() }))
-    .query(({ ctx, input }) => {
-      const profile = mockProfiles.get(input.profileId);
+    .query(async ({ ctx, input }) => {
+      const profile = await prismaDb.nepheshProfile.findFirst({
+        where: {
+          id: input.profileId,
+          userId: ctx.userId, // Security: verify ownership
+        },
+      });
 
-      // Verify ownership
-      if (profile && profile.userId !== ctx.userId) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-      }
-
-      return profile || null;
+      return profile;
     }),
 
   /**
@@ -114,10 +107,11 @@ export const nepheshRouter = createTRPCRouter({
       channelBindings: ChannelBindingsSchema.default({}),
       tier: z.enum(['FREE', 'COMMERCIAL', 'ENTERPRISE']).default('FREE'),
     }))
-    .mutation(({ ctx, input }) => {
+    .mutation(async ({ ctx, input }) => {
       // Check subscription tier limits
-      const existingProfilesCount = Array.from(mockProfiles.values())
-        .filter(p => p.userId === ctx.userId).length;
+      const existingProfilesCount = await prismaDb.nepheshProfile.count({
+        where: { userId: ctx.userId },
+      });
 
       const tierLimit = SUBSCRIPTION_LIMITS[input.tier as SubscriptionTier].profiles;
       if (existingProfilesCount >= tierLimit) {
@@ -128,27 +122,25 @@ export const nepheshRouter = createTRPCRouter({
       }
 
       // Create profile
-      const profile: NepheshProfile = {
-        id: generateId(),
-        userId: ctx.userId,
-        name: input.name,
-        description: input.description || null,
-        systemMessage: input.systemMessage,
-        enabled: true,
-        llmId: input.llmId,
-        temperature: input.temperature,
-        maxTokens: input.maxTokens,
-        enabledSkills: input.enabledSkills,
-        enabledTools: input.enabledTools,
-        memoryEnabled: input.memoryEnabled,
-        memoryMaxItems: input.memoryMaxItems,
-        channelBindings: input.channelBindings,
-        tier: input.tier as SubscriptionTier,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+      const profile = await prismaDb.nepheshProfile.create({
+        data: {
+          userId: ctx.userId,
+          name: input.name,
+          description: input.description,
+          systemMessage: input.systemMessage,
+          enabled: true,
+          llmId: input.llmId,
+          temperature: input.temperature,
+          maxTokens: input.maxTokens,
+          enabledSkills: input.enabledSkills,
+          enabledTools: input.enabledTools as any, // Prisma handles JSON
+          memoryEnabled: input.memoryEnabled,
+          memoryMaxItems: input.memoryMaxItems,
+          channelBindings: input.channelBindings as any, // Prisma handles JSON
+          tier: input.tier as SubscriptionTier,
+        },
+      });
 
-      mockProfiles.set(profile.id, profile);
       return profile;
     }),
 
@@ -172,22 +164,29 @@ export const nepheshRouter = createTRPCRouter({
         channelBindings: ChannelBindingsSchema.optional(),
       }),
     }))
-    .mutation(({ ctx, input }) => {
+    .mutation(async ({ ctx, input }) => {
       // Verify ownership
-      const existing = mockProfiles.get(input.profileId);
+      const existing = await prismaDb.nepheshProfile.findFirst({
+        where: {
+          id: input.profileId,
+          userId: ctx.userId,
+        },
+      });
 
-      if (!existing || existing.userId !== ctx.userId) {
+      if (!existing) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
       // Update profile
-      const profile: NepheshProfile = {
-        ...existing,
-        ...input.updates,
-        updatedAt: new Date().toISOString(),
-      };
+      const profile = await prismaDb.nepheshProfile.update({
+        where: { id: input.profileId },
+        data: {
+          ...input.updates,
+          enabledTools: input.updates.enabledTools as any,
+          channelBindings: input.updates.channelBindings as any,
+        },
+      });
 
-      mockProfiles.set(profile.id, profile);
       return profile;
     }),
 
@@ -196,21 +195,23 @@ export const nepheshRouter = createTRPCRouter({
    */
   deleteProfile: nepheshProcedure
     .input(z.object({ profileId: z.string() }))
-    .mutation(({ ctx, input }) => {
+    .mutation(async ({ ctx, input }) => {
       // Verify ownership
-      const existing = mockProfiles.get(input.profileId);
+      const existing = await prismaDb.nepheshProfile.findFirst({
+        where: {
+          id: input.profileId,
+          userId: ctx.userId,
+        },
+      });
 
-      if (!existing || existing.userId !== ctx.userId) {
+      if (!existing) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
-      // Delete profile and associated jobs
-      mockProfiles.delete(input.profileId);
-      for (const [jobId, job] of mockJobs) {
-        if (job.profileId === input.profileId) {
-          mockJobs.delete(jobId);
-        }
-      }
+      // Delete profile (cascade deletes jobs, memories, channels)
+      await prismaDb.nepheshProfile.delete({
+        where: { id: input.profileId },
+      });
 
       return { success: true };
     }),
@@ -223,22 +224,25 @@ export const nepheshRouter = createTRPCRouter({
       profileId: z.string(),
       enabled: z.boolean(),
     }))
-    .mutation(({ ctx, input }) => {
+    .mutation(async ({ ctx, input }) => {
       // Verify ownership
-      const existing = mockProfiles.get(input.profileId);
+      const existing = await prismaDb.nepheshProfile.findFirst({
+        where: {
+          id: input.profileId,
+          userId: ctx.userId,
+        },
+      });
 
-      if (!existing || existing.userId !== ctx.userId) {
+      if (!existing) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
       // Update enabled status
-      const profile: NepheshProfile = {
-        ...existing,
-        enabled: input.enabled,
-        updatedAt: new Date().toISOString(),
-      };
+      const profile = await prismaDb.nepheshProfile.update({
+        where: { id: input.profileId },
+        data: { enabled: input.enabled },
+      });
 
-      mockProfiles.set(profile.id, profile);
       return profile;
     }),
 
@@ -255,45 +259,51 @@ export const nepheshRouter = createTRPCRouter({
       status: z.enum(['IDLE', 'QUEUED', 'RUNNING', 'COMPLETED', 'ERROR']).optional(),
       limit: z.number().min(1).max(100).default(50),
     }))
-    .query(({ ctx, input }) => {
-      // Get user's profile IDs
-      const userProfileIds = new Set(
-        Array.from(mockProfiles.values())
-          .filter(p => p.userId === ctx.userId)
-          .map(p => p.id)
-      );
-
-      // Filter jobs
-      let jobs = Array.from(mockJobs.values())
-        .filter(j => userProfileIds.has(j.profileId));
+    .query(async ({ ctx, input }) => {
+      // Build where clause
+      const where: any = {
+        profile: {
+          userId: ctx.userId, // Security: only user's jobs
+        },
+      };
 
       // Filter by profile if specified
       if (input.profileId) {
-        if (!userProfileIds.has(input.profileId)) {
+        // Verify ownership
+        const profile = await prismaDb.nepheshProfile.findFirst({
+          where: {
+            id: input.profileId,
+            userId: ctx.userId,
+          },
+        });
+
+        if (!profile) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
-        jobs = jobs.filter(j => j.profileId === input.profileId);
+
+        where.profileId = input.profileId;
       }
 
       // Filter by status if specified
       if (input.status) {
-        jobs = jobs.filter(j => j.status === input.status);
+        where.status = input.status;
       }
 
-      // Sort and limit
-      jobs = jobs
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .slice(0, input.limit);
+      // Fetch jobs with profile info
+      const jobs = await prismaDb.nepheshJob.findMany({
+        where,
+        include: {
+          profile: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: input.limit,
+      });
 
-      // Add profile info
-      return jobs.map(job => ({
-        ...job,
-        profile: mockProfiles.get(job.profileId),
-      }));
+      return jobs;
     }),
 
   /**
-   * Create a manual job (execution happens client-side)
+   * Create a manual job (will be executed by background worker)
    */
   createJob: nepheshProcedure
     .input(z.object({
@@ -301,11 +311,16 @@ export const nepheshRouter = createTRPCRouter({
       prompt: z.string().min(1),
       name: z.string().default('Manual Task'),
     }))
-    .mutation(({ ctx, input }) => {
+    .mutation(async ({ ctx, input }) => {
       // Verify ownership and load profile
-      const profile = mockProfiles.get(input.profileId);
+      const profile = await prismaDb.nepheshProfile.findFirst({
+        where: {
+          id: input.profileId,
+          userId: ctx.userId,
+        },
+      });
 
-      if (!profile || profile.userId !== ctx.userId) {
+      if (!profile) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
@@ -314,106 +329,134 @@ export const nepheshRouter = createTRPCRouter({
       }
 
       // Create job record in QUEUED state
-      const job: NepheshJob = {
-        id: generateId(),
-        profileId: input.profileId,
-        name: input.name,
-        type: 'MANUAL',
-        status: 'QUEUED',
-        inputPrompt: input.prompt,
-        progress: 0,
-        currentStep: null,
-        resultMessages: null,
-        heartbeatSkill: null,
-        lastHeartbeat: null,
-        nextHeartbeat: null,
-        logs: [],
-        executionCount: 0,
-        totalTokens: 0,
-        error: null,
-        retryCount: 0,
-        maxRetries: 3,
-        schedule: null,
-        createdAt: new Date().toISOString(),
-        startedAt: null,
-        completedAt: null,
-      };
+      const job = await prismaDb.nepheshJob.create({
+        data: {
+          profileId: input.profileId,
+          name: input.name,
+          type: 'MANUAL',
+          status: 'QUEUED',
+          inputPrompt: input.prompt,
+          progress: 0,
+        },
+      });
 
-      mockJobs.set(job.id, job);
+      // Enqueue job for background execution
+      try {
+        await enqueueExecuteJob({
+          jobId: job.id,
+          profileId: profile.id,
+          userId: ctx.userId,
+        });
+      } catch (error) {
+        // If enqueueing fails, mark job as error
+        await prismaDb.nepheshJob.update({
+          where: { id: job.id },
+          data: {
+            status: 'ERROR',
+            error: `Failed to enqueue job: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          },
+        });
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to queue job for execution',
+        });
+      }
+
       return job;
     }),
 
   /**
-   * Update job status and results (called by client after execution)
+   * Update job status and results (called by background worker)
    */
   updateJob: nepheshProcedure
     .input(z.object({
       jobId: z.string(),
       status: z.enum(['IDLE', 'QUEUED', 'RUNNING', 'COMPLETED', 'ERROR']),
+      progress: z.number().min(0).max(100).optional(),
+      currentStep: z.string().optional(),
       resultMessages: z.any().optional(),
       totalTokens: z.number().optional(),
       error: z.string().optional(),
     }))
-    .mutation(({ ctx, input }) => {
+    .mutation(async ({ ctx, input }) => {
       // Get job and verify ownership
-      const job = mockJobs.get(input.jobId);
+      const job = await prismaDb.nepheshJob.findFirst({
+        where: { id: input.jobId },
+        include: { profile: true },
+      });
+
       if (!job) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Job not found' });
       }
 
-      const profile = mockProfiles.get(job.profileId);
-      if (!profile || profile.userId !== ctx.userId) {
+      if (job.profile.userId !== ctx.userId) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
       // Update job
-      const updatedJob: NepheshJob = {
-        ...job,
-        status: input.status,
-        resultMessages: input.resultMessages || job.resultMessages,
-        totalTokens: input.totalTokens || job.totalTokens,
-        error: input.error || job.error,
-        completedAt: (input.status === 'COMPLETED' || input.status === 'ERROR')
-          ? new Date().toISOString()
-          : job.completedAt,
-        startedAt: input.status === 'RUNNING'
-          ? new Date().toISOString()
-          : job.startedAt,
-        executionCount: input.status === 'COMPLETED'
-          ? job.executionCount + 1
-          : job.executionCount,
-      };
+      const updatedJob = await prismaDb.nepheshJob.update({
+        where: { id: input.jobId },
+        data: {
+          status: input.status,
+          progress: input.progress,
+          currentStep: input.currentStep,
+          resultMessages: input.resultMessages as any,
+          totalTokens: input.totalTokens,
+          error: input.error,
+          completedAt: (input.status === 'COMPLETED' || input.status === 'ERROR')
+            ? new Date()
+            : undefined,
+          startedAt: input.status === 'RUNNING' && !job.startedAt
+            ? new Date()
+            : undefined,
+          executionCount: input.status === 'COMPLETED'
+            ? { increment: 1 }
+            : undefined,
+        },
+      });
 
-      mockJobs.set(updatedJob.id, updatedJob);
       return updatedJob;
     }),
 
   /**
-   * Cancel a running job (cancellation logic happens client-side)
+   * Cancel a running job
    */
   cancelJob: nepheshProcedure
     .input(z.object({ jobId: z.string() }))
-    .mutation(({ ctx, input }) => {
+    .mutation(async ({ ctx, input }) => {
       // Get job and verify ownership
-      const job = mockJobs.get(input.jobId);
+      const job = await prismaDb.nepheshJob.findFirst({
+        where: { id: input.jobId },
+        include: { profile: true },
+      });
+
       if (!job) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Job not found' });
       }
 
-      const profile = mockProfiles.get(job.profileId);
-      if (!profile || profile.userId !== ctx.userId) {
+      if (job.profile.userId !== ctx.userId) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
-      // Update job status
-      const updatedJob: NepheshJob = {
-        ...job,
-        status: 'ERROR',
-        error: 'Cancelled by user',
-        completedAt: new Date().toISOString(),
-      };
+      // Signal worker to abort (if job is currently running)
+      const wasAborted = cancelActiveJob(input.jobId);
 
-      mockJobs.set(updatedJob.id, updatedJob);
+      // Update job status in database
+      const updatedJob = await prismaDb.nepheshJob.update({
+        where: { id: input.jobId },
+        data: {
+          status: 'ERROR',
+          error: 'Cancelled by user',
+          completedAt: new Date(),
+        },
+      });
+
+      if (wasAborted) {
+        console.log(`[Nephesh] Successfully aborted running job ${input.jobId}`);
+      } else {
+        console.log(`[Nephesh] Job ${input.jobId} was not running, marked as cancelled in database`);
+      }
+
       return updatedJob;
     }),
 
@@ -422,27 +465,48 @@ export const nepheshRouter = createTRPCRouter({
    */
   getProfileStats: nepheshProcedure
     .input(z.object({ profileId: z.string() }))
-    .query(({ ctx, input }) => {
+    .query(async ({ ctx, input }) => {
       // Verify ownership
-      const profile = mockProfiles.get(input.profileId);
+      const profile = await prismaDb.nepheshProfile.findFirst({
+        where: {
+          id: input.profileId,
+          userId: ctx.userId,
+        },
+      });
 
-      if (!profile || profile.userId !== ctx.userId) {
+      if (!profile) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
       // Calculate stats from jobs
-      const profileJobs = Array.from(mockJobs.values())
-        .filter(j => j.profileId === input.profileId);
+      const [totalJobs, completedJobs, failedJobs, tokenAggregation, lastExecution, memoryCount] = await Promise.all([
+        prismaDb.nepheshJob.count({
+          where: { profileId: input.profileId },
+        }),
+        prismaDb.nepheshJob.count({
+          where: { profileId: input.profileId, status: 'COMPLETED' },
+        }),
+        prismaDb.nepheshJob.count({
+          where: { profileId: input.profileId, status: 'ERROR' },
+        }),
+        prismaDb.nepheshJob.aggregate({
+          where: { profileId: input.profileId },
+          _sum: { totalTokens: true },
+        }),
+        prismaDb.nepheshJob.findFirst({
+          where: {
+            profileId: input.profileId,
+            completedAt: { not: null },
+          },
+          orderBy: { completedAt: 'desc' },
+          select: { completedAt: true },
+        }),
+        prismaDb.nepheshMemory.count({
+          where: { profileId: input.profileId },
+        }),
+      ]);
 
-      const totalJobs = profileJobs.length;
-      const completedJobs = profileJobs.filter(j => j.status === 'COMPLETED').length;
-      const failedJobs = profileJobs.filter(j => j.status === 'ERROR').length;
-      const totalTokens = profileJobs.reduce((sum, j) => sum + (j.totalTokens || 0), 0);
-
-      // Get last execution
-      const sortedJobs = profileJobs
-        .filter(j => j.completedAt)
-        .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime());
+      const totalTokens = tokenAggregation._sum.totalTokens || 0;
 
       return {
         profileId: input.profileId,
@@ -451,10 +515,26 @@ export const nepheshRouter = createTRPCRouter({
         failedJobs,
         totalTokens,
         estimatedCost: 0, // TODO: Calculate based on model pricing
-        lastExecution: sortedJobs[0]?.completedAt || null,
-        memoryCount: 0, // Mock: no memory items yet
-        memoryUsage: 0,
+        lastExecution: lastExecution?.completedAt?.toISOString() || null,
+        memoryCount,
+        memoryUsage: 0, // TODO: Calculate memory size
       };
+    }),
+
+  /**
+   * Get job queue statistics (admin only)
+   */
+  getQueueStats: nepheshProcedure
+    .query(async () => {
+      try {
+        const stats = await getQueueStats();
+        return stats;
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to get queue statistics',
+        });
+      }
     }),
 
 });

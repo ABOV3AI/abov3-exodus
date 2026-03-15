@@ -11,8 +11,26 @@ import {
   setFeaturePermission,
   type FeatureFlag,
 } from '../../auth/permissions';
+import {
+  getCurrentVersion,
+  listBackups,
+  deleteBackup,
+  cleanupOldBackups,
+  UpdateEngine,
+  getUpdateSystemInfo,
+} from '../../update';
 
-const featureFlagSchema = z.enum(['NEPHESH', 'TRAIN', 'FLOWCORE', 'ADMIN_PANEL']);
+const featureFlagSchema = z.enum(['NEPHESH', 'TRAIN', 'FLOWCORE', 'ADMIN_PANEL', 'ABOV3_MODELS']);
+
+// Generate random alphanumeric code (8 characters)
+function generateInviteCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed ambiguous chars: 0, O, I, 1
+  let code = '';
+  for (let i = 0; i < 8; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
 
 
 const smtpConfigSchema = z.object({
@@ -470,6 +488,517 @@ export const adminRouter = createTRPCRouter({
         avatar: user?.image || null,
         name: user?.name || null,
       };
+    }),
+
+
+  // ===== SOFTWARE UPDATE PROCEDURES =====
+
+  // Get update system info and history (Master Dev only)
+  getUpdateStatus: adminProcedure
+    .query(async ({ ctx }) => {
+      // Check if user is Master Developer
+      const user = await prismaDb.user.findUnique({
+        where: { id: ctx.userId },
+        select: { isMasterDev: true },
+      });
+
+      if (!user?.isMasterDev) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Master Developers can access software updates',
+        });
+      }
+
+      const systemInfo = await getUpdateSystemInfo();
+      const backups = await listBackups();
+
+      // Get update history from database
+      const updates = await prismaDb.softwareUpdate.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      });
+
+      return {
+        ...systemInfo,
+        updates,
+        backups: backups.slice(0, 10),
+      };
+    }),
+
+
+  // List available backups (Master Dev only)
+  listUpdateBackups: adminProcedure
+    .query(async ({ ctx }) => {
+      const user = await prismaDb.user.findUnique({
+        where: { id: ctx.userId },
+        select: { isMasterDev: true },
+      });
+
+      if (!user?.isMasterDev) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Master Developers can access software updates',
+        });
+      }
+
+      const backups = await listBackups();
+      return { backups };
+    }),
+
+
+  // Trigger rollback to a backup (Master Dev only)
+  rollbackUpdate: adminProcedure
+    .input(z.object({
+      backupPath: z.string(),
+      updateId: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const user = await prismaDb.user.findUnique({
+        where: { id: ctx.userId },
+        select: { isMasterDev: true },
+      });
+
+      if (!user?.isMasterDev) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Master Developers can rollback updates',
+        });
+      }
+
+      const engine = new UpdateEngine();
+      const result = await engine.rollback(input.backupPath);
+
+      if (!result.success) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: result.error || 'Rollback failed',
+        });
+      }
+
+      // Update database record if provided
+      if (input.updateId) {
+        await prismaDb.softwareUpdate.update({
+          where: { id: input.updateId },
+          data: {
+            status: 'ROLLED_BACK',
+            rollbackAt: new Date(),
+          },
+        });
+      }
+
+      return {
+        success: true,
+        message: 'Rollback initiated. Application will restart.',
+      };
+    }),
+
+
+  // Delete a backup (Master Dev only)
+  deleteUpdateBackup: adminProcedure
+    .input(z.object({
+      backupPath: z.string(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const user = await prismaDb.user.findUnique({
+        where: { id: ctx.userId },
+        select: { isMasterDev: true },
+      });
+
+      if (!user?.isMasterDev) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Master Developers can delete backups',
+        });
+      }
+
+      await deleteBackup(input.backupPath);
+      return { success: true };
+    }),
+
+
+  // Clean up old backups, keeping only the most recent N (Master Dev only)
+  cleanupOldBackups: adminProcedure
+    .input(z.object({
+      keepCount: z.number().min(1).max(20).default(5),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const user = await prismaDb.user.findUnique({
+        where: { id: ctx.userId },
+        select: { isMasterDev: true },
+      });
+
+      if (!user?.isMasterDev) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Master Developers can cleanup backups',
+        });
+      }
+
+      const deleted = await cleanupOldBackups(input.keepCount);
+      return { deleted };
+    }),
+
+
+  // ===== INVITATION CODE PROCEDURES =====
+
+  // Generate a new invitation code (Master Dev only)
+  generateInvitationCode: adminProcedure
+    .input(z.object({
+      email: z.string().email().optional(), // Pre-assign to specific email
+      note: z.string().max(200).optional(), // Internal note
+      maxUses: z.number().min(1).max(100).default(1),
+      expiresInDays: z.number().min(1).max(365).optional(), // Optional expiration
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // Check if user is Master Developer
+      const user = await prismaDb.user.findUnique({
+        where: { id: ctx.userId },
+        select: { isMasterDev: true },
+      });
+
+      if (!user?.isMasterDev) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Master Developers can generate invitation codes',
+        });
+      }
+
+      // Generate unique code (retry if collision)
+      let code: string;
+      let attempts = 0;
+      do {
+        code = generateInviteCode();
+        const existing = await prismaDb.invitationCode.findUnique({
+          where: { code },
+        });
+        if (!existing) break;
+        attempts++;
+      } while (attempts < 10);
+
+      if (attempts >= 10) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to generate unique code. Please try again.',
+        });
+      }
+
+      // Calculate expiration date if specified
+      const expiresAt = input.expiresInDays
+        ? new Date(Date.now() + input.expiresInDays * 24 * 60 * 60 * 1000)
+        : null;
+
+      // Create invitation code
+      const invitation = await prismaDb.invitationCode.create({
+        data: {
+          code,
+          createdById: ctx.userId,
+          email: input.email?.toLowerCase() || null,
+          note: input.note || null,
+          maxUses: input.maxUses,
+          expiresAt,
+        },
+      });
+
+      return {
+        success: true,
+        invitation: {
+          id: invitation.id,
+          code: invitation.code,
+          email: invitation.email,
+          note: invitation.note,
+          maxUses: invitation.maxUses,
+          expiresAt: invitation.expiresAt,
+          createdAt: invitation.createdAt,
+        },
+      };
+    }),
+
+
+  // Generate multiple invitation codes at once (Master Dev only)
+  generateBulkInvitationCodes: adminProcedure
+    .input(z.object({
+      count: z.number().min(1).max(50),
+      note: z.string().max(200).optional(),
+      maxUses: z.number().min(1).max(100).default(1),
+      expiresInDays: z.number().min(1).max(365).optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // Check if user is Master Developer
+      const user = await prismaDb.user.findUnique({
+        where: { id: ctx.userId },
+        select: { isMasterDev: true },
+      });
+
+      if (!user?.isMasterDev) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Master Developers can generate invitation codes',
+        });
+      }
+
+      const expiresAt = input.expiresInDays
+        ? new Date(Date.now() + input.expiresInDays * 24 * 60 * 60 * 1000)
+        : null;
+
+      const codes: string[] = [];
+      const usedCodes = new Set<string>();
+
+      // Generate unique codes
+      for (let i = 0; i < input.count; i++) {
+        let code: string;
+        let attempts = 0;
+        do {
+          code = generateInviteCode();
+          attempts++;
+        } while ((usedCodes.has(code) || await prismaDb.invitationCode.findUnique({ where: { code } })) && attempts < 10);
+
+        if (attempts >= 10) continue;
+        usedCodes.add(code);
+        codes.push(code);
+      }
+
+      // Bulk create
+      const invitations = await prismaDb.$transaction(
+        codes.map((code) =>
+          prismaDb.invitationCode.create({
+            data: {
+              code,
+              createdById: ctx.userId,
+              note: input.note || null,
+              maxUses: input.maxUses,
+              expiresAt,
+            },
+          })
+        )
+      );
+
+      return {
+        success: true,
+        count: invitations.length,
+        codes: invitations.map((i: { code: string }) => i.code),
+      };
+    }),
+
+
+  // List all invitation codes (Master Dev only)
+  listInvitationCodes: adminProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(100).default(50),
+      offset: z.number().min(0).default(0),
+      status: z.enum(['ACTIVE', 'EXHAUSTED', 'EXPIRED', 'REVOKED', 'ALL']).default('ALL'),
+    }))
+    .query(async ({ input, ctx }) => {
+      // Check if user is Master Developer
+      const user = await prismaDb.user.findUnique({
+        where: { id: ctx.userId },
+        select: { isMasterDev: true },
+      });
+
+      if (!user?.isMasterDev) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Master Developers can view invitation codes',
+        });
+      }
+
+      const where = input.status !== 'ALL' ? { status: input.status as any } : {};
+
+      const invitations = await prismaDb.invitationCode.findMany({
+        where,
+        take: input.limit,
+        skip: input.offset,
+        include: {
+          usages: {
+            select: {
+              userId: true,
+              userEmail: true,
+              usedAt: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      const total = await prismaDb.invitationCode.count({ where });
+
+      return {
+        invitations,
+        total,
+        hasMore: input.offset + input.limit < total,
+      };
+    }),
+
+
+  // Get invitation statistics (Master Dev only)
+  getInvitationStats: adminProcedure
+    .query(async ({ ctx }) => {
+      const user = await prismaDb.user.findUnique({
+        where: { id: ctx.userId },
+        select: { isMasterDev: true },
+      });
+
+      if (!user?.isMasterDev) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Master Developers can view invitation statistics',
+        });
+      }
+
+      const [total, active, used, expired, revoked, totalUsages] = await Promise.all([
+        prismaDb.invitationCode.count(),
+        prismaDb.invitationCode.count({ where: { status: 'ACTIVE' } }),
+        prismaDb.invitationCode.count({ where: { status: 'EXHAUSTED' } }),
+        prismaDb.invitationCode.count({ where: { status: 'EXPIRED' } }),
+        prismaDb.invitationCode.count({ where: { status: 'REVOKED' } }),
+        prismaDb.invitationUsage.count(),
+      ]);
+
+      // Get recent activations (last 7 days)
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const recentActivations = await prismaDb.invitationUsage.count({
+        where: { usedAt: { gte: weekAgo } },
+      });
+
+      return {
+        total,
+        active,
+        used,
+        expired,
+        revoked,
+        totalUsages,
+        recentActivations,
+      };
+    }),
+
+
+  // Revoke an invitation code (Master Dev only)
+  revokeInvitationCode: adminProcedure
+    .input(z.object({
+      invitationId: z.string(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const user = await prismaDb.user.findUnique({
+        where: { id: ctx.userId },
+        select: { isMasterDev: true },
+      });
+
+      if (!user?.isMasterDev) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Master Developers can revoke invitation codes',
+        });
+      }
+
+      const invitation = await prismaDb.invitationCode.findUnique({
+        where: { id: input.invitationId },
+      });
+
+      if (!invitation) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Invitation code not found',
+        });
+      }
+
+      await prismaDb.invitationCode.update({
+        where: { id: input.invitationId },
+        data: { status: 'REVOKED' },
+      });
+
+      return { success: true };
+    }),
+
+
+  // Reactivate a revoked invitation code (Master Dev only)
+  reactivateInvitationCode: adminProcedure
+    .input(z.object({
+      invitationId: z.string(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const user = await prismaDb.user.findUnique({
+        where: { id: ctx.userId },
+        select: { isMasterDev: true },
+      });
+
+      if (!user?.isMasterDev) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Master Developers can reactivate invitation codes',
+        });
+      }
+
+      const invitation = await prismaDb.invitationCode.findUnique({
+        where: { id: input.invitationId },
+      });
+
+      if (!invitation) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Invitation code not found',
+        });
+      }
+
+      if (invitation.status !== 'REVOKED') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Only revoked codes can be reactivated',
+        });
+      }
+
+      // Check if it should be exhausted
+      const newStatus = invitation.useCount >= invitation.maxUses ? 'EXHAUSTED' : 'ACTIVE';
+
+      await prismaDb.invitationCode.update({
+        where: { id: input.invitationId },
+        data: { status: newStatus },
+      });
+
+      return { success: true, newStatus };
+    }),
+
+
+  // Delete an invitation code (Master Dev only, only if unused)
+  deleteInvitationCode: adminProcedure
+    .input(z.object({
+      invitationId: z.string(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const user = await prismaDb.user.findUnique({
+        where: { id: ctx.userId },
+        select: { isMasterDev: true },
+      });
+
+      if (!user?.isMasterDev) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only Master Developers can delete invitation codes',
+        });
+      }
+
+      const invitation = await prismaDb.invitationCode.findUnique({
+        where: { id: input.invitationId },
+        include: { usages: true },
+      });
+
+      if (!invitation) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Invitation code not found',
+        });
+      }
+
+      if (invitation.usages.length > 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Cannot delete invitation codes that have been used. Revoke instead.',
+        });
+      }
+
+      await prismaDb.invitationCode.delete({
+        where: { id: input.invitationId },
+      });
+
+      return { success: true };
     }),
 
 });

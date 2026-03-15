@@ -106,7 +106,6 @@ export const navItems: {
     },
     {
       name: 'Call',
-      barTitle: 'Voice Calls',
       icon: CallOutlinedIcon,
       iconActive: CallIcon,
       type: 'app',

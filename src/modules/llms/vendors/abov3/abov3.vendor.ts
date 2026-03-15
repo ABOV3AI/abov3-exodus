@@ -31,6 +31,7 @@ export const ModelVendorABOV3: IModelVendor<DABOV3ServiceSettings, ABOV3AccessSc
   brandColor: '#0066cc',
   instanceLimit: 1,
   hasServerConfigKey: 'hasLlmAbov3',
+  requiredFeature: 'ABOV3_MODELS', // Requires explicit permission to access ABOV3 models
 
   // functions
   getTransportAccess: (partialSetup): ABOV3AccessSchema => ({

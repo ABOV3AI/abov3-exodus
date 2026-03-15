@@ -125,10 +125,11 @@ model UserPermission {
 
 // Beta features that require explicit permission
 enum FeatureFlag {
-  NEPHESH      // Autonomous Agents
-  TRAIN        // Model Training
-  FLOWCORE     // Workflow Builder
-  ADMIN_PANEL  // Admin settings access
+  NEPHESH       // Autonomous Agents
+  TRAIN         // Model Training
+  FLOWCORE      // Workflow Builder
+  ADMIN_PANEL   // Admin settings access
+  ABOV3_MODELS  // Access to ABOV3 proprietary models (Genesis, Exodus, Solomon)
 }
 
 model Account {
@@ -227,6 +228,12 @@ model UserSettings {
   // UI preferences
   uiSettings Json? // Theme, scaling, drawer states, etc.
 
+  // App settings (folders, MCP servers, personas, tools, etc.)
+  appSettings Json? // All other app-specific settings
+
+  // Workflow data (training jobs, flowcore workflows)
+  workflowData Json? // Training jobs, datasets, FlowCore workflows
+
   // Sync settings
   autoBackup      Boolean @default(false)
   backupFrequency Int?    // Minutes between auto-backups
@@ -258,6 +265,65 @@ model AdminSettings {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+//
+// Invitation System (Invite-Only Access)
+//
+model InvitationCode {
+  id          String           @id @default(cuid())
+  code        String           @unique // 8 alphanumeric characters
+
+  // Who created this invitation
+  createdById String           // User ID of Master Developer
+
+  // Optional: personalized invitation
+  email       String?          // Pre-assigned email (optional)
+  note        String?          // Internal note about this invitation
+
+  // Usage tracking
+  maxUses     Int              @default(1)  // How many times code can be used
+  useCount    Int              @default(0)  // Current number of uses
+
+  // Status
+  status      InvitationStatus @default(ACTIVE)
+
+  // Expiration (optional)
+  expiresAt   DateTime?
+
+  // Timestamps
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  // Relations
+  usages      InvitationUsage[]
+
+  @@index([code])
+  @@index([status])
+  @@index([createdById])
+}
+
+// Track each use of an invitation code
+model InvitationUsage {
+  id             String         @id @default(cuid())
+  invitationId   String
+  invitation     InvitationCode @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  // User who used the code
+  userId         String         @unique // One user per usage
+  userEmail      String         // Email at time of registration
+
+  usedAt         DateTime       @default(now())
+
+  @@index([invitationId])
+  @@index([userId])
+}
+
+enum InvitationStatus {
+  ACTIVE      // Can be used
+  EXHAUSTED   // Max uses reached
+  EXPIRED     // Past expiration date
+  REVOKED     // Manually disabled
 }
 
 //
@@ -431,4 +497,42 @@ enum ChannelPlatform {
   WHATSAPP
   SLACK
   DISCORD
+}
+
+//
+// Software Update System
+//
+model SoftwareUpdate {
+  id          String       @id @default(cuid())
+  version     String       // Semantic version from package.json in zip
+  filename    String       // Original uploaded filename
+  checksum    String       // SHA-256 hash of the zip file
+  size        Int          // File size in bytes
+
+  status      UpdateStatus @default(PENDING)
+  uploadedBy  String       // User ID who uploaded
+  appliedAt   DateTime?    // When update was successfully applied
+  rollbackAt  DateTime?    // When update was rolled back
+  error       String?      @db.Text // Error message if failed
+
+  // Backup reference
+  backupPath  String?      // Path to backup directory
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum UpdateStatus {
+  PENDING      // Uploaded, awaiting validation
+  VALIDATING   // Checking zip structure and checksum
+  BACKING_UP   // Creating backup of current files
+  APPLYING     // Extracting and replacing files
+  MIGRATING    // Running database migrations
+  RESTARTING   // Signaling app restart
+  COMPLETED    // Successfully applied
+  FAILED       // Failed during any stage
+  ROLLED_BACK  // Reverted to previous version
 }

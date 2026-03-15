@@ -31,6 +31,37 @@ buildType && console.log(` 🚀 ABOV3 Exodus: building for ${buildType}...\n`);
 let nextConfig: NextConfig = {
   reactStrictMode: true,
 
+  // Security headers for production deployment
+  async headers() {
+    return [
+      {
+        // Apply to all routes
+        source: '/:path*',
+        headers: [
+          // Prevent clickjacking
+          { key: 'X-Frame-Options', value: 'DENY' },
+          // Prevent MIME type sniffing
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          // Enable XSS filtering (legacy browsers)
+          { key: 'X-XSS-Protection', value: '1; mode=block' },
+          // Control referrer information
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          // Prevent embedding in iframes (modern alternative to X-Frame-Options)
+          { key: 'Content-Security-Policy', value: "frame-ancestors 'none'" },
+          // HSTS - enforce HTTPS (only in production)
+          ...(process.env.NODE_ENV === 'production' ? [
+            { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
+          ] : []),
+          // Permissions Policy - disable unnecessary features
+          {
+            key: 'Permissions-Policy',
+            value: 'geolocation=(), midi=(), sync-xhr=(), accelerometer=(), gyroscope=(), magnetometer=()',
+          },
+        ],
+      },
+    ];
+  },
+
   // [exports] https://nextjs.org/docs/advanced-features/static-html-export
   ...(buildType && {
     output: buildType,

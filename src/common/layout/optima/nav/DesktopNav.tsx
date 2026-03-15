@@ -25,6 +25,7 @@ import { UserMenu } from '~/common/components/UserMenu';
 import { checkDivider, checkVisibileIcon, NavItemApp, navItems } from '~/common/app.nav';
 import { themeZIndexDesktopNav } from '~/common/app.theme';
 import { useHasLLMs } from '~/common/stores/llms/llms.hooks';
+import { useUserFeatures } from '~/common/stores/store-user-features';
 import { useOverlayComponents } from '~/common/layout/overlays/useOverlayComponents';
 
 import { BringTheLove } from './BringTheLove';
@@ -70,6 +71,12 @@ export function DesktopNav(props: { component: React.ElementType, currentApp?: N
 
   // derived state
   const noLLMs = !useHasLLMs();
+
+  // Subscribe to user features for nav visibility - this triggers re-render when features change
+  const featuresLoaded = useUserFeatures((s) => s.isLoaded);
+  const userFeatures = useUserFeatures((s) => s.features);
+  const isAdmin = useUserFeatures((s) => s.isAdmin);
+  const isMasterDev = useUserFeatures((s) => s.isMasterDev);
 
 
   // handlers
@@ -242,7 +249,7 @@ export function DesktopNav(props: { component: React.ElementType, currentApp?: N
       </Dropdown>);
 
     return components;
-  }, [toggleScratchClipVisibility, isScratchClipVisible, releaseNotesUrl, handleShowReleaseNotes, releaseNotesShown, handleShowTechnologies, props.currentApp, isDrawerOpen]);
+  }, [toggleScratchClipVisibility, isScratchClipVisible, releaseNotesUrl, handleShowReleaseNotes, releaseNotesShown, handleShowTechnologies, props.currentApp, isDrawerOpen, featuresLoaded, userFeatures, isAdmin, isMasterDev]);
 
 
   // External link items
@@ -347,7 +354,7 @@ export function DesktopNav(props: { component: React.ElementType, currentApp?: N
         <Typography
           sx={{
             transform: 'rotate(-90deg)',
-            fontSize: 'calc(var(--Bar) - 4px)',
+            fontSize: 'calc((var(--Bar) - 4px) * 0.5)',
             letterSpacing: '0.05em',
             fontWeight: 800,
             color: 'inherit',

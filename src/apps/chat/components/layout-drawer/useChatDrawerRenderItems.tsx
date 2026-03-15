@@ -312,8 +312,11 @@ export function useChatDrawerRenderItems(
 
       // other derived state
       const filteredChatIDs = chatNavItems.map(_c => _c.conversationId);
-      const filteredChatsCount = chatNavItems.length;
-      const filteredChatsAreEmpty = !filteredChatsCount || (filteredChatsCount === 1 && chatNavItems[0].isEmpty);
+      // Count only non-empty chats for display purposes
+      const nonEmptyChats = chatNavItems.filter(_c => !_c.isEmpty);
+      const filteredChatsCount = nonEmptyChats.length;
+      // Consider empty if there are no non-empty chats
+      const filteredChatsAreEmpty = nonEmptyChats.length === 0;
       const filteredChatsBarBasis = !isSearching && (!showRelativeSize || filteredChatsCount < 2) ? 0
         : chatNavItems.reduce((longest, _c) => Math.max(longest, isSearching ? _c.searchFrequency : _c.messageCount), 1);
 

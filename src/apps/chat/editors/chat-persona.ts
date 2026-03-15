@@ -19,6 +19,7 @@ import { useProjectsStore } from '~/apps/projects/store-projects';
 import { getEnabledAIXTools } from '~/modules/tools/tools.registry';
 import { executeToolCall } from '~/modules/tools/tools.executor';
 import { parseToolInvocationsFromText, hasToolInvocations } from '~/modules/tools/tools.text-parser';
+import { useToolsStore } from '~/modules/tools/store-tools';
 import type { AixTools_ToolDefinition } from '~/modules/aix/server/api/aix.wiretypes';
 import { create_FunctionCallResponse_ContentFragment, createTextContentFragment } from '~/common/stores/chat/chat.fragments';
 
@@ -92,19 +93,17 @@ export async function runPersonaOnConversationHead(
   // are enforced at the execution layer (tools.executor.ts), not at the API layer.
   // This allows seamless mode switching without breaking conversation history.
   const llm = findLLMOrThrow(assistantLlmId);
-  const isAnthropicModel = llm.vId === 'anthropic'; // ABOV3 excluded - tools enabled
 
-  let tools: AixTools_ToolDefinition[] | undefined;
+  // Get tools for ALL models that support function calling
+  // The userToolsEnabled check happens in getEnabledAIXTools via modelId
+  // Mode enforcement happens at execution time in tools.executor.ts
+  const tools = getEnabledAIXTools({ modelId: assistantLlmId });
 
-  // TEMPORARY: Disable tools for Anthropic models to prevent errors from old conversations
-  if (isAnthropicModel) {
-    tools = undefined;
-  } else {
-    // Send all available tools regardless of mode
-    // Mode enforcement happens at execution time in tools.executor.ts
-    // Pass modelId to filter MCP tools based on per-model settings
-    tools = getEnabledAIXTools({ modelId: assistantLlmId });
-  }
+  // Debug: Log collected tools
+  const mcpToolCount = tools?.filter(t => t.type === 'function_call' && t.function_call?.name.startsWith('mcp_')).length || 0;
+  const builtinToolCount = (tools?.length || 0) - mcpToolCount;
+  console.log(`[Chat Persona] Model: ${assistantLlmId}, Vendor: ${llm.vId}`);
+  console.log(`[Chat Persona] Collected tools - Total: ${tools?.length || 0}, MCP: ${mcpToolCount}, Built-in: ${builtinToolCount}`);
 
   // Ensure Anthropic OAuth token is fresh before making API call
   try {
@@ -182,7 +181,10 @@ export async function runPersonaOnConversationHead(
 
   // Handle TEXT-BASED tool invocations (for OAuth users - tools in response text)
   // This parses tool blocks like ```tool:read_file {"path": "..."} ``` from Claude's response
-  if (lastDeepCopy.fragments) {
+  // Only process if text-based tools are enabled in settings
+  const enableTextBasedTools = useToolsStore.getState().enableTextBasedTools;
+
+  if (enableTextBasedTools && lastDeepCopy.fragments) {
     // Check text fragments for tool invocation patterns
     const textFragments = lastDeepCopy.fragments.filter(frag =>
       frag.part.pt === 'text'

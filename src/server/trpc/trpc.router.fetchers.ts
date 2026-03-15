@@ -15,6 +15,157 @@ const SERVER_LOG_FETCHERS_ERRORS = true; // log all fetcher errors to the consol
 // It handles connection errors, HTTP errors, and parsing errors.
 //
 
+
+/**
+ * Validates that an endpoint URL is not a localhost or private IP address.
+ * This prevents the server from making requests to internal services.
+ *
+ * @throws TRPCError with BAD_REQUEST code if the endpoint is blocked
+ */
+function validateEndpoint(url: string): void {
+  let hostname: string;
+  try {
+    hostname = new URL(url).hostname.toLowerCase();
+  } catch (error) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: `Invalid URL format: ${url}`,
+    });
+  }
+
+  // Block localhost addresses
+  const localhostAddresses = ['localhost', '127.0.0.1', '0.0.0.0', '::1', '::'];
+  if (localhostAddresses.includes(hostname)) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: `Localhost endpoints are not supported in cloud deployment. ` +
+        `For local model inference (Ollama, LocalAI, LM Studio), the request must be made directly from your browser to your local machine. ` +
+        `Please ensure your local model server has CORS enabled.`,
+    });
+  }
+
+  // Block private IPv4 ranges
+  const ipv4Match = hostname.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+  if (ipv4Match) {
+    const octets = ipv4Match.slice(1, 5).map(Number);
+    const [a, b, c, d] = octets;
+
+    // 10.0.0.0/8
+    if (a === 10) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: `Private IP addresses (10.x.x.x) are not allowed for security reasons. ` +
+          `This prevents the server from accessing internal network resources.`,
+      });
+    }
+
+    // 172.16.0.0/12
+    if (a === 172 && b >= 16 && b <= 31) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: `Private IP addresses (172.16-31.x.x) are not allowed for security reasons. ` +
+          `This prevents the server from accessing internal network resources.`,
+      });
+    }
+
+    // 192.168.0.0/16
+    if (a === 192 && b === 168) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: `Private IP addresses (192.168.x.x) are not allowed for security reasons. ` +
+          `This prevents the server from accessing internal network resources.`,
+      });
+    }
+
+    // 169.254.0.0/16 (link-local)
+    if (a === 169 && b === 254) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: `Link-local addresses (169.254.x.x) are not allowed for security reasons.`,
+      });
+    }
+
+    // 100.64.0.0/10 (shared address space / CGNAT)
+    if (a === 100 && b >= 64 && b <= 127) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: `Shared address space (100.64-127.x.x) is not allowed for security reasons.`,
+      });
+    }
+  }
+
+  // Block private IPv6 ranges
+  if (hostname.includes(':')) {
+    const lowerHost = hostname.toLowerCase();
+
+    // fe80::/10 (link-local)
+    if (lowerHost.startsWith('fe80:') || lowerHost.startsWith('fe8') || lowerHost.startsWith('fe9') ||
+        lowerHost.startsWith('fea') || lowerHost.startsWith('feb')) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: `IPv6 link-local addresses (fe80::/10) are not allowed for security reasons.`,
+      });
+    }
+
+    // fc00::/7 (unique local addresses)
+    if (lowerHost.startsWith('fc') || lowerHost.startsWith('fd')) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: `IPv6 unique local addresses (fc00::/7) are not allowed for security reasons.`,
+      });
+    }
+  }
+
+  // Block .local domains (mDNS/Bonjour)
+  if (hostname.endsWith('.local')) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: `Local domain names (.local) are not allowed for security reasons.`,
+    });
+  }
+}
+
+
+/**
+ * Checks if an endpoint is a local/private address.
+ * Used by client-side code to determine if a request should bypass the server.
+ */
+export function isLocalEndpoint(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+
+    // Check localhost
+    const localhostAddresses = ['localhost', '127.0.0.1', '0.0.0.0', '::1', '::'];
+    if (localhostAddresses.includes(hostname)) return true;
+
+    // Check private IPv4
+    const ipv4Match = hostname.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+    if (ipv4Match) {
+      const [a, b] = ipv4Match.slice(1, 5).map(Number);
+      if (a === 10) return true;
+      if (a === 172 && b >= 16 && b <= 31) return true;
+      if (a === 192 && b === 168) return true;
+      if (a === 169 && b === 254) return true;
+      if (a === 100 && b >= 64 && b <= 127) return true;
+    }
+
+    // Check private IPv6
+    if (hostname.includes(':')) {
+      const lowerHost = hostname.toLowerCase();
+      if (lowerHost.startsWith('fe8') || lowerHost.startsWith('fe9') ||
+          lowerHost.startsWith('fea') || lowerHost.startsWith('feb')) return true;
+      if (lowerHost.startsWith('fc') || lowerHost.startsWith('fd')) return true;
+    }
+
+    // Check .local domains
+    if (hostname.endsWith('.local')) return true;
+
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 // JSON fetcher
 export async function fetchJsonOrTRPCThrow<TOut extends object = object, TBody extends object | undefined | FormData = undefined>(config: RequestConfig<TBody>): Promise<TOut> {
   return _fetchFromTRPC<TBody, TOut>(config, _jsonRequestParserOrThrow, 'json');
@@ -117,6 +268,9 @@ async function _fetchFromTRPC<TBody extends object | undefined | FormData, TOut>
 
   const { url, method = 'GET', headers: configHeaders, name: moduleName, signal, throwWithoutName = false } = config;
   const body = 'body' in config ? config.body : undefined;
+
+  // Validate endpoint to prevent localhost/private IP access
+  validateEndpoint(url);
 
   // Cleaner url without query
   let debugCleanUrl;

@@ -5,18 +5,56 @@
  * authenticated LLM connections, including OAuth tokens for Claude Pro/Max.
  *
  * Routes requests through the existing AIX infrastructure which has working OAuth support.
+ *
+ * SECURITY: This endpoint requires the EDEN_API_KEY for authentication.
+ * CORS is restricted to localhost by default for security.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { chatGenerateContentImpl } from '~/modules/aix/server/api/aix.router';
 import type { AixAPI_Access, AixAPI_Model, AixAPIChatGenerate_Request, AixAPI_Context_ChatGenerate } from '~/modules/aix/server/api/aix.wiretypes';
 
-// CORS headers for Eden to call this endpoint
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-};
+// SECURITY: Allowed origins for CORS (Eden server typically runs locally)
+const ALLOWED_ORIGINS = [
+  'http://localhost:3100',  // Default Eden port
+  'http://127.0.0.1:3100',
+  'http://localhost:3000',  // Same origin
+  'http://127.0.0.1:3000',
+  // Add production Eden URL here if deployed:
+  // 'https://eden.your-domain.com',
+];
+
+// Get CORS headers based on request origin
+function getCorsHeaders(request: NextRequest): Record<string, string> {
+  const origin = request.headers.get('origin');
+  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Credentials': 'true',
+  };
+}
+
+// Validate API key for Eden requests
+function validateEdenApiKey(request: NextRequest): boolean {
+  const apiKey = request.headers.get('Authorization')?.replace('Bearer ', '');
+  const expectedKey = process.env.EDEN_API_KEY;
+
+  // In development, allow requests without API key for convenience
+  if (process.env.NODE_ENV === 'development' && !expectedKey) {
+    return true;
+  }
+
+  // In production, require the API key
+  if (!expectedKey) {
+    console.warn('[Training API] EDEN_API_KEY not configured - all requests will be rejected in production');
+    return false;
+  }
+
+  return apiKey === expectedKey;
+}
 
 // Credentials passed from Eden (matches TeacherModelCredentials)
 interface Credentials {
@@ -52,10 +90,10 @@ interface GenerateResponse {
 /**
  * Handle CORS preflight requests
  */
-export async function OPTIONS() {
+export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, {
     status: 204,
-    headers: CORS_HEADERS,
+    headers: getCorsHeaders(request),
   });
 }
 
@@ -161,21 +199,31 @@ function buildAixChatGenerate(systemPrompt: string, userPrompt: string): AixAPIC
  * Generate text using AIX infrastructure for proper OAuth support
  */
 export async function POST(request: NextRequest) {
+  const corsHeaders = getCorsHeaders(request);
+
   try {
+    // SECURITY: Validate API key
+    if (!validateEdenApiKey(request)) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized: Invalid or missing EDEN_API_KEY' } satisfies GenerateResponse,
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
     const body: GenerateRequest = await request.json();
     const { modelId, systemPrompt, userPrompt, temperature = 0.7, maxTokens = 16384, credentials } = body;
 
     if (!modelId || !userPrompt) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields: modelId, userPrompt' } satisfies GenerateResponse,
-        { status: 400, headers: CORS_HEADERS }
+        { status: 400, headers: corsHeaders }
       );
     }
 
     if (!credentials) {
       return NextResponse.json(
         { success: false, error: 'Missing credentials. Pass credentials from Exodus.' } satisfies GenerateResponse,
-        { status: 400, headers: CORS_HEADERS }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -257,7 +305,7 @@ export async function POST(request: NextRequest) {
         console.error(`[Training API] AIX error: ${errorMessage}`);
         return NextResponse.json(
           { success: false, error: errorMessage, provider: credentials.provider } satisfies GenerateResponse,
-          { status: 500, headers: CORS_HEADERS }
+          { status: 500, headers: corsHeaders }
         );
       }
 
@@ -265,7 +313,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json(
         { success: true, text: fullText, model: credentials.modelId, provider: credentials.provider } satisfies GenerateResponse,
-        { status: 200, headers: CORS_HEADERS }
+        { status: 200, headers: corsHeaders }
       );
 
     } finally {
@@ -284,13 +332,13 @@ export async function POST(request: NextRequest) {
           error: `OAuth Limitation: ${errorMessage}. Please add an Anthropic API key in Exodus Settings.`,
           provider: 'abov3'
         } satisfies GenerateResponse,
-        { status: 401, headers: CORS_HEADERS }
+        { status: 401, headers: corsHeaders }
       );
     }
 
     return NextResponse.json(
       { success: false, error: errorMessage } satisfies GenerateResponse,
-      { status: 500, headers: CORS_HEADERS }
+      { status: 500, headers: corsHeaders }
     );
   }
 }

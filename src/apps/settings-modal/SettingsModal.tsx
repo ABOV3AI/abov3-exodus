@@ -22,7 +22,7 @@ import { ToolsSettings } from './ToolsSettings';
 
 import type { PreferencesTabId } from '~/common/layout/optima/store-layout-optima';
 import { AppBreadcrumbs } from '~/common/components/AppBreadcrumbs';
-import { DarkModeToggleButton, darkModeToggleButtonSx } from '~/common/components/DarkModeToggleButton';
+import { DarkModeToggleButton } from '~/common/components/DarkModeToggleButton';
 import { GoodModal } from '~/common/components/modals/GoodModal';
 import { Is } from '~/common/util/pwaUtils';
 import { optimaActions } from '~/common/layout/optima/useOptima';
@@ -224,14 +224,14 @@ export function SettingsModal(props: {
       fullscreen={isMobile}
       startButton={
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-          {!isToolsTab && <DarkModeToggleButton hasText />}
-          {!isMobile && !isToolsTab && <Button variant='soft' color='neutral' onClick={props.onOpenShortcuts} startDecorator={<KeyboardCommandKeyOutlinedIcon color='primary' />} sx={darkModeToggleButtonSx}>
+          {!isToolsTab && <DarkModeToggleButton />}
+          {!isMobile && !isToolsTab && <Button variant='soft' color='neutral' onClick={props.onOpenShortcuts} startDecorator={<KeyboardCommandKeyOutlinedIcon color='primary' />} sx={{ boxShadow: 'sm', backgroundColor: 'background.surface', '&:hover': { backgroundColor: 'background.popup' } }}>
             Shortcuts
           </Button>}
-          {isToolsTab && <Button variant='soft' color='neutral' disabled={!enableAixDebuggerDialog} onClick={optimaActions().openAIXDebugger} startDecorator={<TerminalOutlinedIcon color={enableAixDebuggerDialog ? 'primary' : undefined} />} sx={darkModeToggleButtonSx}>
+          {isToolsTab && <Button variant='soft' color='neutral' disabled={!enableAixDebuggerDialog} onClick={optimaActions().openAIXDebugger} startDecorator={<TerminalOutlinedIcon color={enableAixDebuggerDialog ? 'primary' : undefined} />} sx={{ boxShadow: 'sm', backgroundColor: 'background.surface', '&:hover': { backgroundColor: 'background.popup' } }}>
             AI Inspector
           </Button>}
-          {isToolsTab && <Button variant='soft' color='neutral' onClick={optimaActions().openLogger} startDecorator={<TerminalOutlinedIcon color='primary' />} sx={darkModeToggleButtonSx}>
+          {isToolsTab && <Button variant='soft' color='neutral' onClick={optimaActions().openLogger} startDecorator={<TerminalOutlinedIcon color='primary' />} sx={{ boxShadow: 'sm', backgroundColor: 'background.surface', '&:hover': { backgroundColor: 'background.popup' } }}>
             Logs Viewer
           </Button>}
         </Box>

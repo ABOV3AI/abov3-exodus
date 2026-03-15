@@ -61,11 +61,13 @@ export function createChatGenerateDispatch(access: AixAPI_Access, model: AixAPI_
     case 'anthropic': {
       // Check if OAuth is being used (thinking is not supported with OAuth)
       const isOAuth = !!(access as any).oauthAccessToken && !!(access as any).oauthRefreshToken;
+      const projectMode = (access as any).projectMode ?? 'chat';
+      const projectPath = (access as any).projectPath ?? undefined;
 
       return {
         request: {
           ...anthropicAccess(access, model.id, '/v1/messages'),
-          body: aixToAnthropicMessageCreate(model, chatGenerate, streaming, isOAuth),
+          body: aixToAnthropicMessageCreate(model, chatGenerate, streaming, isOAuth, projectMode, projectPath),
         },
         demuxerFormat: streaming ? 'fast-sse' : null,
         chatGenerateParse: streaming ? createAnthropicMessageParser() : createAnthropicMessageParserNS(),
@@ -94,31 +96,37 @@ export function createChatGenerateDispatch(access: AixAPI_Access, model: AixAPI_
      *
      * For reference we show the old code for body/demuxerFormat/chatGenerateParse also below
      */
-    case 'ollama':
+    case 'ollama': {
+      const projectMode = (access as any).projectMode ?? 'chat';
+      const projectPath = (access as any).projectPath ?? undefined;
       return {
         request: {
           ...ollamaAccess(access, '/v1/chat/completions'), // use the OpenAI-compatible endpoint
           // body: ollamaChatCompletionPayload(model, _hist, access.ollamaJson, streaming),
-          body: aixToOpenAIChatCompletions('openai', model, chatGenerate, access.ollamaJson, streaming),
+          body: aixToOpenAIChatCompletions('openai', model, chatGenerate, access.ollamaJson, streaming, projectMode, projectPath),
         },
         // demuxerFormat: streaming ? 'json-nl' : null,
         demuxerFormat: streaming ? 'fast-sse' : null,
         // chatGenerateParse: createDispatchParserOllama(),
         chatGenerateParse: streaming ? createOpenAIChatCompletionsChunkParser() : createOpenAIChatCompletionsParserNS(),
       };
+    }
 
     /**
      * ABOV3 Ark-SLM - Local SLM inference server using OpenAI-compatible API
      */
-    case 'ark-slm':
+    case 'ark-slm': {
+      const projectMode = (access as any).projectMode ?? 'chat';
+      const projectPath = (access as any).projectPath ?? undefined;
       return {
         request: {
           ...arkSLMAccess(access, '/v1/chat/completions'),
-          body: aixToOpenAIChatCompletions('openai', model, chatGenerate, false, streaming),
+          body: aixToOpenAIChatCompletions('openai', model, chatGenerate, false, streaming, projectMode, projectPath),
         },
         demuxerFormat: streaming ? 'fast-sse' : null,
         chatGenerateParse: streaming ? createOpenAIChatCompletionsChunkParser() : createOpenAIChatCompletionsParserNS(),
       };
+    }
 
     case 'alibaba':
     case 'azure':
@@ -132,7 +140,10 @@ export function createChatGenerateDispatch(access: AixAPI_Access, model: AixAPI_
     case 'openrouter':
     case 'perplexity':
     case 'togetherai':
-    case 'xai':
+    case 'xai': {
+      // Extract project mode for Coding Mode support (same as ABOV3)
+      const projectMode = (access as any).projectMode ?? 'chat';
+      const projectPath = (access as any).projectPath ?? undefined;
 
       // switch to the Responses API if the model supports it
       const isResponsesAPI = !!model.vndOaiResponsesAPI;
@@ -150,10 +161,11 @@ export function createChatGenerateDispatch(access: AixAPI_Access, model: AixAPI_
       return {
         request: {
           ...openAIAccess(access, model.id, '/v1/chat/completions'),
-          body: aixToOpenAIChatCompletions(access.dialect, model, chatGenerate, false, streaming),
+          body: aixToOpenAIChatCompletions(access.dialect, model, chatGenerate, false, streaming, projectMode, projectPath),
         },
         demuxerFormat: streaming ? 'fast-sse' : null,
         chatGenerateParse: streaming ? createOpenAIChatCompletionsChunkParser() : createOpenAIChatCompletionsParserNS(),
       };
+    }
   }
 }

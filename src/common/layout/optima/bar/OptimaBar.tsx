@@ -53,6 +53,11 @@ function CenterItemsPortal(props: { currentApp?: NavItemApp }) {
 }
 
 function CenterItemsFallback(props: { currentApp?: NavItemApp }) {
+  // Don't show anything for Call page (no icon, no title)
+  if (props.currentApp?.name === 'Call') {
+    return null;
+  }
+
   return <Box sx={{
     display: 'flex',
     alignItems: 'center',

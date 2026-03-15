@@ -59,11 +59,29 @@ const signInSchema = z.object({
 });
 
 
+// SECURITY: Ensure NEXTAUTH_SECRET is set in production
+const getAuthSecret = (): string => {
+  if (env.NEXTAUTH_SECRET) {
+    return env.NEXTAUTH_SECRET;
+  }
+  // In development, allow fallback for convenience
+  if (process.env.NODE_ENV === 'development') {
+    console.warn('[Auth] WARNING: Using default secret in development. Set NEXTAUTH_SECRET in production!');
+    return 'dev-secret-key-do-not-use-in-production';
+  }
+  // In production, fail hard if secret is missing
+  throw new Error(
+    'CRITICAL SECURITY ERROR: NEXTAUTH_SECRET environment variable is not set. ' +
+    'This is required for secure JWT signing in production. ' +
+    'Generate a secure secret with: openssl rand -base64 32'
+  );
+};
+
 export const authConfig: NextAuthConfig = {
   adapter: PrismaAdapter(prismaDb),
 
   // Secret for JWT signing (required in production)
-  secret: env.NEXTAUTH_SECRET || 'your-secret-key-change-in-production',
+  secret: getAuthSecret(),
 
   // Base URL for callbacks
   basePath: '/api/auth',

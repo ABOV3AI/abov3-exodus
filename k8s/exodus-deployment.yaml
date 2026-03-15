@@ -22,6 +22,10 @@ spec:
           env:
             - name: NODE_ENV
               value: "production"
+            # SECURITY: Disable local model endpoints in cloud deployment
+            # This prevents SSRF attacks by blocking localhost/private IP requests
+            - name: NEXT_PUBLIC_DEPLOYMENT_MODE
+              value: "cloud"
             - name: NEXTAUTH_URL
               value: "https://exodus.abov3.ai"
             - name: NEXTAUTH_SECRET
@@ -39,6 +43,14 @@ spec:
                 secretKeyRef:
                   name: db-credentials
                   key: direct-url
+            # High Availability: Read Replica URL (optional)
+            # Routes read operations to replica for better performance
+            - name: POSTGRES_READ_URL
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: read-url
+                  optional: true  # Falls back to primary if not set
           resources:
             requests:
               memory: "512Mi"

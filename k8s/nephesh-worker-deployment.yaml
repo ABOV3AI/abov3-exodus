@@ -1,0 +1,214 @@
+# Nephesh Worker Deployment
+# Background job processing service for autonomous Nephesh agents
+#
+# Architecture:
+# - Shared worker pool (2-10 pods) processes jobs from pg-boss queue
+# - Each worker can handle WORKER_CONCURRENCY (default: 2) jobs in parallel
+# - Auto-scales based on job queue depth via HPA (see below)
+#
+# Deployment Strategy:
+# - RollingUpdate: Max 1 unavailable to ensure continuous job processing
+# - Health checks verify job queue connectivity
+# - Graceful shutdown: 30s termination grace period for job completion
+#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: abov3-nephesh-worker
+  labels:
+    app: abov3-nephesh-worker
+    component: background-worker
+spec:
+  replicas: 2  # Start with 2 workers, HPA will scale 2-10 based on load
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0  # Ensure at least 1 worker is always running
+  selector:
+    matchLabels:
+      app: abov3-nephesh-worker
+  template:
+    metadata:
+      labels:
+        app: abov3-nephesh-worker
+        component: background-worker
+      annotations:
+        # Prometheus scraping annotations
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/api/metrics"
+    spec:
+      # Graceful shutdown: Give workers 30s to finish processing current jobs
+      terminationGracePeriodSeconds: 30
+
+      containers:
+        - name: worker
+          image: ghcr.io/abov3ai/exodus:beta  # Same image as web, different mode
+
+          # Override command to run in worker mode
+          # The instrumentation.ts hook will auto-start worker/scheduler
+          # based on WORKER_MODE environment variable
+          command: ["node", "server.js"]
+
+          env:
+            # Production mode
+            - name: NODE_ENV
+              value: "production"
+
+            # SECURITY: Cloud deployment mode (no local model endpoints)
+            - name: NEXT_PUBLIC_DEPLOYMENT_MODE
+              value: "cloud"
+
+            # Worker-specific configuration
+            - name: WORKER_MODE
+              value: "nephesh"  # Enables job queue worker
+
+            - name: WORKER_CONCURRENCY
+              value: "2"  # Process 2 jobs in parallel per worker
+
+            - name: JOB_TIMEOUT_MS
+              value: "300000"  # 5 minute timeout per job
+
+            # Database credentials (same as web service)
+            - name: POSTGRES_PRISMA_URL
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: url
+
+            - name: POSTGRES_URL_NON_POOLING
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: direct-url
+
+            # Read replica URL (optional, for better performance)
+            - name: POSTGRES_READ_URL
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: read-url
+                  optional: true
+
+            # NextAuth (required for user context loading)
+            - name: NEXTAUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secrets
+                  key: nextauth-secret
+
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"  # Workers need more CPU for AI processing
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"  # Allow bursting for intensive jobs
+
+          # Liveness probe: Verify worker is responsive
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # Readiness probe: Verify job queue connection
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 2
+
+          # Expose metrics port for Prometheus
+          ports:
+            - name: metrics
+              containerPort: 3000
+              protocol: TCP
+
+---
+# Horizontal Pod Autoscaler
+# Auto-scales worker pods based on job queue depth
+#
+# Scaling Logic:
+# - Min replicas: 2 (always have 2 workers for HA)
+# - Max replicas: 10 (cap to prevent runaway scaling)
+# - Target: 50 jobs per worker
+# - Scale up when: queue depth > 50 jobs/worker
+# - Scale down when: queue depth < 50 jobs/worker (after 5 min stabilization)
+#
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: abov3-nephesh-worker-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: abov3-nephesh-worker
+
+  minReplicas: 2
+  maxReplicas: 10
+
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300  # Wait 5 minutes before scaling down
+      policies:
+        - type: Percent
+          value: 50  # Scale down max 50% of pods at a time
+          periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0  # Scale up immediately
+      policies:
+        - type: Pods
+          value: 2  # Add 2 pods at a time
+          periodSeconds: 60
+
+  metrics:
+    # Scale based on CPU utilization
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70  # Scale up when CPU > 70%
+
+    # Scale based on memory utilization
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80  # Scale up when memory > 80%
+
+    # TODO: Add custom metric for job queue depth
+    # Requires Prometheus adapter and custom metrics API
+    # Example:
+    # - type: External
+    #   external:
+    #     metric:
+    #       name: nephesh_job_queue_depth
+    #     target:
+    #       type: AverageValue
+    #       averageValue: "50"  # 50 jobs per worker
+
+---
+# Pod Disruption Budget
+# Ensures at least 1 worker is always available during voluntary disruptions
+# (e.g., node drains, cluster upgrades)
+#
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: abov3-nephesh-worker-pdb
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: abov3-nephesh-worker

@@ -50,10 +50,9 @@ interface AppPersonasStore {
 }
 
 /**
- * DO NOT USE outside of this application - this is a very simple store for Personas so that
- * they're not immediately lost.
+ * Simple store for Personas. Exported for sync purposes.
  */
-const useAppPersonasStore = create<AppPersonasStore>()(persist(
+export const useAppPersonasStore = create<AppPersonasStore>()(persist(
   (_set, _get) => ({
 
     simplePersonas: [],

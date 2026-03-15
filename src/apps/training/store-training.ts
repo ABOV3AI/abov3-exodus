@@ -96,7 +96,7 @@ interface TrainingActions {
 
 // === Store Implementation ===
 
-const useTrainingStoreImpl = create<TrainingState & TrainingActions>()(
+export const useTrainingStoreImpl = create<TrainingState & TrainingActions>()(
   persist(
     (set, get) => ({
 

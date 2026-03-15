@@ -5,6 +5,7 @@ import { Box, Button, ButtonGroup, ColorPaletteProp, Sheet } from '@mui/joy';
 
 import { ROUTE_APP_NEWS } from '~/common/app.routes';
 import { checkDivider, checkVisibileIcon, NavItemApp, navItems } from '~/common/app.nav';
+import { useUserFeatures } from '~/common/stores/store-user-features';
 
 import { BringTheLove } from './BringTheLove';
 import { optimaCloseDrawer, optimaOpenModels } from '../useOptima';
@@ -68,6 +69,12 @@ const _styles = {
  * This can be plugged to the Drawer or Panel, to have nav items on Mobile.
  */
 export function MobileNavItems(props: { currentApp?: NavItemApp }) {
+
+  // Subscribe to user features for nav visibility - this triggers re-render when features change
+  useUserFeatures((s) => s.isLoaded);
+  useUserFeatures((s) => s.features);
+  useUserFeatures((s) => s.isAdmin);
+  useUserFeatures((s) => s.isMasterDev);
 
   // group apps into visible (rendered as of now) and overflow (rendered with a dropdown menu)
   let crossedDivider = false;

@@ -12,7 +12,7 @@ interface TTSPreferencesStore {
 
 }
 
-const useTTSPreferencesStore = create<TTSPreferencesStore>()(
+export const useTTSPreferencesStore = create<TTSPreferencesStore>()(
   persist(
     (set) => ({
 

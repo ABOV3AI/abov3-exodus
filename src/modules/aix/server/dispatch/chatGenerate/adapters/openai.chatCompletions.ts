@@ -2,7 +2,6 @@ import type { OpenAIDialects } from '~/modules/llms/server/openai/openai.router'
 
 import { AixAPI_Model, AixAPIChatGenerate_Request, AixMessages_ChatMessage, AixMessages_SystemMessage, AixParts_DocPart, AixParts_InlineAudioPart, AixParts_MetaInReferenceToPart, AixTools_ToolDefinition, AixTools_ToolsPolicy } from '../../../api/aix.wiretypes';
 import { OpenAIWire_API_Chat_Completions, OpenAIWire_ContentParts, OpenAIWire_Messages } from '../../wiretypes/openai.wiretypes';
-import { LLM_IF_OAI_Fn } from '~/common/stores/llms/llms.types';
 
 import { aixSpillShallFlush, aixSpillSystemToUser, approxDocPart_To_String } from './adapters.common';
 
@@ -30,14 +29,22 @@ const approxSystemMessageJoiner = '\n\n---\n\n';
 type TRequest = OpenAIWire_API_Chat_Completions.Request;
 type TRequestMessages = TRequest['messages'];
 
-export function aixToOpenAIChatCompletions(openAIDialect: OpenAIDialects, model: AixAPI_Model, _chatGenerate: AixAPIChatGenerate_Request, jsonOutput: boolean, streaming: boolean): TRequest {
+export function aixToOpenAIChatCompletions(
+  openAIDialect: OpenAIDialects,
+  model: AixAPI_Model,
+  _chatGenerate: AixAPIChatGenerate_Request,
+  jsonOutput: boolean,
+  streaming: boolean,
+  projectMode?: 'chat' | 'research' | 'coding',
+  projectPath?: string,
+): TRequest {
 
   // Pre-process CGR - approximate spill of System to User message
   let chatGenerate = aixSpillSystemToUser(_chatGenerate);
 
-  // [OpenRouter] Note: model.interfaces was removed from the AIX API Model type
-  // Function calling support can no longer be checked at this layer
-  // Models that don't support function calling will fail at the API level
+  // [OpenRouter] Check if model supports function calling
+  // If not supported, skip tools to prevent 404 errors from OpenRouter free models
+  const modelSupportsFunctionCalling = model.supportsFunctionCalling === true;
 
   // Dialect incompatibilities -> Hotfixes
   const hotFixAlternateUserAssistantRoles = openAIDialect === 'deepseek' || openAIDialect === 'perplexity';
@@ -58,9 +65,47 @@ export function aixToOpenAIChatCompletions(openAIDialect: OpenAIDialects, model:
   const hotFixOpenAIOFamily = (openAIDialect === 'openai' || openAIDialect === 'azure')
     && ['gpt-6', 'gpt-5', 'o4', 'o3', 'o1'].some(_id => model.id === _id || model.id.startsWith(_id + '-'));
 
-  // Throw if function support is needed but missing
+  // Throw if function support is needed but missing (for known problematic dialects)
   if (chatGenerate.tools?.length && hotFixThrowCannotFC)
     throw new Error('This service does not support function calls');
+
+  // Skip tools if model doesn't support function calling (prevents 404 on OpenRouter free models)
+  const shouldSendTools = modelSupportsFunctionCalling && !!chatGenerate.tools?.length;
+
+  // Diagnostic logging for tool sending
+  console.log(`[OpenAI Adapter] Model: ${model.id}, dialect: ${openAIDialect}`);
+  console.log(`[OpenAI Adapter] supportsFunctionCalling: ${modelSupportsFunctionCalling}, tools count: ${chatGenerate.tools?.length || 0}`);
+  console.log(`[OpenAI Adapter] shouldSendTools: ${shouldSendTools}`);
+
+  // Log MCP tools specifically
+  const mcpToolCount = chatGenerate.tools?.filter(t => t.type === 'function_call' && t.function_call?.name.startsWith('mcp_')).length || 0;
+  const builtinToolCount = (chatGenerate.tools?.length || 0) - mcpToolCount;
+  console.log(`[OpenAI Adapter] MCP tools: ${mcpToolCount}, Built-in tools: ${builtinToolCount}`);
+  if (mcpToolCount > 0) {
+    const mcpNames = chatGenerate.tools
+      ?.filter(t => t.type === 'function_call' && t.function_call?.name.startsWith('mcp_'))
+      .map(t => t.type === 'function_call' ? t.function_call?.name : '')
+      .filter(Boolean)
+      .slice(0, 5);
+    console.log(`[OpenAI Adapter] MCP tool names (first 5):`, mcpNames?.join(', '));
+  }
+
+  if (chatGenerate.tools?.length && !modelSupportsFunctionCalling) {
+    console.log(`[OpenAI Adapter] Model ${model.id} does not support function calling, skipping ${chatGenerate.tools.length} tools`);
+  }
+
+  // [Groq] Limit tools to 128 maximum (Groq API limit)
+  // Other providers may have different limits but 128 is a reasonable default
+  const maxTools = openAIDialect === 'groq' ? 128 : 256;
+  let toolsToSend = chatGenerate.tools;
+  if (toolsToSend && toolsToSend.length > maxTools) {
+    console.log(`[OpenAI Adapter] Limiting tools from ${toolsToSend.length} to ${maxTools} for ${openAIDialect}`);
+    toolsToSend = toolsToSend.slice(0, maxTools);
+  }
+
+  if (shouldSendTools && toolsToSend?.length) {
+    console.log(`[OpenAI Adapter] Sending ${toolsToSend.length} tools:`, toolsToSend.map(t => t.type === 'function_call' ? t.function_call?.name : t.type).slice(0, 10).join(', '), '...');
+  }
 
   // Convert the chat messages to the OpenAI 4-Messages format
   let chatMessages = _toOpenAIMessages(chatGenerate.systemMessage, chatGenerate.chatSequence, hotFixOpenAIOFamily);
@@ -75,13 +120,44 @@ export function aixToOpenAIChatCompletions(openAIDialect: OpenAIDialects, model:
   if (hotFixAlternateUserAssistantRoles)
     chatMessages = _fixAlternateUserAssistantRoles(chatMessages);
 
+  // Inject Coding Mode and MCP instructions into system message for non-ABOV3 vendors
+  // This enables Groq, OpenAI, and other vendors to understand the project context and MCP tools
+  if (projectMode && projectMode !== 'chat' && projectPath) {
+    // Check if MCP tools are present
+    const hasMCPTools = toolsToSend?.some(t => t.type === 'function_call' && t.function_call?.name.startsWith('mcp_'));
+
+    let modeInstructions = projectMode === 'coding'
+      ? `**Mode: CODING** - You are working on a project located at: ${projectPath}\nYou have access to read and write files in this project directory using the provided tools.\nAlways consider the project structure and existing code patterns when making changes.`
+      : `**Mode: RESEARCH** - You have read-only access to the project at: ${projectPath}\nYou can explore and analyze files but cannot make modifications.`;
+
+    // Add MCP tool instructions if MCP tools are present
+    if (hasMCPTools) {
+      const mcpInstructions = projectMode === 'coding'
+        ? `\n\n## MCP Tools\nYou have access to MCP tools for working with the user's project files.\n- Use the project path "${projectPath}" as the base for all file operations\n- MCP tools are prefixed with "mcp_" (e.g., mcp_eden_read_file, mcp_eden_write_file)\n- Always use absolute paths or paths relative to the project root\n- For file modifications, read the file first to understand its structure`
+        : `\n\n## MCP Tools\nYou have access to MCP read-only tools for exploring the user's project files.\n- Use the project path "${projectPath}" as the base for all file operations\n- Only use read operations (read_file, list_directory, etc.)\n- Do not attempt to modify files in research mode`;
+      modeInstructions += mcpInstructions;
+    }
+
+    // Find and prepend to the system/developer message
+    const systemIndex = chatMessages.findIndex(m => m.role === 'system' || m.role === 'developer');
+    if (systemIndex >= 0) {
+      const systemMsg = chatMessages[systemIndex];
+      if (typeof systemMsg.content === 'string') {
+        systemMsg.content = modeInstructions + '\n\n---\n\n' + systemMsg.content;
+      }
+    } else if (chatMessages.length > 0) {
+      // No system message exists, prepend one
+      chatMessages.unshift({ role: 'system', content: modeInstructions });
+    }
+  }
 
   // Construct the request payload
   let payload: TRequest = {
     model: model.id,
     messages: chatMessages,
-    tools: chatGenerate.tools && _toOpenAITools(chatGenerate.tools),
-    tool_choice: chatGenerate.toolsPolicy && _toOpenAIToolChoice(openAIDialect, chatGenerate.toolsPolicy),
+    // Only send tools if model supports function calling (prevents 404 on OpenRouter free models)
+    tools: shouldSendTools && toolsToSend ? _toOpenAITools(toolsToSend) : undefined,
+    tool_choice: shouldSendTools && toolsToSend?.length && chatGenerate.toolsPolicy ? _toOpenAIToolChoice(openAIDialect, chatGenerate.toolsPolicy) : undefined,
     parallel_tool_calls: undefined,
     max_tokens: model.maxTokens !== undefined ? model.maxTokens : undefined,
     ...(model.temperature !== null ? { temperature: model.temperature !== undefined ? model.temperature : undefined } : {}),
@@ -95,8 +171,9 @@ export function aixToOpenAIChatCompletions(openAIDialect: OpenAIDialects, model:
     user: undefined,
   };
 
-  // [OpenRouter, 2025-01-24]
-  if (hotFixVndORIncludeReasoning)
+  // [OpenRouter, 2025-01-24] - only include reasoning for models that support it
+  // Free models may not support this parameter and will fail with data policy errors
+  if (hotFixVndORIncludeReasoning && model.vndAntThinkingBudget !== undefined)
     payload.include_reasoning = true;
 
   // Top-P instead of temperature

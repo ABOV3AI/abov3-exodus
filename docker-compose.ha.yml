@@ -1,0 +1,136 @@
+# ========================================
+# High Availability PostgreSQL Setup
+# ========================================
+#
+# This configuration provides:
+# - Primary PostgreSQL for write operations (port 5432)
+# - Read Replica PostgreSQL for read operations (port 5433)
+# - Automatic replication from primary to replica
+# - Connection pooling via PgBouncer
+#
+# Usage:
+#   docker compose -f docker-compose.ha.yml up -d
+#
+# For production, consider:
+# - Using managed HA PostgreSQL (AWS RDS, Google Cloud SQL, etc.)
+# - Adding more read replicas for higher read throughput
+# - Setting up automatic failover with Patroni or similar
+#
+
+services:
+  # ========================================
+  # Primary PostgreSQL (Write Operations)
+  # ========================================
+  postgres-primary:
+    image: postgres:16-alpine
+    container_name: exodus-postgres-primary
+    environment:
+      POSTGRES_USER: exodus
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-exodus_ha_password}
+      POSTGRES_DB: exodus
+      # Replication settings
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    command: |
+      postgres
+      -c wal_level=replica
+      -c max_wal_senders=3
+      -c max_replication_slots=3
+      -c hot_standby=on
+      -c archive_mode=on
+      -c archive_command='/bin/true'
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_primary_data:/var/lib/postgresql/data
+      - ./scripts/postgres/init-primary.sh:/docker-entrypoint-initdb.d/init-primary.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U exodus"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - exodus-network
+
+  # ========================================
+  # Read Replica PostgreSQL (Read Operations)
+  # ========================================
+  # DISABLED: Replica has configuration issues - use primary for now
+  # postgres-replica:
+  #   image: postgres:16-alpine
+  #   container_name: exodus-postgres-replica
+  #   environment:
+  #     POSTGRES_USER: exodus
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-exodus_ha_password}
+  #     POSTGRES_DB: exodus
+  #   ports:
+  #     - "5433:5432"
+  #   volumes:
+  #     - postgres_replica_data:/var/lib/postgresql/data
+  #   depends_on:
+  #     postgres-primary:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U exodus"]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 5
+  #   networks:
+  #     - exodus-network
+
+  # ========================================
+  # PgBouncer Connection Pooler (Optional)
+  # ========================================
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: exodus-pgbouncer
+    environment:
+      DATABASE_URL: "postgres://exodus:${POSTGRES_PASSWORD:-exodus_ha_password}@postgres-primary:5432/exodus"
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 100
+      DEFAULT_POOL_SIZE: 20
+    ports:
+      - "6432:5432"
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+    networks:
+      - exodus-network
+
+  # ========================================
+  # ABOV3 Exodus Application
+  # ========================================
+  # Note: ABOV3 Pauline TTS runs as standalone container
+  # accessible at host.docker.internal:8004
+  exodus:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: exodus-app
+    ports:
+      - "4000:3000"
+    environment:
+      - NODE_ENV=production
+      # Direct connection to primary (bypassing pgbouncer due to SCRAM auth issues)
+      - POSTGRES_PRISMA_URL=postgresql://exodus:${POSTGRES_PASSWORD:-exodus_ha_password}@postgres-primary:5432/exodus?connection_limit=10
+      # Direct connection for migrations
+      - POSTGRES_URL_NON_POOLING=postgresql://exodus:${POSTGRES_PASSWORD:-exodus_ha_password}@postgres-primary:5432/exodus
+      # Read replica for reads (using primary for now since replica is disabled)
+      - POSTGRES_READ_URL=postgresql://exodus:${POSTGRES_PASSWORD:-exodus_ha_password}@postgres-primary:5432/exodus
+      # Auth
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-ha-dev-secret-min-32-characters-long}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:4000}
+      # Pauline TTS (standalone container on host)
+      - PAULINE_ENDPOINT=http://host.docker.internal:8004
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+    networks:
+      - exodus-network
+
+volumes:
+  postgres_primary_data:
+  postgres_replica_data:
+
+networks:
+  exodus-network:
+    driver: bridge

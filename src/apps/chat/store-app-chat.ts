@@ -84,7 +84,7 @@ interface AppChatStore {
 }
 
 
-const useAppChatStore = create<AppChatStore>()(persist(
+export const useAppChatStore = create<AppChatStore>()(persist(
   (_set, _get) => ({
 
     // Chat AI

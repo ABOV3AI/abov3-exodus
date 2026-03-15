@@ -135,6 +135,11 @@ export const env = createEnv({
     // Frontend: server to use for PlantUML rendering
     NEXT_PUBLIC_PLANTUML_SERVER_URL: z.url().optional(),
 
+    // Deployment mode: 'cloud' disables local model endpoints for security
+    // Set to 'cloud' for DigitalOcean/production deployments
+    // Leave unset or 'local' for self-hosted/development
+    NEXT_PUBLIC_DEPLOYMENT_MODE: z.enum(['cloud', 'local']).optional(),
+
   },
 
   // matches user expectations - see https://github.com/ABOV3AI/abov3-exodus/issues/279
@@ -144,6 +149,7 @@ export const env = createEnv({
   experimental__runtimeEnv: {
     NEXT_PUBLIC_GA4_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID,
     NEXT_PUBLIC_PLANTUML_SERVER_URL: process.env.NEXT_PUBLIC_PLANTUML_SERVER_URL,
+    NEXT_PUBLIC_DEPLOYMENT_MODE: process.env.NEXT_PUBLIC_DEPLOYMENT_MODE,
   },
 });
 

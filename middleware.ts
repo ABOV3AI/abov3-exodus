@@ -25,6 +25,7 @@ const STATIC_PATTERNS = [
   '/favicon.ico',
   '/logo',
   '/icons',
+  '/images',
   '/manifest.json',
   '/robots.txt',
   '/sitemap.xml',
@@ -114,8 +115,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization)
      * - favicon.ico (favicon file)
-     * - public files (logo, icons, etc.)
+     * - public files (logo, icons, images, etc.)
      */
-    '/((?!_next/static|_next/image|favicon.ico|logo|icons|manifest.json).*)',
+    '/((?!_next/static|_next/image|favicon.ico|logo|icons|images|manifest.json).*)',
   ],
 };

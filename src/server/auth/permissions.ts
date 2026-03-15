@@ -13,7 +13,7 @@ import { prismaDb } from '~/server/prisma/prismaDb';
 export type { FeatureFlag } from '@prisma/client';
 
 // All available feature flags
-export const ALL_FEATURES: FeatureFlag[] = ['NEPHESH', 'TRAIN', 'FLOWCORE', 'ADMIN_PANEL'];
+export const ALL_FEATURES: FeatureFlag[] = ['NEPHESH', 'TRAIN', 'FLOWCORE', 'ADMIN_PANEL', 'ABOV3_MODELS'];
 
 /**
  * Check if a user has access to a specific feature

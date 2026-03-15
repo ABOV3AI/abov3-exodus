@@ -1,0 +1,327 @@
+# ========================================
+# High Availability PostgreSQL Deployment for Kubernetes
+# ========================================
+#
+# This configuration provides:
+# - Primary PostgreSQL StatefulSet for write operations
+# - Read Replica PostgreSQL StatefulSet for read operations
+# - Separate services for primary (postgres-primary) and replica (postgres-replica)
+# - Automatic failover with streaming replication
+#
+# Usage:
+#   kubectl apply -f postgres-ha-deployment.yaml
+#
+# For production, consider:
+# - Using a PostgreSQL operator (CloudNativePG, Zalando, CrunchyData)
+# - Adding more read replicas with multiple replicas
+# - Setting up automatic failover with Patroni
+#
+# Environment Variables in your app deployment:
+#   POSTGRES_PRISMA_URL: postgres-primary service (writes)
+#   POSTGRES_READ_URL: postgres-replica service (reads)
+#
+
+---
+# ========================================
+# ConfigMap for PostgreSQL Configuration
+# ========================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+data:
+  # Primary node configuration
+  primary.conf: |
+    wal_level = replica
+    max_wal_senders = 3
+    max_replication_slots = 3
+    hot_standby = on
+    archive_mode = on
+    archive_command = '/bin/true'
+    synchronous_commit = on
+
+  # Replica node configuration
+  replica.conf: |
+    hot_standby = on
+    hot_standby_feedback = on
+
+  # pg_hba.conf additions for replication
+  pg_hba_replication.conf: |
+    host replication replicator 0.0.0.0/0 scram-sha-256
+    host all all 0.0.0.0/0 scram-sha-256
+
+---
+# ========================================
+# Primary PostgreSQL StatefulSet
+# ========================================
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-primary
+  labels:
+    app: postgres
+    role: primary
+spec:
+  serviceName: postgres-primary
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+      role: primary
+  template:
+    metadata:
+      labels:
+        app: postgres
+        role: primary
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            - name: POSTGRES_USER
+              value: "abov3"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: password
+            - name: POSTGRES_DB
+              value: "abov3_exodus"
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+            - name: REPLICATION_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: replication-password
+          args:
+            - "-c"
+            - "wal_level=replica"
+            - "-c"
+            - "max_wal_senders=3"
+            - "-c"
+            - "max_replication_slots=3"
+            - "-c"
+            - "hot_standby=on"
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+            - name: init-scripts
+              mountPath: /docker-entrypoint-initdb.d
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "abov3"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "abov3"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: init-scripts
+          configMap:
+            name: postgres-init-scripts
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 20Gi
+
+---
+# ========================================
+# Primary PostgreSQL Service
+# ========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-primary
+  labels:
+    app: postgres
+    role: primary
+spec:
+  selector:
+    app: postgres
+    role: primary
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+  type: ClusterIP
+
+---
+# ========================================
+# Read Replica PostgreSQL StatefulSet
+# ========================================
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-replica
+  labels:
+    app: postgres
+    role: replica
+spec:
+  serviceName: postgres-replica
+  replicas: 1  # Increase for more read capacity
+  selector:
+    matchLabels:
+      app: postgres
+      role: replica
+  template:
+    metadata:
+      labels:
+        app: postgres
+        role: replica
+    spec:
+      initContainers:
+        - name: init-replica
+          image: postgres:16-alpine
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: replication-password
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          command:
+            - bash
+            - -c
+            - |
+              # Wait for primary to be ready
+              until pg_isready -h postgres-primary -p 5432 -U abov3; do
+                echo "Waiting for primary..."
+                sleep 2
+              done
+
+              # Check if data directory is empty (fresh replica)
+              if [ ! -s "$PGDATA/PG_VERSION" ]; then
+                echo "Initializing replica from primary..."
+                rm -rf $PGDATA/*
+                pg_basebackup \
+                  -h postgres-primary \
+                  -p 5432 \
+                  -U replicator \
+                  -D $PGDATA \
+                  -Fp -Xs -P -R
+                chmod 700 $PGDATA
+              fi
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            - name: POSTGRES_USER
+              value: "abov3"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: password
+            - name: POSTGRES_DB
+              value: "abov3_exodus"
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          args:
+            - "-c"
+            - "hot_standby=on"
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "abov3"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "abov3"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 20Gi
+
+---
+# ========================================
+# Read Replica PostgreSQL Service
+# ========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-replica
+  labels:
+    app: postgres
+    role: replica
+spec:
+  selector:
+    app: postgres
+    role: replica
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+  type: ClusterIP
+
+---
+# ========================================
+# ConfigMap for Init Scripts
+# ========================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-scripts
+data:
+  init-replication.sh: |
+    #!/bin/bash
+    set -e
+
+    # Create replication user
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+        DO \$\$
+        BEGIN
+            IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'replicator') THEN
+                CREATE USER replicator WITH REPLICATION ENCRYPTED PASSWORD '${REPLICATION_PASSWORD}';
+            END IF;
+        END
+        \$\$;
+        GRANT CONNECT ON DATABASE $POSTGRES_DB TO replicator;
+    EOSQL
+
+    # Configure pg_hba.conf for replication
+    cat >> "$PGDATA/pg_hba.conf" <<EOF
+    host    replication     replicator      0.0.0.0/0               scram-sha-256
+    host    all             all             0.0.0.0/0               scram-sha-256
+    EOF
+
+    echo "Primary PostgreSQL initialized for HA replication"

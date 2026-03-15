@@ -45,6 +45,27 @@ export function openRouterModelFamilySortFn(a: { id: string }, b: { id: string }
   return aPrefixIndex !== -1 ? -1 : 1;
 }
 
+// Providers/models known to support function calling
+// Based on OpenRouter documentation: https://openrouter.ai/docs/guides/routing/provider-selection
+const orFunctionCallingPrefixes = [
+  // Major providers with confirmed function calling support
+  'openai/',           // GPT-4, GPT-3.5 all support function calling
+  'anthropic/',        // Claude 3+ models support tools
+  'google/',           // Gemini models support function calling
+  'mistralai/',        // Mistral Large, Medium support function calling
+  'cohere/',           // Command R+ supports tool use
+  // NOT including: nvidia/, meta-llama/, qwen/, etc. - mixed support or no support
+];
+
+// Specific models known to NOT support function calling even from FC-supporting providers
+const orNoFunctionCallingModels = [
+  // Free models typically don't support function calling
+  ':free',             // Free model variants (e.g., gemma-3-4b-it:free)
+  '-free',             // Free model variants with dash (e.g., gpt-oss-20b-free)
+  '/free-',            // Free model variants with prefix (e.g., free-gpt-4)
+  '-instruct',         // Instruct-tuned models often lack FC
+];
+
 export function openRouterModelToModelDescription(wireModel: object): ModelDescriptionSchema | null {
 
   // parse the model
@@ -75,6 +96,18 @@ export function openRouterModelToModelDescription(wireModel: object): ModelDescr
   const hidden = orOldModelIDs.some(prefix => model.id.startsWith(prefix))
     || !orModelFamilyOrder.some(prefix => model.id.startsWith(prefix));
 
+  // Determine function calling support based on provider/model
+  // Free models (:free suffix) typically don't support function calling
+  const isFromFCProvider = orFunctionCallingPrefixes.some(prefix => model.id.startsWith(prefix));
+  const isExcludedFromFC = orNoFunctionCallingModels.some(suffix => model.id.includes(suffix)) || seemsFree;
+  const supportsFunctionCalling = isFromFCProvider && !isExcludedFromFC;
+
+  // Build interfaces array
+  const interfaces = [LLM_IF_OAI_Chat];
+  if (supportsFunctionCalling) {
+    interfaces.push(LLM_IF_OAI_Fn);
+  }
+
   return fromManualMapping([], model.id, undefined, undefined, {
     idPrefix: model.id,
     // latest: ...
@@ -85,7 +118,7 @@ export function openRouterModelToModelDescription(wireModel: object): ModelDescr
     contextWindow: model.context_length || 4096,
     maxCompletionTokens: model.top_provider.max_completion_tokens || undefined,
     // trainingDataCutoff: ...
-    interfaces: [LLM_IF_OAI_Chat],
+    interfaces,
     // benchmark: ...
     chatPrice,
     hidden,

@@ -9,6 +9,8 @@ import { llmsStoreActions, llmsStoreState } from '~/common/stores/llms/store-llm
 // Note: this function is designed to be called once per session
 let _isConfiguring = false;
 let _isConfigurationDone = false;
+let _configurationAttempts = 0;
+const MAX_CONFIGURATION_ATTEMPTS = 3;
 
 
 /**
@@ -19,7 +21,10 @@ let _isConfigurationDone = false;
 export async function reconfigureBackendModels(lastLlmReconfigHash: string, setLastReconfigHash: (hash: string) => void, remoteServices: boolean, existingServices: boolean) {
 
   // Note: double-calling is only expected to happen in react strict mode
-  if (_isConfiguring || _isConfigurationDone)
+  // Allow retries if not fully configured yet
+  if (_isConfiguring)
+    return;
+  if (_isConfigurationDone && _configurationAttempts >= MAX_CONFIGURATION_ATTEMPTS)
     return;
 
   // skip if there haven't been any changes in the backend configuration
@@ -34,6 +39,8 @@ export async function reconfigureBackendModels(lastLlmReconfigHash: string, setL
 
   // begin configuration
   _isConfiguring = true;
+  _configurationAttempts++;
+  console.log(`[reconfigureBackendModels] Starting configuration attempt ${_configurationAttempts}/${MAX_CONFIGURATION_ATTEMPTS}`);
   // FIXME: future: move this to the end of the function, but also with strong retry count and error catching, so one's app wouldn't loop upon each boot
   setLastReconfigHash(backendReconfigHash);
   const initiallyEmpty = !llmsStoreState().llms?.length;
@@ -64,6 +71,7 @@ export async function reconfigureBackendModels(lastLlmReconfigHash: string, setL
 
   // track in order the services that were configured
   const configuredServiceIds: DModelsServiceId[] = [];
+  let failedServices = 0;
 
   // sequentially re-configure
   await servicesToReconfigure.reduce(async (promiseChain, service) => {
@@ -78,12 +86,17 @@ export async function reconfigureBackendModels(lastLlmReconfigHash: string, setL
       .catch(error => {
         // catches errors and logs them, but does not stop the chain
         console.error('Auto-configuration failed for service:', service.label, error);
+        failedServices++;
       })
       .then(() => {
         // short delay between vendors
         return new Promise(resolve => setTimeout(resolve, 50));
       });
   }, Promise.resolve());
+
+  // Log configuration results
+  const successCount = servicesToReconfigure.length - failedServices;
+  console.log(`[reconfigureBackendModels] Configuration complete: ${successCount}/${servicesToReconfigure.length} services succeeded`);
 
   // Re-rank the LLMs based on the order of configured services
   llmsStoreActions().rerankLLMsByServices(configuredServiceIds);

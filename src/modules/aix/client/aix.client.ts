@@ -4,7 +4,7 @@ import { findServiceAccessOrThrow } from '~/modules/llms/vendors/vendor.helpers'
 
 import type { DMessage, DMessageGenerator } from '~/common/stores/chat/chat.message';
 import type { MaybePromise } from '~/common/types/useful.types';
-import { DLLM, DLLMId, LLM_IF_HOTFIX_NoTemperature, LLM_IF_OAI_Responses, LLM_IF_Outputs_Audio, LLM_IF_Outputs_Image, LLM_IF_Outputs_NoText } from '~/common/stores/llms/llms.types';
+import { DLLM, DLLMId, LLM_IF_HOTFIX_NoTemperature, LLM_IF_OAI_Fn, LLM_IF_OAI_Responses, LLM_IF_Outputs_Audio, LLM_IF_Outputs_Image, LLM_IF_Outputs_NoText } from '~/common/stores/llms/llms.types';
 import { apiStream } from '~/common/util/trpc.client';
 import { DMetricsChatGenerate_Lg, metricsChatGenerateLgToMd, metricsComputeChatGenerateCostsMd } from '~/common/stores/metrics/metrics.chatgenerate';
 import { DModelParameterValues, getAllModelParameterValues } from '~/common/stores/llms/llms.parameters';
@@ -39,6 +39,7 @@ export function aixCreateModelFromLLMOptions(
   llmOptions: DModelParameterValues, // this must have been already externally computed, usually as the initial values + user/over replacements
   llmOptionOverrides: Omit<DModelParameterValues, 'llmRef'> | undefined,
   debugLlmId: string,
+  userToolsEnabled?: boolean, // user explicitly enabled built-in tools for this model (default: disabled)
 ): AixAPI_Model {
 
   // make sure llmRef is removed, if present in the override - excess of caution here
@@ -77,6 +78,12 @@ export function aixCreateModelFromLLMOptions(
   // Output APIs
   const llmVndOaiResponsesAPI = llmInterfaces.includes(LLM_IF_OAI_Responses);
 
+  // Function calling support (required for tools - prevents 404 on OpenRouter free models)
+  // Tools are disabled by default; user must explicitly enable them via userToolsEnabled
+  // Only enable if: 1) user explicitly enabled AND 2) model supports function calling
+  const modelHasFunctionCalling = llmInterfaces.includes(LLM_IF_OAI_Fn);
+  const supportsFunctionCalling = userToolsEnabled === true && modelHasFunctionCalling;
+
   // Client-side late stage model HotFixes
   const hotfixOmitTemperature = llmInterfaces.includes(LLM_IF_HOTFIX_NoTemperature);
 
@@ -98,6 +105,7 @@ export function aixCreateModelFromLLMOptions(
   return {
     id: llmRef,
     acceptsOutputs: acceptsOutputs,
+    supportsFunctionCalling: supportsFunctionCalling,
     ...(hotfixOmitTemperature ? { temperature: null } : llmTemperature !== undefined ? { temperature: llmTemperature } : {}),
     ...(llmResponseTokens /* null: similar to undefined, will omit the value */ ? { maxTokens: llmResponseTokens } : {}),
     ...(llmTopP !== undefined ? { topP: llmTopP } : {}),
@@ -273,7 +281,7 @@ export async function aixChatGenerateText_Simple(
 
   // Aix Model
   const llmParameters = getAllModelParameterValues(llm.initialParameters, clientOptions?.llmUserParametersReplacement ?? llm.userParameters);
-  const aixModel = aixCreateModelFromLLMOptions(llm.interfaces, llmParameters, clientOptions?.llmOptionsOverride, llmId);
+  const aixModel = aixCreateModelFromLLMOptions(llm.interfaces, llmParameters, clientOptions?.llmOptionsOverride, llmId, llm.userToolsEnabled);
 
   // Aix ChatGenerate Request
   const aixChatGenerate = aixCGR_FromSimpleText(
@@ -457,7 +465,7 @@ export async function aixChatGenerateContent_DMessage<TServiceSettings extends o
 
   // Aix Model
   const llmParameters = getAllModelParameterValues(llm.initialParameters, clientOptions?.llmUserParametersReplacement ?? llm.userParameters);
-  const aixModel = aixCreateModelFromLLMOptions(llm.interfaces, llmParameters, clientOptions?.llmOptionsOverride, llmId);
+  const aixModel = aixCreateModelFromLLMOptions(llm.interfaces, llmParameters, clientOptions?.llmOptionsOverride, llmId, llm.userToolsEnabled);
 
   // Client-side late stage model HotFixes
   const { shallDisableStreaming } = clientHotFixGenerateRequest_ApplyAll(llm.interfaces, aixChatGenerate, llmParameters.llmRef || llm.id);
@@ -695,6 +703,29 @@ async function _aixChatGenerateContent_LL(
           await onGenerateContentUpdate(accumulator_LL, true);
         return accumulator_LL;
       }
+    }
+
+    // [Local Endpoint Check] Block local endpoints in cloud deployment for security
+    const { isAccessLocal, isLocalModelSupportEnabled, getLocalModelUnavailableMessage, getCORSSetupInstructions, getEndpointFromAccess } = await import('./aix.client.local');
+
+    if (isAccessLocal(aixAccess)) {
+      if (!isLocalModelSupportEnabled()) {
+        // Cloud deployment: Block local endpoints with helpful message
+        const errorMessage = getLocalModelUnavailableMessage();
+        accumulator_LL.fragments.push({
+          ft: 'content',
+          fId: agiId('chat-dfragment'),
+          part: { pt: 'text', text: errorMessage },
+        });
+        accumulator_LL.genTokenStopReason = 'filter';
+        if (onGenerateContentUpdate)
+          await onGenerateContentUpdate(accumulator_LL, true);
+        return accumulator_LL;
+      }
+      // Local deployment: Could implement client-side direct fetch here
+      // For now, fall through to server (server validation will catch and block)
+      // TODO: Implement direct browser-to-localhost fetch for Phase 1.2 completion
+      // const result = await fetchLocalModelDirect(aixAccess, aixModel, aixChatGenerate);
     }
 
     // tRPC Aix Chat Generation (streaming) API - inside the try block for deployment path errors

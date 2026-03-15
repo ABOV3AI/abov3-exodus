@@ -20,6 +20,9 @@ export interface ToolsState {
   enableTesting: boolean;
   enableUtility: boolean;
 
+  // Text-based tools (MCP approach) for models without native function calling
+  enableTextBasedTools: boolean;
+
   // Execution limits
   executionTimeout: number; // milliseconds
   maxMemory: number; // bytes
@@ -45,6 +48,8 @@ export interface ToolsState {
   setEnableGit: (enable: boolean) => void;
   setEnableTesting: (enable: boolean) => void;
   setEnableUtility: (enable: boolean) => void;
+
+  setEnableTextBasedTools: (enable: boolean) => void;
 
   setExecutionTimeout: (timeout: number) => void;
   setMaxMemory: (memory: number) => void;
@@ -74,6 +79,9 @@ export const useToolsStore = create<ToolsState>()(
       enableTesting: true,
       enableUtility: true,
 
+      // Text-based tools enabled by default (fallback for models without native FC)
+      enableTextBasedTools: true,
+
       // Sensible defaults
       executionTimeout: 5000, // 5 seconds
       maxMemory: 50 * 1024 * 1024, // 50MB
@@ -100,6 +108,8 @@ export const useToolsStore = create<ToolsState>()(
       setEnableTesting: (enable) => set({ enableTesting: enable }),
       setEnableUtility: (enable) => set({ enableUtility: enable }),
 
+      setEnableTextBasedTools: (enable) => set({ enableTextBasedTools: enable }),
+
       setExecutionTimeout: (timeout) => set({ executionTimeout: timeout }),
       setMaxMemory: (memory) => set({ maxMemory: memory }),
       setRateLimit: (limit) => set({ rateLimit: limit }),
@@ -113,7 +123,17 @@ export const useToolsStore = create<ToolsState>()(
     }),
     {
       name: 'app-tools-settings',
-      version: 1,
+      version: 2,
+      migrate: (persistedState: any, version: number) => {
+        // v1 -> v2: Add enableTextBasedTools (default true)
+        if (version < 2) {
+          return {
+            ...persistedState,
+            enableTextBasedTools: true,
+          };
+        }
+        return persistedState;
+      },
     }
   )
 );

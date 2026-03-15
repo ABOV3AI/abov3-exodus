@@ -89,8 +89,8 @@ export const useUIPreferencesStore = create<UIPreferencesStore>()(
       complexityMode: 'pro',
       setComplexityMode: (complexityMode: UIComplexityMode) => set({ complexityMode }),
 
-      // 2024-07-14: 'sm' is the new default, down from 'md'
-      contentScaling: 'sm',
+      // 2026-03-08: 'xs' is the new default for more compact UI
+      contentScaling: 'xs',
       setContentScaling: (contentScaling: ContentScaling) => set({ contentScaling: contentScaling }),
       increaseContentScaling: () => set((state) => state.contentScaling === 'md' ? state : { contentScaling: state.contentScaling === 'xs' ? 'sm' : 'md' }),
       decreaseContentScaling: () => set((state) => state.contentScaling === 'xs' ? state : { contentScaling: state.contentScaling === 'md' ? 'sm' : 'xs' }),

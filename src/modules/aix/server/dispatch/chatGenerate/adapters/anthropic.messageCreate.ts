@@ -97,7 +97,14 @@ function validateAndFixToolSequencing(messages: TRequest['messages']): void {
   }
 }
 
-export function aixToAnthropicMessageCreate(model: AixAPI_Model, _chatGenerate: AixAPIChatGenerate_Request, streaming: boolean, isOAuth: boolean = false): TRequest {
+export function aixToAnthropicMessageCreate(
+  model: AixAPI_Model,
+  _chatGenerate: AixAPIChatGenerate_Request,
+  streaming: boolean,
+  isOAuth: boolean = false,
+  projectMode?: 'chat' | 'research' | 'coding',
+  projectPath?: string,
+): TRequest {
 
   // Pre-process CGR - approximate spill of System to User message
   const chatGenerate = aixSpillSystemToUser(_chatGenerate);
@@ -151,6 +158,37 @@ export function aixToAnthropicMessageCreate(model: AixAPI_Model, _chatGenerate: 
     } else {
       // Create new system message
       systemMessage = [claudeCodeMessage];
+    }
+  }
+
+  // Add MCP tool instructions when project path is available and MCP tools exist
+  const hasMCPTools = chatGenerate.tools?.some(t => t.type === 'function_call' && t.function_call?.name.startsWith('mcp_'));
+  if (hasMCPTools && projectMode && projectMode !== 'chat' && projectPath) {
+    const mcpInstructions = projectMode === 'coding'
+      ? `## MCP Tools - Project Context
+
+You have access to MCP tools for working with the user's project files.
+Project path: ${projectPath}
+
+When using MCP file tools (mcp_*_read_file, mcp_*_write_file, mcp_*_list_directory, etc.):
+- Use the project path as the base for all file operations
+- Always use absolute paths or paths relative to the project root
+- For file modifications, read the file first to understand its structure
+- Create directories before writing files to new paths`
+      : `## MCP Tools - Project Context
+
+You have access to MCP read-only tools for exploring the user's project files.
+Project path: ${projectPath}
+
+When using MCP file tools (mcp_*_read_file, mcp_*_list_directory, etc.):
+- Use the project path as the base for all file operations
+- Only use read operations - do not attempt to modify files in research mode`;
+
+    const mcpBlock = AnthropicWire_Blocks.TextBlock(mcpInstructions);
+    if (systemMessage && systemMessage.length) {
+      systemMessage.push(mcpBlock);
+    } else {
+      systemMessage = [mcpBlock];
     }
   }
 
@@ -283,14 +321,32 @@ export function aixToAnthropicMessageCreate(model: AixAPI_Model, _chatGenerate: 
   // }
 
   // Construct the request payload
-  // CRITICAL: OAuth credentials cannot use tools - Anthropic blocks requests with tools for Claude Code OAuth
+  // For OAuth users: only pass MCP tools (they start with 'mcp_'), keep native tools as text-based
+  // For non-OAuth users: pass all tools
+  const toolsToPass = (() => {
+    if (!chatGenerate.tools) return undefined;
+    if (isOAuth) {
+      // Filter to only MCP tools for OAuth users
+      const mcpTools = chatGenerate.tools.filter(t => t.type === 'function_call' && t.function_call?.name.startsWith('mcp_'));
+      if (mcpTools.length > 0) {
+        const toolNames = mcpTools.map(t => t.type === 'function_call' ? t.function_call?.name : t.type).join(', ');
+        console.log(`[Anthropic Tools] OAuth mode: passing ${mcpTools.length} MCP tools:`, toolNames);
+        return mcpTools;
+      }
+      return undefined;
+    }
+    // Non-OAuth: pass all tools
+    console.log(`[Anthropic Tools] Non-OAuth mode: passing ${chatGenerate.tools.length} tools`);
+    return chatGenerate.tools;
+  })();
+
   const payload: TRequest = {
     max_tokens: model.maxTokens !== undefined ? model.maxTokens : 8192,
     model: model.id,
     system: systemMessage,
     messages: chatMessages,
-    tools: !isOAuth && chatGenerate.tools ? _toAnthropicTools(chatGenerate.tools) : undefined,
-    tool_choice: !isOAuth && chatGenerate.toolsPolicy ? _toAnthropicToolChoice(chatGenerate.toolsPolicy) : undefined,
+    tools: toolsToPass ? _toAnthropicTools(toolsToPass) : undefined,
+    tool_choice: toolsToPass?.length && chatGenerate.toolsPolicy ? _toAnthropicToolChoice(chatGenerate.toolsPolicy) : undefined,
     // metadata: { user_id: ... }
     // stop_sequences: undefined,
     stream: streaming,
@@ -383,6 +439,15 @@ function* _generateAnthropicMessagesContentBlocks({ parts, role }: AixMessages_C
 
           case 'meta_cache_control':
             yield { set_cache_control: part.control };
+            break;
+
+          case 'tool_response':
+            // Handle tool responses in user messages (from MCP tool execution)
+            const toolErrorPrefix = part.error ? (typeof part.error === 'string' ? `[ERROR] ${part.error} - ` : '[ERROR] ') : '';
+            if (part.response.type === 'function_call' || part.response.type === 'code_execution') {
+              const resultText = toolErrorPrefix + part.response.result;
+              yield { role: 'user', content: AnthropicWire_Blocks.ToolResultBlock(part.id, [AnthropicWire_Blocks.TextBlock(resultText)], part.error ? true : undefined) };
+            }
             break;
 
           default:

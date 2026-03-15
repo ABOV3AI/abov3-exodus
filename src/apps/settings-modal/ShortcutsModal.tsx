@@ -36,8 +36,8 @@ const shortcutsMd = platformAwareKeystrokes(`
 | Ctrl + ]         | **Next** chat (in history)              |
 | **Settings**     |                                         |
 | Ctrl + ,         | ⚙️ Preferences                          |
-| Ctrl + Shift + M | 🧠 Models                               |
-| Ctrl + Shift + O | 💬 Options (current Chat Model)         |
+| Ctrl + Shift + M | 🤖 Models                               |
+| Ctrl + Shift + O | 🎛️ Options (current Chat Model)         |
 | Ctrl + Shift + + | Increase Text Size                      |
 | Ctrl + Shift + - | Decrease Text Size                      |
 | Ctrl + Shift + / | Shortcuts                               |

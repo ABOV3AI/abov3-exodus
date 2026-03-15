@@ -1,6 +1,7 @@
 import type { BackendCapabilities } from '~/modules/backend/store-backend-capabilities';
 
 import type { DLLM } from '~/common/stores/llms/llms.types';
+import type { FeatureFlag } from '~/common/stores/store-user-features';
 
 import type { ModelDescriptionSchema } from '../server/llm.server.types';
 import type { ModelVendorId } from './vendors.registry';
@@ -16,6 +17,7 @@ export interface IModelVendor<TServiceSettings extends Record<string, any> = {},
   readonly hasFreeModels?: boolean;
   readonly hasServerConfigFn?: (backendCapabilities: BackendCapabilities) => boolean; // used to show a 'green checkmark' in the list of vendors when adding services
   readonly hasServerConfigKey?: keyof BackendCapabilities;
+  readonly requiredFeature?: FeatureFlag; // Feature flag required to use this vendor (e.g., 'ABOV3_MODELS')
 
   /// abstraction interface ///
 

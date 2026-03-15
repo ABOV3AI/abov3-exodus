@@ -23,6 +23,51 @@ const MCP_FILE_TOOLS = [
 ];
 
 /**
+ * SECURITY: Validate file paths to prevent directory traversal attacks
+ * Rejects paths containing:
+ * - ".." sequences (parent directory traversal)
+ * - Absolute paths starting with "/" or drive letters like "C:\"
+ * - Null bytes or other control characters
+ */
+function validateFilePath(filePath: string): { valid: boolean; error?: string } {
+  if (!filePath || typeof filePath !== 'string') {
+    return { valid: false, error: 'Path must be a non-empty string' };
+  }
+
+  // Normalize path separators
+  const normalizedPath = filePath.replace(/\\/g, '/');
+
+  // Block absolute paths (Unix-style or Windows-style)
+  if (normalizedPath.startsWith('/') || /^[a-zA-Z]:/.test(filePath)) {
+    return { valid: false, error: 'Absolute paths are not allowed. Use relative paths within the project.' };
+  }
+
+  // Block null bytes and control characters (security risk)
+  if (/[\x00-\x1f]/.test(filePath)) {
+    return { valid: false, error: 'Path contains invalid control characters' };
+  }
+
+  // Split and check each component
+  const parts = normalizedPath.split('/').filter(p => p);
+  for (const part of parts) {
+    // Block ".." traversal
+    if (part === '..') {
+      return { valid: false, error: 'Path traversal (..) is not allowed' };
+    }
+    // Block hidden traversal attempts like "...", ".. ", etc.
+    if (part.startsWith('..')) {
+      return { valid: false, error: 'Path traversal patterns are not allowed' };
+    }
+    // Block paths that might resolve to parent (Windows-specific edge cases)
+    if (part.match(/^\.+$/)) {
+      return { valid: false, error: 'Invalid path component' };
+    }
+  }
+
+  return { valid: true };
+}
+
+/**
  * Extract the base tool name from an MCP tool ID
  * e.g., "mcp_ABOV3_Eden_read_file" -> "read_file"
  */
@@ -49,6 +94,10 @@ async function executeLocalFileOperation(
         const filePath = args.path as string;
         if (!filePath) return { error: 'Missing required argument: path' };
 
+        // SECURITY: Validate path against traversal attacks
+        const pathValidation = validateFilePath(filePath);
+        if (!pathValidation.valid) return { error: pathValidation.error! };
+
         const fileHandle = await getFileHandle(projectHandle, filePath, false);
         if (!fileHandle) return { error: `File not found: ${filePath}` };
 
@@ -63,6 +112,10 @@ async function executeLocalFileOperation(
         if (!filePath) return { error: 'Missing required argument: path' };
         if (content === undefined) return { error: 'Missing required argument: content' };
 
+        // SECURITY: Validate path against traversal attacks
+        const pathValidation = validateFilePath(filePath);
+        if (!pathValidation.valid) return { error: pathValidation.error! };
+
         const fileHandle = await getFileHandle(projectHandle, filePath, true);
         if (!fileHandle) return { error: `Could not create file: ${filePath}` };
 
@@ -75,6 +128,12 @@ async function executeLocalFileOperation(
       case 'list_directory': {
         const dirPath = (args.path as string) || '.';
         const includeHidden = args.includeHidden as boolean ?? false;
+
+        // SECURITY: Validate path against traversal attacks (except for "." root)
+        if (dirPath !== '.') {
+          const pathValidation = validateFilePath(dirPath);
+          if (!pathValidation.valid) return { error: pathValidation.error! };
+        }
 
         const dirHandle = dirPath === '.' ? projectHandle : await getDirectoryHandle(projectHandle, dirPath, false);
         if (!dirHandle) return { error: `Directory not found: ${dirPath}` };
@@ -95,6 +154,10 @@ async function executeLocalFileOperation(
         const dirPath = args.path as string;
         if (!dirPath) return { error: 'Missing required argument: path' };
 
+        // SECURITY: Validate path against traversal attacks
+        const pathValidation = validateFilePath(dirPath);
+        if (!pathValidation.valid) return { error: pathValidation.error! };
+
         const dirHandle = await getDirectoryHandle(projectHandle, dirPath, true);
         if (!dirHandle) return { error: `Could not create directory: ${dirPath}` };
 
@@ -104,6 +167,10 @@ async function executeLocalFileOperation(
       case 'delete_file': {
         const filePath = args.path as string;
         if (!filePath) return { error: 'Missing required argument: path' };
+
+        // SECURITY: Validate path against traversal attacks
+        const pathValidation = validateFilePath(filePath);
+        if (!pathValidation.valid) return { error: pathValidation.error! };
 
         const parts = filePath.split('/').filter(p => p);
         const fileName = parts.pop()!;
@@ -119,6 +186,10 @@ async function executeLocalFileOperation(
       case 'file_info': {
         const filePath = args.path as string;
         if (!filePath) return { error: 'Missing required argument: path' };
+
+        // SECURITY: Validate path against traversal attacks
+        const pathValidation = validateFilePath(filePath);
+        if (!pathValidation.valid) return { error: pathValidation.error! };
 
         const fileHandle = await getFileHandle(projectHandle, filePath, false);
         if (!fileHandle) return { error: `File not found: ${filePath}` };
@@ -138,6 +209,10 @@ async function executeLocalFileOperation(
         const content = args.content as string;
         if (!filePath) return { error: 'Missing required argument: path' };
         if (content === undefined) return { error: 'Missing required argument: content' };
+
+        // SECURITY: Validate path against traversal attacks
+        const pathValidation = validateFilePath(filePath);
+        if (!pathValidation.valid) return { error: pathValidation.error! };
 
         // Read existing content first
         let existingContent = '';

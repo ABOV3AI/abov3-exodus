@@ -2,6 +2,7 @@ import * as React from 'react';
 import TimeAgo from 'react-timeago';
 
 import { Box, Button, ButtonGroup, Divider, FormControl, FormHelperText, Input, Switch, Tooltip, Typography } from '@mui/joy';
+import BuildIcon from '@mui/icons-material/Build';
 import CloudIcon from '@mui/icons-material/Cloud';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
@@ -87,6 +88,8 @@ export function LLMOptionsModal(props: { id: DLLMId, onClose: () => void }) {
 
   const handleLlmMcpToggle = () => updateLLM(llm.id, { userMcpEnabled: llm.userMcpEnabled === false ? undefined : false });
 
+  const handleLlmToolsToggle = () => updateLLM(llm.id, { userToolsEnabled: !llm.userToolsEnabled });
+
   const handleLlmDelete = () => {
     removeLLM(llm.id);
     props.onClose();
@@ -149,6 +152,27 @@ export function LLMOptionsModal(props: { id: DLLMId, onClose: () => void }) {
                   endDecorator={!llm.hidden ? <VisibilityIcon /> : <VisibilityOffIcon />}
                   slotProps={{ endDecorator: { sx: { minWidth: 26 } } }} />
         </Tooltip>
+      </FormControl>
+
+      <FormControl orientation='horizontal' sx={{ flexWrap: 'wrap', alignItems: 'center' }}>
+        <FormLabelStart title='Built-in Tools' sx={{ minWidth: 80 }} />
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Tooltip title={llm.userToolsEnabled ? 'Disable API function calling for this model' : 'Enable API function calling (required for file/web tools)'}>
+            <Switch
+              checked={!!llm.userToolsEnabled}
+              onChange={handleLlmToolsToggle}
+              disabled={!llm.interfaces.includes(LLM_IF_OAI_Fn)}
+              endDecorator={<BuildIcon />}
+              slotProps={{ endDecorator: { sx: { minWidth: 26 } } }}
+            />
+          </Tooltip>
+          {!llm.interfaces.includes(LLM_IF_OAI_Fn) && (
+            <FormHelperText>Model does not support function calling</FormHelperText>
+          )}
+          {llm.interfaces.includes(LLM_IF_OAI_Fn) && !llm.userToolsEnabled && (
+            <FormHelperText>Enable to use file/web tools via API</FormHelperText>
+          )}
+        </Box>
       </FormControl>
 
       <FormControl orientation='horizontal' sx={{ flexWrap: 'wrap', alignItems: 'center' }}>

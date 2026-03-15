@@ -21,6 +21,12 @@ import SettingsIcon from '@mui/icons-material/Settings';
 
 import { optimaOpenAdminPanel, optimaOpenUserProfile } from '~/common/layout/optima/useOptima';
 import { useUserFeatures } from '~/common/stores/store-user-features';
+import { resetAllUserStores } from '~/common/stores/storeReset';
+import { disableAutoSync } from '~/common/stores/chat/sync-chats';
+import { disableLlmAutoSync } from '~/common/stores/llms/sync-llms';
+import { disableUiAutoSync } from '~/common/stores/sync-ui';
+import { disableAppSettingsAutoSync } from '~/common/stores/sync-app-settings';
+import { disableWorkflowAutoSync } from '~/common/stores/sync-workflows';
 
 export function UserMenu(props: { variant?: 'button' | 'icon' }) {
   const { variant = 'icon' } = props;
@@ -32,6 +38,14 @@ export function UserMenu(props: { variant?: 'button' | 'icon' }) {
   const nameFromStore = useUserFeatures((state) => state.name);
 
   const handleSignOut = async () => {
+    // Disable auto-sync and reset stores before signing out
+    disableAutoSync();
+    disableLlmAutoSync();
+    disableUiAutoSync();
+    disableAppSettingsAutoSync();
+    disableWorkflowAutoSync();
+    await resetAllUserStores();
+
     await signOut({ redirect: false });
     router.push('/');
   };
