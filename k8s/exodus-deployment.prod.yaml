@@ -1,0 +1,388 @@
+# ===================================================
+# ABOV3 Exodus - Production Kubernetes Deployment
+# ===================================================
+#
+# This is the production-specific deployment configuration for DigitalOcean Kubernetes.
+# It includes HA configuration, zero-downtime deployments, and comprehensive monitoring.
+#
+# Environment: PROD (DigitalOcean Kubernetes)
+# Domain: https://exodus.abov3.ai
+#
+# Features:
+# - High Availability (2 replicas)
+# - Zero-downtime rolling updates
+# - Resource limits and requests
+# - Comprehensive health checks
+# - Pod Disruption Budget
+# - Horizontal Pod Autoscaler ready
+#
+# Deployment:
+#   kubectl apply -f k8s/exodus-deployment.prod.yaml
+#
+# Update image:
+#   kubectl set image deployment/abov3-exodus exodus=ghcr.io/abov3ai/exodus:v2.1.0
+#
+# Rollback:
+#   kubectl rollout undo deployment/abov3-exodus
+#
+# ===================================================
+
+---
+# Production Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: abov3-exodus
+  namespace: default
+  labels:
+    app: abov3-exodus
+    environment: production
+    tier: frontend
+    managed-by: kubectl
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    kubernetes.io/description: "ABOV3 Exodus - Main web application"
+spec:
+  # High Availability: Start with 2 replicas
+  replicas: 2
+
+  # Rolling Update Strategy (Zero Downtime)
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1          # Allow 1 extra pod during updates
+      maxUnavailable: 0    # Never have fewer than desired replicas
+
+  # Revision history
+  revisionHistoryLimit: 10  # Keep last 10 revisions for rollback
+
+  selector:
+    matchLabels:
+      app: abov3-exodus
+      environment: production
+
+  template:
+    metadata:
+      labels:
+        app: abov3-exodus
+        environment: production
+        tier: frontend
+        version: "2.0.0"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/api/metrics"
+    spec:
+      # Security Context (run as non-root)
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+
+      # Affinity rules (spread across nodes)
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - abov3-exodus
+                topologyKey: kubernetes.io/hostname
+
+      # Graceful termination
+      terminationGracePeriodSeconds: 30
+
+      containers:
+        - name: exodus
+          # Image will be updated via kubectl set image or CI/CD
+          image: ghcr.io/abov3ai/exodus:latest
+          imagePullPolicy: Always
+
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+
+          # Environment Variables
+          env:
+            # Node.js Environment
+            - name: NODE_ENV
+              value: "production"
+
+            # SECURITY: Cloud deployment mode (SSRF prevention)
+            - name: NEXT_PUBLIC_DEPLOYMENT_MODE
+              value: "cloud"
+
+            # Application URL
+            - name: NEXTAUTH_URL
+              value: "https://exodus.abov3.ai"
+
+            # Authentication Secret (from Kubernetes Secret)
+            - name: NEXTAUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secrets
+                  key: nextauth-secret
+
+            # Database URLs (from Kubernetes Secret)
+            - name: POSTGRES_PRISMA_URL
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: url
+
+            - name: POSTGRES_URL_NON_POOLING
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: direct-url
+
+            - name: POSTGRES_READ_URL
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: read-url
+                  optional: true  # Falls back to primary if not set
+
+            # Worker Configuration
+            - name: WORKER_MODE
+              value: "nephesh"
+
+            - name: WORKER_CONCURRENCY
+              value: "2"
+
+            - name: JOB_TIMEOUT_MS
+              value: "300000"  # 5 minutes
+
+            # Kubernetes Pod Info (for logging/debugging)
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+
+            - name: K8S_POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+
+            - name: K8S_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+
+            - name: K8S_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+
+            # Telemetry
+            - name: NEXT_TELEMETRY_DISABLED
+              value: "1"
+
+          # Resource Management
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+
+          # Liveness Probe (restart if unhealthy)
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+
+          # Readiness Probe (remove from load balancer if not ready)
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 2
+
+          # Startup Probe (allow slow startup)
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+              scheme: HTTP
+            initialDelaySeconds: 0
+            periodSeconds: 5
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 30  # Allow up to 150s for startup
+
+          # Lifecycle Hooks
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 15"]  # Allow time for graceful shutdown
+
+          # Security Context (container level)
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false  # Next.js needs write access to .next
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities:
+              drop:
+                - ALL
+
+---
+# Service (ClusterIP)
+apiVersion: v1
+kind: Service
+metadata:
+  name: abov3-exodus
+  namespace: default
+  labels:
+    app: abov3-exodus
+    environment: production
+  annotations:
+    service.beta.kubernetes.io/do-loadbalancer-protocol: "http"
+spec:
+  type: ClusterIP
+  selector:
+    app: abov3-exodus
+    environment: production
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 3000
+  sessionAffinity: None
+
+---
+# Pod Disruption Budget (ensure minimum availability during maintenance)
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: abov3-exodus-pdb
+  namespace: default
+  labels:
+    app: abov3-exodus
+    environment: production
+spec:
+  minAvailable: 1  # Always keep at least 1 pod running
+  selector:
+    matchLabels:
+      app: abov3-exodus
+      environment: production
+
+---
+# Horizontal Pod Autoscaler (optional - uncomment to enable)
+# apiVersion: autoscaling/v2
+# kind: HorizontalPodAutoscaler
+# metadata:
+#   name: abov3-exodus-hpa
+#   namespace: default
+#   labels:
+#     app: abov3-exodus
+#     environment: production
+# spec:
+#   scaleTargetRef:
+#     apiVersion: apps/v1
+#     kind: Deployment
+#     name: abov3-exodus
+#   minReplicas: 2
+#   maxReplicas: 5
+#   metrics:
+#     - type: Resource
+#       resource:
+#         name: cpu
+#         target:
+#           type: Utilization
+#           averageUtilization: 70
+#     - type: Resource
+#       resource:
+#         name: memory
+#         target:
+#           type: Utilization
+#           averageUtilization: 80
+#   behavior:
+#     scaleDown:
+#       stabilizationWindowSeconds: 300  # Wait 5 minutes before scaling down
+#       policies:
+#         - type: Percent
+#           value: 50
+#           periodSeconds: 60
+#     scaleUp:
+#       stabilizationWindowSeconds: 0  # Scale up immediately
+#       policies:
+#         - type: Percent
+#           value: 100
+#           periodSeconds: 15
+
+---
+# Notes and Usage Instructions
+#
+# Prerequisites:
+# 1. Kubernetes cluster (DigitalOcean)
+# 2. kubectl configured with cluster access
+# 3. Secrets created (auth-secrets, db-credentials)
+# 4. Docker image pushed to ghcr.io/abov3ai/exodus
+#
+# Create Secrets:
+#   kubectl create secret generic auth-secrets \
+#     --from-literal=nextauth-secret="$(openssl rand -base64 32)"
+#
+#   kubectl create secret generic db-credentials \
+#     --from-literal=url="postgresql://..." \
+#     --from-literal=direct-url="postgresql://..." \
+#     --from-literal=read-url="postgresql://..."
+#
+# Deploy:
+#   kubectl apply -f k8s/exodus-deployment.prod.yaml
+#
+# Check Status:
+#   kubectl get deployment abov3-exodus
+#   kubectl get pods -l app=abov3-exodus
+#   kubectl get svc abov3-exodus
+#
+# View Logs:
+#   kubectl logs -f deployment/abov3-exodus
+#   kubectl logs -f <pod-name>
+#
+# Update Image:
+#   kubectl set image deployment/abov3-exodus \
+#     exodus=ghcr.io/abov3ai/exodus:v2.1.0 --record
+#
+# Watch Rollout:
+#   kubectl rollout status deployment/abov3-exodus
+#   kubectl rollout history deployment/abov3-exodus
+#
+# Rollback:
+#   kubectl rollout undo deployment/abov3-exodus
+#   kubectl rollout undo deployment/abov3-exodus --to-revision=2
+#
+# Scale Manually:
+#   kubectl scale deployment abov3-exodus --replicas=3
+#
+# Port Forward (for testing):
+#   kubectl port-forward svc/abov3-exodus 3000:80
+#   curl http://localhost:3000/api/health
+#
+# Debugging:
+#   kubectl describe deployment abov3-exodus
+#   kubectl describe pod <pod-name>
+#   kubectl exec -it <pod-name> -- /bin/sh
+#
+# Delete:
+#   kubectl delete -f k8s/exodus-deployment.prod.yaml
+#

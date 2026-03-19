@@ -1,0 +1,126 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+# GitHub recommends pinning actions to a commit SHA.
+# To get a newer version, you will need to update the SHA.
+# You can also reference a tag or branch, but the action may change without warning.
+
+name: Create and publish Docker images
+
+on:
+  push:
+    branches:
+      - main          # Primary branch (Big-AGI Open)
+    tags:
+      - 'v2.*'        # Stable releases (v2.0.0, v2.1.0, etc.)
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            # Development: main branch
+            type=raw,value=development,enable=${{ github.ref == 'refs/heads/main' }}
+
+            # Latest: v2.x releases (safe default)
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v2.') }}
+
+            # Stable: v2.x releases (alias)
+            type=raw,value=stable,enable=${{ startsWith(github.ref, 'refs/tags/v2.') }}
+
+            # Version tags (v2.0.0, 2.0.0)
+            type=ref,event=tag
+            type=semver,pattern={{version}}
+          labels: |
+            org.opencontainers.image.title=Big-AGI Open
+            org.opencontainers.image.description=Big-AGI Open - Multi-model AI workspace for experts who need to think broader, decide smarter, and build with confidence.
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.documentation=https://big-agi.com
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            NEXT_PUBLIC_GA4_MEASUREMENT_ID=${{ secrets.GA4_MEASUREMENT_ID }}
+            NEXT_PUBLIC_BUILD_HASH=${{ github.sha }}
+            NEXT_PUBLIC_BUILD_REF_NAME=${{ github.ref_name }}
+          # Enable build cache (future)
+          #cache-from: type=gha
+          #cache-to: type=gha,mode=max
+          # Enable provenance and SBOM (future)
+          #provenance: true
+          #sbom: true
+
+      # ===================================================
+      # TEST Environment Deployment (Automatic on main branch)
+      # ===================================================
+      - name: Deploy to TEST environment
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "Triggering TEST deployment via webhook..."
+          curl -X POST -f \
+            -H "Content-Type: application/json" \
+            -d '{"commit":"${{ github.sha }}","branch":"${{ github.ref_name }}"}' \
+            http://${{ secrets.TEST_VM_HOST }}:9000/hooks/deploy
+        continue-on-error: true
+
+      - name: Verify TEST deployment
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "Waiting for TEST deployment to complete..."
+          sleep 30
+
+          # Check health endpoint
+          for i in {1..10}; do
+            if curl -sf http://${{ secrets.TEST_VM_HOST }}:3000/api/health | grep -q '"status":"ok"'; then
+              echo "✅ TEST deployment successful - Health check passed"
+              exit 0
+            fi
+            echo "Waiting for TEST to be healthy... ($i/10)"
+            sleep 10
+          done
+
+          echo "⚠️ WARNING: TEST health check did not pass within 2 minutes"
+          echo "Check TEST logs: ssh ${{ secrets.TEST_VM_USER }}@${{ secrets.TEST_VM_HOST }} 'pm2 logs abov3-exodus-test'"
+          exit 1
+        continue-on-error: true

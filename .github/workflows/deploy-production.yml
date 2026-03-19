@@ -1,0 +1,356 @@
+# ===================================================
+# ABOV3 Exodus - Production Deployment Workflow
+# ===================================================
+#
+# This workflow deploys to production on DigitalOcean Kubernetes.
+# It includes manual approval gates and comprehensive health checks.
+#
+# Triggers:
+#   - Push of version tags (v2.*)
+#
+# Requires:
+#   - GitHub Environment: production (with approvers configured)
+#   - Secrets: KUBECONFIG_PROD
+#
+# Usage:
+#   git tag v2.1.0
+#   git push origin v2.1.0
+#
+# ===================================================
+
+name: Deploy to Production
+
+on:
+  push:
+    tags:
+      - 'v2.*'  # Trigger on version tags like v2.1.0
+
+# Ensure only one deployment runs at a time
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false  # Don't cancel running deployments
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-latest
+
+    # GitHub Environment with protection rules
+    environment:
+      name: production
+      url: https://exodus.abov3.ai
+
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      # ===================================================
+      # Step 1: Checkout Code
+      # ===================================================
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ===================================================
+      # Step 2: Extract Version Info
+      # ===================================================
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Deploying version: $VERSION"
+
+      # ===================================================
+      # Step 3: Set up kubectl
+      # ===================================================
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG_PROD }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+          # Verify connection
+          kubectl cluster-info
+          kubectl get nodes
+
+      # ===================================================
+      # Step 4: Verify Docker Image Exists
+      # ===================================================
+      - name: Verify Docker image
+        run: |
+          IMAGE="ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}"
+          echo "Checking if image exists: $IMAGE"
+
+          # Try to pull image metadata
+          if ! docker manifest inspect $IMAGE > /dev/null 2>&1; then
+            echo "❌ ERROR: Docker image not found: $IMAGE"
+            echo "Make sure the docker-image.yml workflow has completed successfully."
+            exit 1
+          fi
+
+          echo "✅ Docker image verified: $IMAGE"
+
+      # ===================================================
+      # Step 5: Backup Current State
+      # ===================================================
+      - name: Backup current deployment state
+        run: |
+          echo "Saving current deployment state..."
+
+          # Get current revision
+          CURRENT_REVISION=$(kubectl get deployment abov3-exodus -o jsonpath='{.metadata.annotations.deployment\.kubernetes\.io/revision}')
+          echo "Current revision: $CURRENT_REVISION"
+          echo "current_revision=$CURRENT_REVISION" >> $GITHUB_ENV
+
+          # Get current image
+          CURRENT_IMAGE=$(kubectl get deployment abov3-exodus -o jsonpath='{.spec.template.spec.containers[0].image}')
+          echo "Current image: $CURRENT_IMAGE"
+          echo "current_image=$CURRENT_IMAGE" >> $GITHUB_ENV
+
+          # Save deployment manifest
+          kubectl get deployment abov3-exodus -o yaml > deployment-backup.yaml
+
+      # ===================================================
+      # Step 6: Update Deployment Image
+      # ===================================================
+      - name: Update deployment image
+        run: |
+          IMAGE="ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}"
+          echo "Updating deployment to image: $IMAGE"
+
+          kubectl set image deployment/abov3-exodus \
+            exodus=$IMAGE \
+            --record
+
+          if [ $? -ne 0 ]; then
+            echo "❌ ERROR: Failed to update deployment image"
+            exit 1
+          fi
+
+          echo "✅ Deployment image updated successfully"
+
+      # ===================================================
+      # Step 7: Monitor Rollout
+      # ===================================================
+      - name: Wait for rollout to complete
+        run: |
+          echo "Monitoring rollout progress (timeout: 10 minutes)..."
+
+          kubectl rollout status deployment/abov3-exodus --timeout=10m
+
+          if [ $? -ne 0 ]; then
+            echo "❌ ERROR: Rollout did not complete successfully"
+            echo ""
+            echo "Rollout status:"
+            kubectl rollout status deployment/abov3-exodus
+            echo ""
+            echo "Pod status:"
+            kubectl get pods -l app=abov3-exodus
+            echo ""
+            echo "Recent events:"
+            kubectl get events --sort-by='.lastTimestamp' | head -20
+            exit 1
+          fi
+
+          echo "✅ Rollout completed successfully"
+
+      # ===================================================
+      # Step 8: Health Checks
+      # ===================================================
+      - name: Run health checks
+        run: |
+          echo "Running health checks..."
+
+          # Wait for pods to stabilize
+          sleep 15
+
+          # Check pod status
+          echo "Pod status:"
+          kubectl get pods -l app=abov3-exodus
+
+          RUNNING_PODS=$(kubectl get pods -l app=abov3-exodus --field-selector=status.phase=Running --no-headers | wc -l)
+          echo "Running pods: $RUNNING_PODS"
+
+          if [ $RUNNING_PODS -lt 1 ]; then
+            echo "❌ ERROR: No running pods detected"
+            exit 1
+          fi
+
+          # Health endpoint check
+          echo "Checking health endpoint..."
+          TIMESTAMP=$(date +%s)
+
+          kubectl run health-check-$TIMESTAMP --rm -i --restart=Never \
+            --image=curlimages/curl --timeout=60s \
+            -- curl -sf --max-time 10 http://abov3-exodus/api/health
+
+          if [ $? -ne 0 ]; then
+            echo "❌ ERROR: Health check failed"
+            echo ""
+            echo "Pod logs:"
+            kubectl logs -l app=abov3-exodus --tail=50
+            exit 1
+          fi
+
+          echo "✅ Health check passed"
+
+      # ===================================================
+      # Step 9: Metrics Verification
+      # ===================================================
+      - name: Verify metrics endpoint
+        run: |
+          echo "Checking metrics endpoint..."
+          TIMESTAMP=$(date +%s)
+
+          kubectl run metrics-check-$TIMESTAMP --rm -i --restart=Never \
+            --image=curlimages/curl --timeout=60s \
+            -- curl -sf --max-time 10 http://abov3-exodus/api/metrics
+
+          if [ $? -eq 0 ]; then
+            echo "✅ Metrics endpoint is responding"
+          else
+            echo "⚠️ WARNING: Metrics endpoint is not responding"
+            # Don't fail deployment for metrics
+          fi
+
+      # ===================================================
+      # Step 10: Extended Monitoring
+      # ===================================================
+      - name: Monitor for 5 minutes
+        run: |
+          echo "Monitoring deployment for 5 minutes..."
+
+          for i in {1..10}; do
+            echo "Monitor check $i/10..."
+
+            # Check pod count
+            RUNNING_PODS=$(kubectl get pods -l app=abov3-exodus --field-selector=status.phase=Running --no-headers | wc -l)
+            echo "  Running pods: $RUNNING_PODS"
+
+            if [ $RUNNING_PODS -lt 1 ]; then
+              echo "❌ ERROR: Pod count dropped to 0"
+              exit 1
+            fi
+
+            # Quick health check
+            TIMESTAMP=$(date +%s)
+            if kubectl run quick-health-$TIMESTAMP-$i --rm -i --restart=Never \
+                --image=curlimages/curl --timeout=30s \
+                -- curl -sf --max-time 5 http://abov3-exodus/api/health > /dev/null 2>&1; then
+              echo "  Health: OK"
+            else
+              echo "  ⚠️ Health check warning"
+            fi
+
+            # Wait 30 seconds before next check
+            if [ $i -lt 10 ]; then
+              sleep 30
+            fi
+          done
+
+          echo "✅ Extended monitoring completed"
+
+      # ===================================================
+      # Step 11: Deployment Summary
+      # ===================================================
+      - name: Display deployment summary
+        if: always()
+        run: |
+          echo "======================================"
+          echo "  Production Deployment Summary"
+          echo "======================================"
+          echo "Version:         ${{ steps.version.outputs.version }}"
+          echo "Previous image:  ${{ env.current_image }}"
+          echo "New image:       ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}"
+          echo "Previous rev:    ${{ env.current_revision }}"
+
+          NEW_REVISION=$(kubectl get deployment abov3-exodus -o jsonpath='{.metadata.annotations.deployment\.kubernetes\.io/revision}')
+          echo "New rev:         $NEW_REVISION"
+
+          echo ""
+          echo "Deployment status:"
+          kubectl get deployment abov3-exodus
+
+          echo ""
+          echo "Pod status:"
+          kubectl get pods -l app=abov3-exodus
+
+          echo ""
+          echo "Recent logs:"
+          kubectl logs -l app=abov3-exodus --tail=20
+
+          echo "======================================"
+
+      # ===================================================
+      # Step 12: Rollback on Failure
+      # ===================================================
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "======================================"
+          echo "  DEPLOYMENT FAILED - ROLLING BACK"
+          echo "======================================"
+
+          echo "Rolling back to previous revision..."
+          kubectl rollout undo deployment/abov3-exodus
+
+          echo "Waiting for rollback to complete..."
+          kubectl rollout status deployment/abov3-exodus --timeout=5m
+
+          if [ $? -eq 0 ]; then
+            echo "✅ Rollback completed successfully"
+          else
+            echo "❌ ERROR: Rollback failed!"
+            echo "Manual intervention required!"
+          fi
+
+          echo ""
+          echo "Post-rollback status:"
+          kubectl get pods -l app=abov3-exodus
+
+          exit 1
+
+      # ===================================================
+      # Step 13: Notify Success
+      # ===================================================
+      - name: Create deployment summary
+        if: success()
+        run: |
+          echo "======================================"
+          echo "  ✅ PRODUCTION DEPLOYMENT SUCCESSFUL"
+          echo "======================================"
+          echo "Version:  ${{ steps.version.outputs.version }}"
+          echo "URL:      https://exodus.abov3.ai"
+          echo "Status:   Deployed"
+          echo "======================================"
+
+          # Optional: Send Slack/Discord notification
+          # curl -X POST ${{ secrets.SLACK_WEBHOOK_URL }} \
+          #   -H 'Content-Type: application/json' \
+          #   -d '{"text":"✅ Production deployment successful: ${{ steps.version.outputs.version }}"}'
+
+      # ===================================================
+      # Step 14: Post-deployment Recommendations
+      # ===================================================
+      - name: Post-deployment recommendations
+        if: success()
+        run: |
+          echo ""
+          echo "Post-deployment recommendations:"
+          echo "  1. Monitor metrics for the next 30 minutes"
+          echo "  2. Check error rates in Prometheus/Grafana"
+          echo "  3. Verify critical user flows"
+          echo "  4. Watch for alerts in PagerDuty/Slack"
+          echo ""
+          echo "Monitoring commands:"
+          echo "  kubectl get pods -l app=abov3-exodus -w"
+          echo "  kubectl logs -f deployment/abov3-exodus"
+          echo "  ./scripts/monitor-deployment.sh prod 1800"
+          echo ""
