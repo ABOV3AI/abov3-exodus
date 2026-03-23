@@ -55,10 +55,11 @@ interface SlackChannelBinding {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { profileId: string } }
+  { params }: { params: Promise<{ profileId: string }> }
 ) {
   try {
-    const profileId = params.profileId;
+    const resolvedParams = await params;
+    const profileId = resolvedParams.profileId;
 
     // Parse webhook payload
     const payload: SlackWebhookPayload = await request.json();
@@ -204,11 +205,12 @@ export async function POST(
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { profileId: string } }
+  { params }: { params: Promise<{ profileId: string }> }
 ) {
+  const resolvedParams = await params;
   return NextResponse.json({
     ok: true,
     message: 'Slack webhook endpoint is active',
-    profileId: params.profileId,
+    profileId: resolvedParams.profileId,
   });
 }
