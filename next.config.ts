@@ -76,36 +76,21 @@ let nextConfig: NextConfig = {
 
   // [puppeteer] https://github.com/puppeteer/puppeteer/issues/11052
   // NOTE: we may not be needing this anymore, as we use '@cloudflare/puppeteer'
-  serverExternalPackages: ['puppeteer-core', 'mongodb', 'nodemailer', 'mysql2', 'pg', 'sqlite3', 'pg-boss'],
+  // Also includes pg-boss and other packages that use node: protocol imports
+  serverExternalPackages: ['puppeteer-core', 'mongodb', 'nodemailer', 'mysql2', 'pg', 'sqlite3', 'pg-boss', 'bcryptjs'],
 
   webpack: (config: any, { isServer, nextRuntime }: { isServer: boolean; nextRuntime?: 'edge' | 'nodejs' }) => {
     // @mui/joy: anything material gets redirected to Joy
     config.resolve.alias['@mui/material'] = '@mui/joy';
 
-    // [Edge Runtime] Handle Node.js built-in modules that aren't available in Edge
-    // Stub them out for edge bundles since server-only code won't run there anyway
+    // [Edge Runtime] Stub out bcryptjs for edge bundles
     if (nextRuntime === 'edge') {
       config.resolve.alias = {
         ...config.resolve.alias,
         'bcryptjs': false,
-        // Handle node: protocol imports
-        'node:fs': false,
-        'node:path': false,
-        'node:stream': false,
-        'node:crypto': false,
-        'node:child_process': false,
-        'node:os': false,
-        'node:util': false,
-        'node:dns': false,
-        'node:timers': false,
-        'node:timers/promises': false,
-        'node:http': false,
-        'node:https': false,
-        'node:buffer': false,
-        'node:zlib': false,
       };
 
-      // Also set fallbacks for non-prefixed Node.js modules
+      // Set fallbacks for Node.js modules
       config.resolve.fallback = {
         ...config.resolve.fallback,
         'fs': false,
