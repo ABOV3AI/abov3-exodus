@@ -65,30 +65,10 @@ function extractOAuthCode(text: string): string | null {
 
 export function ABOV3ServiceSetup(props: { serviceId: DModelsServiceId }) {
 
-  // Check feature access FIRST - ABOV3 models require explicit permission
+  // ALL hooks must be called unconditionally - check permission FIRST
   const hasABOV3Access = useHasFeature('ABOV3_MODELS');
 
-  // Early return if no access - BEFORE calling other hooks (React rules)
-  if (!hasABOV3Access) {
-    return (
-      <Alert
-        variant='soft'
-        color='warning'
-        startDecorator={<LockIcon />}
-        sx={{ my: 2 }}
-      >
-        <Box>
-          <Typography level='title-md'>Access Restricted</Typography>
-          <Typography level='body-sm'>
-            ABOV3 proprietary models (Genesis, Exodus, Solomon) require special access.
-            Contact your administrator to enable this feature for your account.
-          </Typography>
-        </Box>
-      </Alert>
-    );
-  }
-
-  // state
+  // state - ALWAYS call all hooks regardless of permission
   const advanced = useToggleableBoolean();
   const [oauthDialogOpen, setOAuthDialogOpen] = React.useState(false);
   const [oauthCode, setOAuthCode] = React.useState('');
@@ -100,7 +80,7 @@ export function ABOV3ServiceSetup(props: { serviceId: DModelsServiceId }) {
   const { service, serviceAccess, serviceHasCloudTenantConfig, serviceHasLLMs, updateSettings } =
     useServiceSetup(props.serviceId, ModelVendorABOV3);
 
-  // All hooks must be called before any conditional returns
+  // All hooks called unconditionally
   const { autoVndAntBreakpoints, setAutoVndAntBreakpoints } = useChatAutoAI();
 
   // derived state
@@ -217,6 +197,26 @@ export function ABOV3ServiceSetup(props: { serviceId: DModelsServiceId }) {
       setClipboardStatus('idle');
     };
   }, [oauthDialogOpen, oauthVerifier, exchangeToken]);
+
+  // Use conditional RENDERING (not early return) to satisfy React Hooks rules
+  if (!hasABOV3Access) {
+    return (
+      <Alert
+        variant='soft'
+        color='warning'
+        startDecorator={<LockIcon />}
+        sx={{ my: 2 }}
+      >
+        <Box>
+          <Typography level='title-md'>Access Restricted</Typography>
+          <Typography level='body-sm'>
+            ABOV3 proprietary models (Genesis, Exodus, Solomon) require special access.
+            Contact your administrator to enable this feature for your account.
+          </Typography>
+        </Box>
+      </Alert>
+    );
+  }
 
   return <>
 
