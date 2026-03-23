@@ -85,9 +85,27 @@ let nextConfig: NextConfig = {
     // [Edge Runtime] Handle Node.js built-in modules that aren't available in Edge
     // Stub them out for edge bundles since server-only code won't run there anyway
     if (nextRuntime === 'edge') {
-      config.resolve.alias['bcryptjs'] = false;
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'bcryptjs': false,
+        // Handle node: protocol imports
+        'node:fs': false,
+        'node:path': false,
+        'node:stream': false,
+        'node:crypto': false,
+        'node:child_process': false,
+        'node:os': false,
+        'node:util': false,
+        'node:dns': false,
+        'node:timers': false,
+        'node:timers/promises': false,
+        'node:http': false,
+        'node:https': false,
+        'node:buffer': false,
+        'node:zlib': false,
+      };
 
-      // Prevent Edge Runtime from trying to bundle Node.js modules
+      // Also set fallbacks for non-prefixed Node.js modules
       config.resolve.fallback = {
         ...config.resolve.fallback,
         'fs': false,
@@ -101,16 +119,10 @@ let nextConfig: NextConfig = {
         'util': false,
         'dns': false,
         'timers': false,
-        'node:fs': false,
-        'node:path': false,
-        'node:stream': false,
-        'node:crypto': false,
-        'node:child_process': false,
-        'node:os': false,
-        'node:util': false,
-        'node:dns': false,
-        'node:timers': false,
-        'node:timers/promises': false,
+        'http': false,
+        'https': false,
+        'buffer': false,
+        'zlib': false,
       };
     }
 
