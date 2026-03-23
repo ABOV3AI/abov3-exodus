@@ -65,22 +65,10 @@ function extractOAuthCode(text: string): string | null {
 
 export function ABOV3ServiceSetup(props: { serviceId: DModelsServiceId }) {
 
-  // Check feature access - ABOV3 models require explicit permission
+  // Check feature access FIRST - ABOV3 models require explicit permission
   const hasABOV3Access = useHasFeature('ABOV3_MODELS');
 
-  // state
-  const advanced = useToggleableBoolean();
-  const [oauthDialogOpen, setOAuthDialogOpen] = React.useState(false);
-  const [oauthCode, setOAuthCode] = React.useState('');
-  const [oauthError, setOAuthError] = React.useState<string | null>(null);
-  const [oauthVerifier, setOAuthVerifier] = React.useState<string | null>(null);
-  const [clipboardStatus, setClipboardStatus] = React.useState<'idle' | 'watching' | 'detected' | 'error'>('idle');
-
-  // external state
-  const { service, serviceAccess, serviceHasCloudTenantConfig, serviceHasLLMs, updateSettings } =
-    useServiceSetup(props.serviceId, ModelVendorABOV3);
-
-  // If user doesn't have ABOV3_MODELS permission, show access denied message
+  // Early return if no access - BEFORE calling other hooks (React rules)
   if (!hasABOV3Access) {
     return (
       <Alert
@@ -100,6 +88,19 @@ export function ABOV3ServiceSetup(props: { serviceId: DModelsServiceId }) {
     );
   }
 
+  // state
+  const advanced = useToggleableBoolean();
+  const [oauthDialogOpen, setOAuthDialogOpen] = React.useState(false);
+  const [oauthCode, setOAuthCode] = React.useState('');
+  const [oauthError, setOAuthError] = React.useState<string | null>(null);
+  const [oauthVerifier, setOAuthVerifier] = React.useState<string | null>(null);
+  const [clipboardStatus, setClipboardStatus] = React.useState<'idle' | 'watching' | 'detected' | 'error'>('idle');
+
+  // external state
+  const { service, serviceAccess, serviceHasCloudTenantConfig, serviceHasLLMs, updateSettings } =
+    useServiceSetup(props.serviceId, ModelVendorABOV3);
+
+  // All hooks must be called before any conditional returns
   const { autoVndAntBreakpoints, setAutoVndAntBreakpoints } = useChatAutoAI();
 
   // derived state
