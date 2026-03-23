@@ -48,6 +48,12 @@ RUN sh -c '[ ! -e /lib/libssl.so.3 ] && ln -s /usr/lib/libssl.so.3 /lib/libssl.s
 
 # Build the application
 ENV NODE_ENV=production
+# Provide a placeholder NEXTAUTH_SECRET for build-time (real secret injected at runtime)
+ARG NEXTAUTH_SECRET=build-time-placeholder-secret-will-be-replaced-at-runtime
+ENV NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+# Provide a placeholder DATABASE_URL for build-time (real database URL injected at runtime)
+ARG DATABASE_URL=postgresql://placeholder:placeholder@localhost:5432/placeholder
+ENV DATABASE_URL=${DATABASE_URL}
 RUN npm run build
 
 # Reduce installed packages to production-only
@@ -74,6 +80,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/src/server/prisma ./src/server/prisma
+
+# Copy standalone worker script for Nephesh workers
+COPY --from=builder --chown=nextjs:nodejs /app/standalone-worker.js ./standalone-worker.js
 
 # Minimal ENV for production
 ENV NODE_ENV=production
