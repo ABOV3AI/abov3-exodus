@@ -10,7 +10,8 @@ import { TRPCError } from '@trpc/server';
 import { createTRPCRouter, nepheshProcedure } from '~/server/trpc/trpc.server';
 import { prismaDb } from '~/server/prisma/prismaDb';
 import { SUBSCRIPTION_LIMITS, type SubscriptionTier } from '../nephesh.types';
-import { enqueueExecuteJob, getQueueStats } from '~/server/queue/job-queue';
+// Dynamic import to avoid bundling Node.js modules in Edge Runtime
+// import { enqueueExecuteJob, getQueueStats } from '~/server/queue/job-queue';
 import { cancelActiveJob } from '~/server/workers/job-cancellation';
 import type { NepheshProfile as PrismaNepheshProfile, NepheshJob as PrismaNepheshJob, JobType, JobStatus } from '@prisma/client';
 
@@ -342,6 +343,7 @@ export const nepheshRouter = createTRPCRouter({
 
       // Enqueue job for background execution
       try {
+        const { enqueueExecuteJob } = await import('~/server/queue/job-queue');
         await enqueueExecuteJob({
           jobId: job.id,
           profileId: profile.id,
@@ -527,6 +529,7 @@ export const nepheshRouter = createTRPCRouter({
   getQueueStats: nepheshProcedure
     .query(async () => {
       try {
+        const { getQueueStats } = await import('~/server/queue/job-queue');
         const stats = await getQueueStats();
         return stats;
       } catch (error) {
