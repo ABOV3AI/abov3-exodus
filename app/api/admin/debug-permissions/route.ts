@@ -14,6 +14,9 @@ import { hasFeatureAccess, getUserFeatures } from '~/server/auth/permissions';
 import { auth } from '~/server/auth/auth';
 import { prismaDb } from '~/server/prisma/prismaDb';
 
+// Force dynamic rendering - don't prerender at build time (needs DATABASE_URL)
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // Get current session

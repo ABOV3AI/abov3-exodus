@@ -11,6 +11,9 @@ import type { NextRequest } from 'next/server';
 import { auth } from '~/server/auth/auth';
 import { prismaDb } from '~/server/prisma/prismaDb';
 
+// Force dynamic rendering - don't prerender at build time (needs DATABASE_URL)
+export const dynamic = 'force-dynamic';
+
 // GET - Retrieve user's theme preference
 export async function GET(request: NextRequest) {
   try {
