@@ -17,9 +17,43 @@ export function DarkModeToggleButton(props: { hasText?: boolean }) {
   // external state
   const { mode: colorMode, setMode: setColorMode } = useColorScheme();
 
-  const handleToggleDarkMode = (event: React.MouseEvent) => {
+  // Load user's theme preference from database on mount
+  React.useEffect(() => {
+    const loadThemeFromDatabase = async () => {
+      try {
+        const response = await fetch('/api/auth/theme');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.theme && data.theme !== colorMode) {
+            setColorMode(data.theme);
+          }
+        }
+      } catch (error) {
+        // Ignore errors (user might not be authenticated)
+        console.debug('[theme] Could not load theme from database:', error);
+      }
+    };
+    loadThemeFromDatabase();
+  }, []);
+
+  const handleToggleDarkMode = async (event: React.MouseEvent) => {
     event.stopPropagation();
-    setColorMode(colorMode === 'dark' ? 'light' : 'dark');
+    const newMode = colorMode === 'dark' ? 'light' : 'dark';
+
+    // Update UI immediately
+    setColorMode(newMode);
+
+    // Save to database in background
+    try {
+      await fetch('/api/auth/theme', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ theme: newMode }),
+      });
+    } catch (error) {
+      // Ignore errors (theme still works via localStorage)
+      console.debug('[theme] Could not save theme to database:', error);
+    }
   };
 
   return props.hasText ? (

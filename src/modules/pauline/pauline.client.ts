@@ -15,7 +15,25 @@ import { getPaulineData, usePaulineData } from './store-module-pauline';
 export const isValidPaulineEndpoint = (endpoint?: string) => {
   if (!endpoint) return false;
   const trimmed = endpoint.trim();
-  return trimmed.startsWith('http://') || trimmed.startsWith('https://');
+
+  // Must start with http:// or https://
+  if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+    return false;
+  }
+
+  // Must have more than just the protocol (e.g., "https://" alone is invalid)
+  if (trimmed === 'http://' || trimmed === 'https://') {
+    return false;
+  }
+
+  // Try to parse as URL to validate format
+  try {
+    const url = new URL(trimmed);
+    // Must have a hostname (e.g., not just "https://")
+    return url.hostname.length > 0;
+  } catch {
+    return false;
+  }
 };
 
 export const isPaulineEnabled = (endpoint?: string) =>
