@@ -76,16 +76,45 @@ let nextConfig: NextConfig = {
 
   // [puppeteer] https://github.com/puppeteer/puppeteer/issues/11052
   // NOTE: we may not be needing this anymore, as we use '@cloudflare/puppeteer'
-  serverExternalPackages: ['puppeteer-core', 'mongodb', 'nodemailer', 'mysql2', 'pg', 'sqlite3'],
+  serverExternalPackages: ['puppeteer-core', 'mongodb', 'nodemailer', 'mysql2', 'pg', 'sqlite3', 'pg-boss'],
 
   webpack: (config: any, { isServer, nextRuntime }: { isServer: boolean; nextRuntime?: 'edge' | 'nodejs' }) => {
     // @mui/joy: anything material gets redirected to Joy
     config.resolve.alias['@mui/material'] = '@mui/joy';
 
-    // [Edge Runtime] bcryptjs requires Node.js crypto module which isn't available in Edge
-    // Stub it out for edge bundles - auth is handled differently there
+    // [Edge Runtime] Handle Node.js built-in modules that aren't available in Edge
+    // Stub them out for edge bundles since server-only code won't run there anyway
     if (nextRuntime === 'edge') {
       config.resolve.alias['bcryptjs'] = false;
+
+      // Prevent Edge Runtime from trying to bundle Node.js modules
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        'fs': false,
+        'path': false,
+        'stream': false,
+        'crypto': false,
+        'child_process': false,
+        'net': false,
+        'tls': false,
+        'os': false,
+        'util': false,
+        'node:fs': false,
+        'node:path': false,
+        'node:stream': false,
+        'node:crypto': false,
+        'node:child_process': false,
+        'node:os': false,
+        'node:util': false,
+      };
+    }
+
+    // [pg-boss] Explicitly mark as external for server bundles to prevent webpack mangling
+    if (isServer && nextRuntime !== 'edge') {
+      config.externals = config.externals || [];
+      if (Array.isArray(config.externals)) {
+        config.externals.push('pg-boss');
+      }
     }
 
     // [mongodb] Fix: Prevent client-side bundling of server-only modules
@@ -191,7 +220,6 @@ if (process.env.POSTHOG_API_KEY && process.env.POSTHOG_ENV_ID) {
     personalApiKey: process.env.POSTHOG_API_KEY,
     envId: process.env.POSTHOG_ENV_ID,
     host: 'https://us.i.posthog.com', // backtrace upload host
-    verbose: false,
     sourcemaps: {
       enabled: process.env.NODE_ENV === 'production',
       project: 'abov3-exodus',
