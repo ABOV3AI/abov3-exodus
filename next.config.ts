@@ -99,6 +99,8 @@ let nextConfig: NextConfig = {
         'tls': false,
         'os': false,
         'util': false,
+        'dns': false,
+        'timers': false,
         'node:fs': false,
         'node:path': false,
         'node:stream': false,
@@ -106,6 +108,9 @@ let nextConfig: NextConfig = {
         'node:child_process': false,
         'node:os': false,
         'node:util': false,
+        'node:dns': false,
+        'node:timers': false,
+        'node:timers/promises': false,
       };
     }
 
