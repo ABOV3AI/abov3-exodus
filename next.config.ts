@@ -83,11 +83,13 @@ let nextConfig: NextConfig = {
     // @mui/joy: anything material gets redirected to Joy
     config.resolve.alias['@mui/material'] = '@mui/joy';
 
-    // [Edge Runtime] Stub out bcryptjs for edge bundles
+    // [Edge Runtime] Stub out Node.js-only modules for edge bundles
     if (nextRuntime === 'edge') {
       config.resolve.alias = {
         ...config.resolve.alias,
         'bcryptjs': false,
+        'pg-boss': false,
+        '~/server/queue/job-queue': false,
       };
 
       // Set fallbacks for Node.js modules
