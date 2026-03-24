@@ -14,6 +14,9 @@ import { auth } from '~/server/auth/auth';
 // Force dynamic rendering - don't prerender at build time (needs DATABASE_URL)
 export const dynamic = 'force-dynamic';
 
+// Explicitly use Node.js runtime (not Edge) for Prisma access
+export const runtime = 'nodejs';
+
 // Valid feature flags
 const VALID_FEATURES: FeatureFlag[] = ['NEPHESH', 'TRAIN', 'FLOWCORE', 'ADMIN_PANEL'];
 
