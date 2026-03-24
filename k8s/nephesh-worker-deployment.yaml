@@ -49,7 +49,7 @@ spec:
 
       containers:
         - name: worker
-          image: ghcr.io/abov3ai/abov3-exodus:latest  # Same image as web, different mode
+          image: ghcr.io/abov3ai/exodus:v2.1.22  # Same image as web, different mode
 
           # Use standalone worker script to avoid Next.js bundling issues
           command: ["node"]
