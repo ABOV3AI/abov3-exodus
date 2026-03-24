@@ -30,23 +30,32 @@ const logConfig = process.env.NODE_ENV === 'development'
   ? ['query', 'error', 'warn'] as const
   : ['error'] as const;
 
+// Check if we have a database URL (not available during build time)
+const hasDatabaseUrl = !!(process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL);
 
 /**
  * Primary Prisma Client (Write Operations)
  *
  * Use this for all write operations: INSERT, UPDATE, DELETE, CREATE
  * Connects to the primary PostgreSQL node
+ *
+ * Note: Returns a placeholder during build time (no DATABASE_URL)
  */
-export const prismaDb =
-  globalForPrisma.prismaWrite ??
-  new PrismaClient({
-    log: [...logConfig],
-    datasources: {
-      db: {
-        url: process.env.POSTGRES_PRISMA_URL,
+export const prismaDb = hasDatabaseUrl
+  ? (globalForPrisma.prismaWrite ??
+    new PrismaClient({
+      log: [...logConfig],
+      datasources: {
+        db: {
+          url: process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL,
+        },
       },
-    },
-  });
+    }))
+  : new Proxy({} as PrismaClient, {
+      get: () => {
+        throw new Error('Database not available during build time');
+      },
+    });
 
 
 /**
@@ -59,22 +68,30 @@ export const prismaDb =
  * - Distributes read load across replicas
  * - Improves performance for read-heavy workloads
  * - Provides failover capability
+ *
+ * Note: Returns a placeholder during build time (no DATABASE_URL)
  */
-export const prismaDbRead =
-  globalForPrisma.prismaRead ??
-  new PrismaClient({
-    log: [...logConfig],
-    datasources: {
-      db: {
-        // Use read replica URL if available, otherwise fall back to primary
-        url: process.env.POSTGRES_READ_URL || process.env.POSTGRES_PRISMA_URL,
+export const prismaDbRead = hasDatabaseUrl
+  ? (globalForPrisma.prismaRead ??
+    new PrismaClient({
+      log: [...logConfig],
+      datasources: {
+        db: {
+          // Use read replica URL if available, otherwise fall back to primary
+          url: process.env.POSTGRES_READ_URL || process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL,
+        },
       },
-    },
-  });
+    }))
+  : new Proxy({} as PrismaClient, {
+      get: () => {
+        throw new Error('Database not available during build time');
+      },
+    });
 
 
 // Cache clients in development to prevent connection exhaustion
-if (process.env.NODE_ENV !== 'production') {
+// Only cache if we have real Prisma clients (not proxies)
+if (process.env.NODE_ENV !== 'production' && hasDatabaseUrl) {
   globalForPrisma.prismaWrite = prismaDb;
   globalForPrisma.prismaRead = prismaDbRead;
 }
