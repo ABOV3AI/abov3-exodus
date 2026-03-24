@@ -21,6 +21,9 @@ const updateProfileSchema = z.object({
   'At least one field (name or image) must be provided'
 );
 
+// Force dynamic rendering - don't prerender at build time (needs DATABASE_URL)
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     // Check authentication

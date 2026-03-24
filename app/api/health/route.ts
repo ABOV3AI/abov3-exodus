@@ -10,6 +10,9 @@ import { isJobQueueHealthy } from '~/server/queue/job-queue';
  * - Database connection is working (if configured)
  * - Job queue is operational (if configured)
  */
+// Force dynamic rendering - don't prerender at build time (needs DATABASE_URL)
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const health: {
@@ -42,8 +45,9 @@ export async function GET() {
       // Not an error - app works without database using browser storage
     }
 
-    // Check job queue health (for Nephesh background jobs)
-    if (databaseUrl) {
+    // Check job queue health (only in worker mode)
+    const isWorkerMode = process.env.WORKER_MODE === 'nephesh';
+    if (isWorkerMode && databaseUrl) {
       try {
         const queueHealthy = await isJobQueueHealthy();
         health.jobQueue = queueHealthy ? 'connected' : 'disconnected';

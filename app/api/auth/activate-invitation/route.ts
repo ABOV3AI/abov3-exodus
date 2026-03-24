@@ -14,6 +14,9 @@ const activateSchema = z.object({
 });
 
 
+// Force dynamic rendering - don't prerender at build time (needs DATABASE_URL)
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     // Parse request body

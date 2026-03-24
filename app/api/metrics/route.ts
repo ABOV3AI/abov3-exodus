@@ -21,6 +21,9 @@ import { getQueueStats } from '~/server/queue/job-queue';
 import { getSchedulerStats } from '~/server/workers/nephesh-scheduler';
 import { getActiveJobCount } from '~/server/workers/job-cancellation';
 
+// Force dynamic rendering - don't prerender at build time (needs DATABASE_URL)
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // Gather metrics from various sources

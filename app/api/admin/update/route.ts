@@ -33,6 +33,9 @@ async function isMasterDev(userId: string): Promise<boolean> {
 /**
  * GET - Get update status and history
  */
+// Force dynamic rendering - don't prerender at build time (needs DATABASE_URL)
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const session = await auth();

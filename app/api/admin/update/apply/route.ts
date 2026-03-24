@@ -12,6 +12,9 @@ import { auth } from '~/server/auth/auth';
 import { prismaDb } from '~/server/prisma/prismaDb';
 import { validateUpdateZip, UpdateEngine, getCurrentVersion } from '~/server/update';
 
+// Force dynamic rendering - don't prerender at build time (needs DATABASE_URL)
+export const dynamic = 'force-dynamic';
+
 /**
  * Check if user is a Master Developer
  */
