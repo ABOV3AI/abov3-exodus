@@ -31,11 +31,6 @@ buildType && console.log(` 🚀 ABOV3 Exodus: building for ${buildType}...\n`);
 let nextConfig: NextConfig = {
   reactStrictMode: true,
 
-  // Experimental: Disable static generation for all routes (fixes Prisma build errors)
-  experimental: {
-    dynamicIO: true,
-  },
-
   // Security headers for production deployment
   async headers() {
     return [

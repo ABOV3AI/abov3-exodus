@@ -11,6 +11,9 @@ import type { NextRequest } from 'next/server';
 import { hasFeatureAccess, type FeatureFlag } from '~/server/auth/permissions';
 import { auth } from '~/server/auth/auth';
 
+// Force dynamic rendering - don't prerender at build time (needs DATABASE_URL)
+export const dynamic = 'force-dynamic';
+
 // Valid feature flags
 const VALID_FEATURES: FeatureFlag[] = ['NEPHESH', 'TRAIN', 'FLOWCORE', 'ADMIN_PANEL'];
 
