@@ -15,6 +15,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: abov3-nephesh-worker
+  namespace: abov3-prod
   labels:
     app: abov3-nephesh-worker
     component: background-worker
@@ -42,61 +43,32 @@ spec:
       # Graceful shutdown: Give workers 30s to finish processing current jobs
       terminationGracePeriodSeconds: 30
 
+      # Image pull secrets for private container registry
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+
       containers:
         - name: worker
-          image: ghcr.io/abov3ai/exodus:beta  # Same image as web, different mode
+          image: ghcr.io/abov3ai/exodus:latest  # Same image as web, different mode
 
-          # Override command to run in worker mode
-          # The instrumentation.ts hook will auto-start worker/scheduler
-          # based on WORKER_MODE environment variable
-          command: ["node", "server.js"]
+          # Use standalone worker script to avoid Next.js bundling issues
+          command: ["node"]
+          args: ["/app/standalone-worker.js"]
 
           env:
-            # Production mode
-            - name: NODE_ENV
-              value: "production"
-
-            # SECURITY: Cloud deployment mode (no local model endpoints)
-            - name: NEXT_PUBLIC_DEPLOYMENT_MODE
-              value: "cloud"
-
-            # Worker-specific configuration
-            - name: WORKER_MODE
-              value: "nephesh"  # Enables job queue worker
-
+            # Worker configuration
             - name: WORKER_CONCURRENCY
               value: "2"  # Process 2 jobs in parallel per worker
 
             - name: JOB_TIMEOUT_MS
               value: "300000"  # 5 minute timeout per job
 
-            # Database credentials (same as web service)
-            - name: POSTGRES_PRISMA_URL
-              valueFrom:
-                secretKeyRef:
-                  name: db-credentials
-                  key: url
-
-            - name: POSTGRES_URL_NON_POOLING
+            # Database URL for pg-boss
+            - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
                   name: db-credentials
                   key: direct-url
-
-            # Read replica URL (optional, for better performance)
-            - name: POSTGRES_READ_URL
-              valueFrom:
-                secretKeyRef:
-                  name: db-credentials
-                  key: read-url
-                  optional: true
-
-            # NextAuth (required for user context loading)
-            - name: NEXTAUTH_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: auth-secrets
-                  key: nextauth-secret
 
           resources:
             requests:
@@ -106,31 +78,8 @@ spec:
               memory: "2Gi"
               cpu: "2000m"  # Allow bursting for intensive jobs
 
-          # Liveness probe: Verify worker is responsive
-          livenessProbe:
-            httpGet:
-              path: /api/health
-              port: 3000
-            initialDelaySeconds: 30
-            periodSeconds: 30
-            timeoutSeconds: 5
-            failureThreshold: 3
-
-          # Readiness probe: Verify job queue connection
-          readinessProbe:
-            httpGet:
-              path: /api/health
-              port: 3000
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 2
-
-          # Expose metrics port for Prometheus
-          ports:
-            - name: metrics
-              containerPort: 3000
-              protocol: TCP
+          # No health probes - standalone worker doesn't expose HTTP endpoints
+          # Pod is considered healthy if the process is running
 
 ---
 # Horizontal Pod Autoscaler
@@ -147,6 +96,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: abov3-nephesh-worker-hpa
+  namespace: abov3-prod
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -207,6 +157,7 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: abov3-nephesh-worker-pdb
+  namespace: abov3-prod
 spec:
   minAvailable: 1
   selector:

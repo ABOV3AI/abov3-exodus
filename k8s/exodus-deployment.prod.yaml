@@ -33,7 +33,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: abov3-exodus
-  namespace: default
+  namespace: abov3-prod
   labels:
     app: abov3-exodus
     environment: production
@@ -96,6 +96,10 @@ spec:
       # Graceful termination
       terminationGracePeriodSeconds: 30
 
+      # Image pull secrets for private container registry
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+
       containers:
         - name: exodus
           # Image will be updated via kubectl set image or CI/CD
@@ -120,6 +124,12 @@ spec:
             # Application URL
             - name: NEXTAUTH_URL
               value: "https://exodus.abov3.ai"
+
+            - name: AUTH_URL
+              value: "https://exodus.abov3.ai"
+
+            - name: AUTH_TRUST_HOST
+              value: "true"
 
             # Authentication Secret (from Kubernetes Secret)
             - name: NEXTAUTH_SECRET
@@ -147,16 +157,6 @@ spec:
                   name: db-credentials
                   key: read-url
                   optional: true  # Falls back to primary if not set
-
-            # Worker Configuration
-            - name: WORKER_MODE
-              value: "nephesh"
-
-            - name: WORKER_CONCURRENCY
-              value: "2"
-
-            - name: JOB_TIMEOUT_MS
-              value: "300000"  # 5 minutes
 
             # Kubernetes Pod Info (for logging/debugging)
             - name: K8S_POD_NAME
@@ -250,7 +250,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: abov3-exodus
-  namespace: default
+  namespace: abov3-prod
   labels:
     app: abov3-exodus
     environment: production
@@ -274,7 +274,7 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: abov3-exodus-pdb
-  namespace: default
+  namespace: abov3-prod
   labels:
     app: abov3-exodus
     environment: production
@@ -291,7 +291,7 @@ spec:
 # kind: HorizontalPodAutoscaler
 # metadata:
 #   name: abov3-exodus-hpa
-#   namespace: default
+#   namespace: abov3-prod
 #   labels:
 #     app: abov3-exodus
 #     environment: production
