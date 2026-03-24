@@ -18,8 +18,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  # Use explicit image name to match K8s deployment manifests
-  IMAGE_NAME: abov3ai/exodus
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build-and-push-image:

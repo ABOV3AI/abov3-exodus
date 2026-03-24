@@ -103,7 +103,7 @@ spec:
       containers:
         - name: exodus
           # Image will be updated via kubectl set image or CI/CD
-          image: ghcr.io/abov3ai/exodus:latest
+          image: ghcr.io/abov3ai/abov3-exodus:latest
           imagePullPolicy: Always
 
           ports:
