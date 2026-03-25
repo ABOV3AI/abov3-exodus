@@ -33,7 +33,7 @@ export const usePaulineStore = create<ModulePaulineStore>()(
     (set) => ({
 
       // ABOV3 Pauline TTS settings
-      paulineEndpoint: 'http://localhost:8080',
+      paulineEndpoint: 'https://pauline.abov3.ai',
       setPaulineEndpoint: (paulineEndpoint: string) => set({ paulineEndpoint }),
 
       paulineVoiceId: 'Emily.wav',
@@ -68,7 +68,7 @@ export const usePaulineStore = create<ModulePaulineStore>()(
               console.log('[Migration] Migrating Fish Speech settings to ABOV3 Pauline');
 
               // Migrate endpoint if it exists and current endpoint is default
-              if (parsed.state.fishSpeechEndpoint && state.paulineEndpoint === 'http://localhost:8080') {
+              if (parsed.state.fishSpeechEndpoint && state.paulineEndpoint === 'https://pauline.abov3.ai') {
                 state.paulineEndpoint = parsed.state.fishSpeechEndpoint;
               }
 

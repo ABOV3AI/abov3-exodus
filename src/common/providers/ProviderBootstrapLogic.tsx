@@ -93,6 +93,10 @@ export function ProviderBootstrapLogic(props: { children: React.ReactNode }) {
           enableUiAutoSync();
           enableAppSettingsAutoSync();
           enableWorkflowAutoSync();
+
+          // Trigger model refresh after API keys (sources) are restored
+          console.log('[Bootstrap] Triggering model refresh after sync...');
+          void sherpaReconfigureBackendModels();
         })
         .catch(err => console.error('[Bootstrap] User data sync failed:', err));
     }
@@ -175,6 +179,34 @@ export function ProviderBootstrapLogic(props: { children: React.ReactNode }) {
   // [oauth] initialize ABOV3 OAuth token refresh (one-time on mount)
   React.useEffect(() => {
     initializeABOV3OAuthRefresh(); // check token every 4 minutes
+  }, []);
+
+  // [mcp] auto-register ABOV3 Eden MCP if not already present
+  React.useEffect(() => {
+    const initializeEdenMCP = async () => {
+      const store = useMCPServersStore.getState();
+
+      // Check if Eden already registered (by name)
+      const hasEden = store.servers.some(s => s.name === 'ABOV3 Eden');
+      if (hasEden) {
+        console.log('[Eden MCP] Already registered');
+        return;
+      }
+
+      console.log('[Eden MCP] Auto-registering ABOV3 Eden...');
+      try {
+        await store.addServer({
+          name: 'ABOV3 Eden',
+          type: 'url',
+          url: 'https://eden.abov3.ai/mcp',
+          enabled: true,
+        });
+        console.log('[Eden MCP] Successfully registered');
+      } catch (error) {
+        console.error('[Eden MCP] Failed to register:', error);
+      }
+    };
+    void initializeEdenMCP();
   }, []);
 
   // [mcp] initialize MCP runtime and register servers (one-time on mount)
