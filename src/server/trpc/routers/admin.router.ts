@@ -21,6 +21,7 @@ import {
 } from '../../update';
 
 const featureFlagSchema = z.enum(['NEPHESH', 'TRAIN', 'FLOWCORE', 'ADMIN_PANEL', 'ABOV3_MODELS']);
+const userRoleSchema = z.enum(['USER', 'DEVELOPER', 'ADMIN', 'MASTER']);
 
 // Generate random alphanumeric code (8 characters)
 function generateInviteCode(): string {
@@ -276,6 +277,140 @@ export const adminRouter = createTRPCRouter({
       });
 
       return { success: true };
+    }),
+
+
+  // Update user details (admin only)
+  updateUser: adminProcedure
+    .input(z.object({
+      userId: z.string(),
+      email: z.string().email().optional(),
+      name: z.string().optional(),
+      newPassword: z.string().min(8).optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // Check if target exists
+      const target = await prismaDb.user.findUnique({
+        where: { id: input.userId },
+        select: { isMasterDev: true, email: true },
+      });
+
+      if (!target) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'User not found',
+        });
+      }
+
+      // Check if trying to modify master developer (only master can modify master)
+      if (target.isMasterDev) {
+        const currentUser = await prismaDb.user.findUnique({
+          where: { id: ctx.userId },
+          select: { isMasterDev: true },
+        });
+        if (!currentUser?.isMasterDev) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Cannot modify Master Developer account',
+          });
+        }
+      }
+
+      // Check if email is being changed and if it's already taken
+      if (input.email && input.email.toLowerCase() !== target.email.toLowerCase()) {
+        const existing = await prismaDb.user.findUnique({
+          where: { email: input.email.toLowerCase() },
+        });
+        if (existing) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Email is already in use by another account',
+          });
+        }
+      }
+
+      // Build update data
+      const updateData: any = {};
+      if (input.email) updateData.email = input.email.toLowerCase();
+      if (input.name !== undefined) updateData.name = input.name || null;
+      if (input.newPassword) {
+        updateData.password = await bcrypt.hash(input.newPassword, 12);
+      }
+
+      // Update user
+      const updated = await prismaDb.user.update({
+        where: { id: input.userId },
+        data: updateData,
+        select: {
+          id: true,
+          email: true,
+          name: true,
+        },
+      });
+
+      return { success: true, user: updated };
+    }),
+
+
+  // Update user role (admin only)
+  updateUserRole: adminProcedure
+    .input(z.object({
+      userId: z.string(),
+      role: userRoleSchema,
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // Check if target exists
+      const target = await prismaDb.user.findUnique({
+        where: { id: input.userId },
+        select: { isMasterDev: true, role: true },
+      });
+
+      if (!target) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'User not found',
+        });
+      }
+
+      // Cannot modify master developer role
+      if (target.isMasterDev) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Cannot modify Master Developer role',
+        });
+      }
+
+      // Cannot set someone to MASTER role unless you're a master dev
+      if (input.role === 'MASTER') {
+        const currentUser = await prismaDb.user.findUnique({
+          where: { id: ctx.userId },
+          select: { isMasterDev: true },
+        });
+        if (!currentUser?.isMasterDev) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Only Master Developers can assign MASTER role',
+          });
+        }
+      }
+
+      // Update role and isAdmin flag
+      const isAdmin = input.role === 'ADMIN' || input.role === 'MASTER';
+
+      const updated = await prismaDb.user.update({
+        where: { id: input.userId },
+        data: {
+          role: input.role,
+          isAdmin,
+        },
+        select: {
+          id: true,
+          role: true,
+          isAdmin: true,
+        },
+      });
+
+      return { success: true, user: updated };
     }),
 
 
