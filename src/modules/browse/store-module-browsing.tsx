@@ -30,7 +30,7 @@ export const useBrowseStore = create<BrowseState>()(
   persist(
     (set) => ({
 
-      wssEndpoint: '', // default WSS endpoint
+      wssEndpoint: 'wss://browserless.abov3.ai', // default WSS endpoint
       setWssEndpoint: (wssEndpoint: string) => set(() => ({ wssEndpoint })),
 
       pageTransform: 'text',
