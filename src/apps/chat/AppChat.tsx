@@ -771,6 +771,7 @@ export function AppChat() {
           onConversationBeamEdit={handleMessageBeamLastInFocusedPane}
           onConversationsImportFromFiles={handleConversationsImportFromFiles}
           onTextImagine={handleImagineFromText}
+          onConversationFlatten={handleConversationFlatten}
           setIsMulticast={setIsComposerMulticast}
           onComposerHasContent={setComposerHasContent}
           sx={isMobile ? composerOpenMobileSx : composerOpenSx}

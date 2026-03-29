@@ -66,6 +66,7 @@ import { ButtonAttachClipboardMemo } from './buttons/ButtonAttachClipboard';
 import { ButtonAttachScreenCaptureMemo } from './buttons/ButtonAttachScreenCapture';
 import { ButtonAttachWebMemo } from './buttons/ButtonAttachWeb';
 import { ButtonPrismMemo } from './buttons/ButtonPrism';
+import { ButtonCompactMemo } from './buttons/ButtonCompact';
 import { ButtonCallMemo } from './buttons/ButtonCall';
 import { ButtonGroupDrawRepeat } from './buttons/ButtonGroupDrawRepeat';
 import { ButtonMicContinuationMemo } from './buttons/ButtonMicContinuation';
@@ -114,6 +115,7 @@ export function Composer(props: {
   onConversationBeamEdit: (conversationId: DConversationId, editMessageId?: DMessageId) => Promise<void>;
   onConversationsImportFromFiles: (files: File[]) => Promise<void>;
   onTextImagine: (conversationId: DConversationId, text: string) => void;
+  onConversationFlatten: (conversationId: DConversationId) => void;
   setIsMulticast: (on: boolean) => void;
   onComposerHasContent: (hasContent: boolean) => void;
   sx?: SxProps;
@@ -478,6 +480,10 @@ export function Composer(props: {
   }, [systemPurposeId, targetConversationId]);
 
   const handleDrawOptionsClicked = React.useCallback(() => optimaOpenPreferences('draw'), []);
+
+  const handleCompactClicked = React.useCallback(() => {
+    targetConversationId && props.onConversationFlatten(targetConversationId);
+  }, [props.onConversationFlatten, targetConversationId]);
 
   const handleTextImagineClicked = React.useCallback(() => {
     if (!composeText || !targetConversationId) return;
@@ -1085,6 +1091,14 @@ export function Composer(props: {
                     disabled={noConversation /*|| noLLM*/}
                     hasContent={!!composeText}
                     onClick={handleSendTextBeamClicked}
+                  />
+                )}
+
+                {/* [desktop] Compact context button */}
+                {isDesktop && showChatExtras && !assistantAbortible && (
+                  <ButtonCompactMemo
+                    disabled={noConversation}
+                    onClick={handleCompactClicked}
                   />
                 )}
 

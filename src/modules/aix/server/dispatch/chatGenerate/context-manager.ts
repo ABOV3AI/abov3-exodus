@@ -76,6 +76,90 @@ export function estimateMessageTokens(message: AixMessages_ChatMessage): number 
 
 
 /**
+ * Extract tool_invocation IDs from a message
+ */
+export function getToolInvocationIds(message: AixMessages_ChatMessage): string[] {
+  const ids: string[] = [];
+  for (const part of message.parts) {
+    if ('pt' in part && (part as any).pt === 'tool_invocation' && 'id' in part) {
+      ids.push((part as any).id);
+    }
+  }
+  return ids;
+}
+
+
+/**
+ * Extract tool_response IDs from a message
+ */
+export function getToolResponseIds(message: AixMessages_ChatMessage): string[] {
+  const ids: string[] = [];
+  for (const part of message.parts) {
+    if ('pt' in part && (part as any).pt === 'tool_response' && 'id' in part) {
+      ids.push((part as any).id);
+    }
+  }
+  return ids;
+}
+
+
+/**
+ * Build a map of tool call pairs (invocation -> response message indices)
+ * Returns: Map<toolId, { invocationIndex: number, responseIndex: number | null }>
+ */
+export function buildToolPairMap(messages: AixMessages_ChatMessage[]): Map<string, { invocationIndex: number; responseIndex: number | null }> {
+  const toolPairs = new Map<string, { invocationIndex: number; responseIndex: number | null }>();
+
+  // First pass: find all tool invocations
+  for (let i = 0; i < messages.length; i++) {
+    const invocationIds = getToolInvocationIds(messages[i]);
+    for (const id of invocationIds) {
+      toolPairs.set(id, { invocationIndex: i, responseIndex: null });
+    }
+  }
+
+  // Second pass: match tool responses
+  for (let i = 0; i < messages.length; i++) {
+    const responseIds = getToolResponseIds(messages[i]);
+    for (const id of responseIds) {
+      const pair = toolPairs.get(id);
+      if (pair) {
+        pair.responseIndex = i;
+      }
+    }
+  }
+
+  return toolPairs;
+}
+
+
+/**
+ * Check if removing a message at given index would orphan any tool responses
+ * Returns indices of messages that must also be removed to maintain tool pairing
+ */
+export function getOrphanedToolResponseIndices(
+  messageIndex: number,
+  messages: AixMessages_ChatMessage[],
+  toolPairs: Map<string, { invocationIndex: number; responseIndex: number | null }>,
+): number[] {
+  const orphanedIndices: number[] = [];
+
+  // Get tool invocation IDs in the message being removed
+  const invocationIds = getToolInvocationIds(messages[messageIndex]);
+
+  // For each invocation, check if there's a response that would be orphaned
+  for (const id of invocationIds) {
+    const pair = toolPairs.get(id);
+    if (pair && pair.responseIndex !== null && pair.responseIndex > messageIndex) {
+      orphanedIndices.push(pair.responseIndex);
+    }
+  }
+
+  return orphanedIndices;
+}
+
+
+/**
  * Estimate tokens for a system message
  */
 export function estimateSystemMessageTokens(systemMessage: AixMessages_SystemMessage | null): number {
@@ -128,7 +212,9 @@ export function extractTextFromMessage(message: AixMessages_ChatMessage): string
 
 /**
  * Truncate context to fit within token limit
- * Removes oldest messages first while preserving conversation coherence
+ * Removes oldest messages first while preserving:
+ * - Conversation coherence
+ * - Tool call pairs (tool_invocation + tool_response must be removed together)
  */
 export async function truncateContext(
   request: AixAPIChatGenerate_Request,
@@ -151,39 +237,69 @@ export async function truncateContext(
 
   console.log(`[ContextManager] Context overflow: ${originalTokens} tokens > ${maxTokens} max. Truncating...`);
 
-  // Clone the message sequence
-  const truncatedSequence = [...request.chatSequence];
+  // Clone the message sequence and track indices to remove
+  const messages = [...request.chatSequence];
+  const indicesToRemove = new Set<number>();
   let currentTokens = originalTokens;
-  let truncatedCount = 0;
   let storedMemoryCount = 0;
+
+  // Build tool pair map to track invocation/response relationships
+  const toolPairs = buildToolPairMap(messages);
 
   // Reserve tokens for system message
   const systemTokens = estimateSystemMessageTokens(request.systemMessage);
 
   // Remove oldest messages until we fit (keep at least the last 2 messages)
-  while (currentTokens > maxTokens && truncatedSequence.length > 2) {
-    const removed = truncatedSequence.shift();
-    if (removed) {
-      const messageTokens = estimateMessageTokens(removed);
-      currentTokens -= messageTokens;
-      truncatedCount++;
+  // We iterate from the front, marking messages for removal
+  let candidateIndex = 0;
 
-      // Store meaningful content in memory if callback provided
-      if (storeMemoriesCallback && conversationId) {
-        const content = extractTextFromMessage(removed);
-        if (content.length >= MIN_CONTENT_LENGTH_FOR_MEMORY) {
-          try {
-            await storeMemoriesCallback(content, conversationId);
-            storedMemoryCount++;
-          } catch (e) {
-            console.warn('[ContextManager] Failed to store memory:', e);
-          }
+  while (currentTokens > maxTokens && candidateIndex < messages.length - 2) {
+    // Skip if already marked for removal
+    if (indicesToRemove.has(candidateIndex)) {
+      candidateIndex++;
+      continue;
+    }
+
+    const message = messages[candidateIndex];
+    const messageTokens = estimateMessageTokens(message);
+
+    // Mark this message for removal
+    indicesToRemove.add(candidateIndex);
+    currentTokens -= messageTokens;
+
+    // Check if this message has tool invocations that would orphan tool responses
+    const orphanedResponseIndices = getOrphanedToolResponseIndices(candidateIndex, messages, toolPairs);
+
+    // Also mark orphaned tool response messages for removal
+    for (const orphanedIndex of orphanedResponseIndices) {
+      if (!indicesToRemove.has(orphanedIndex)) {
+        indicesToRemove.add(orphanedIndex);
+        currentTokens -= estimateMessageTokens(messages[orphanedIndex]);
+        console.log(`[ContextManager] Also removing orphaned tool_response at index ${orphanedIndex} to maintain pairing`);
+      }
+    }
+
+    // Store meaningful content in memory if callback provided
+    if (storeMemoriesCallback && conversationId) {
+      const content = extractTextFromMessage(message);
+      if (content.length >= MIN_CONTENT_LENGTH_FOR_MEMORY) {
+        try {
+          await storeMemoriesCallback(content, conversationId);
+          storedMemoryCount++;
+        } catch (e) {
+          console.warn('[ContextManager] Failed to store memory:', e);
         }
       }
     }
+
+    candidateIndex++;
   }
 
-  console.log(`[ContextManager] Truncated ${truncatedCount} messages, stored ${storedMemoryCount} memories. Final tokens: ${currentTokens}`);
+  // Build final sequence by filtering out removed indices
+  const truncatedSequence = messages.filter((_, index) => !indicesToRemove.has(index));
+  const truncatedCount = indicesToRemove.size;
+
+  console.log(`[ContextManager] Truncated ${truncatedCount} messages (preserving tool pairs), stored ${storedMemoryCount} memories. Final tokens: ${currentTokens}`);
 
   return {
     request: {

@@ -42,6 +42,7 @@ export interface ChatActions {
   historyReplace: (cId: DConversationId, messages: DMessage[]) => void;
   historyTruncateToIncluded: (cId: DConversationId, mId: DMessageId, offset: number) => void;
   historyKeepLastThinkingOnly: (cId: DConversationId) => void;
+  historyCompactContext: (cId: DConversationId, targetMessageCount?: number) => { removed: number; kept: number };
   historyView: (cId: DConversationId) => Readonly<DMessage[]> | undefined;
   appendMessage: (cId: DConversationId, message: DMessage) => void;
   deleteMessage: (cId: DConversationId, mId: DMessageId) => void;
@@ -287,6 +288,80 @@ export const useChatStore = create<ConversationsStore>()(/*devtools(*/
             // updated: Date.now(),
           };
         }),
+
+      /**
+       * Compact conversation context by removing oldest messages while preserving tool call pairs.
+       * This prevents "orphaned tool_response" errors when messages are removed.
+       */
+      historyCompactContext: (conversationId: DConversationId, targetMessageCount: number = 10): { removed: number; kept: number } => {
+        const conversation = _get().conversations.find(_c => _c.id === conversationId);
+        if (!conversation || conversation.messages.length <= targetMessageCount)
+          return { removed: 0, kept: conversation?.messages.length ?? 0 };
+
+        const messages = conversation.messages;
+        const originalCount = messages.length;
+
+        // Build tool pair map: invocation ID -> { invocationIndex, responseIndex }
+        const toolPairs = new Map<string, { invocationIndex: number; responseIndex: number | null }>();
+
+        // First pass: find all tool invocations
+        for (let i = 0; i < messages.length; i++) {
+          for (const fragment of messages[i].fragments) {
+            if ('part' in fragment && fragment.part.pt === 'tool_invocation') {
+              toolPairs.set(fragment.part.id, { invocationIndex: i, responseIndex: null });
+            }
+          }
+        }
+
+        // Second pass: match tool responses
+        for (let i = 0; i < messages.length; i++) {
+          for (const fragment of messages[i].fragments) {
+            if ('part' in fragment && fragment.part.pt === 'tool_response') {
+              const pair = toolPairs.get(fragment.part.id);
+              if (pair) pair.responseIndex = i;
+            }
+          }
+        }
+
+        // Mark messages for removal from the front, but ensure tool pairs stay together
+        const indicesToRemove = new Set<number>();
+        const targetRemoveCount = messages.length - targetMessageCount;
+
+        for (let i = 0; i < messages.length && indicesToRemove.size < targetRemoveCount; i++) {
+          // Skip if already marked
+          if (indicesToRemove.has(i)) continue;
+
+          // Don't remove the last few messages
+          if (i >= messages.length - 2) break;
+
+          // Mark for removal
+          indicesToRemove.add(i);
+
+          // Check if this message has tool invocations that would orphan responses
+          for (const fragment of messages[i].fragments) {
+            if ('part' in fragment && fragment.part.pt === 'tool_invocation') {
+              const pair = toolPairs.get(fragment.part.id);
+              if (pair && pair.responseIndex !== null && pair.responseIndex > i) {
+                // Also remove the orphaned response
+                indicesToRemove.add(pair.responseIndex);
+              }
+            }
+          }
+        }
+
+        // Build compacted message list
+        const compactedMessages = messages.filter((_, index) => !indicesToRemove.has(index));
+
+        // Update the conversation
+        _get()._editConversation(conversationId, () => ({
+          messages: compactedMessages,
+          tokenCount: updateMessagesTokenCounts(compactedMessages, false, 'historyCompactContext'),
+          updated: Date.now(),
+          _abortController: null,
+        }));
+
+        return { removed: indicesToRemove.size, kept: compactedMessages.length };
+      },
 
       historyView: (conversationId: DConversationId): Readonly<DMessage[]> | undefined =>
         _get().conversations.find(_c => _c.id === conversationId)?.messages ?? undefined,
