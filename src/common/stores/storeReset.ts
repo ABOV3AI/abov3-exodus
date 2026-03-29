@@ -158,7 +158,7 @@ export function resetToolsStore(): void {
     enableGit: false,
     enableTesting: true,
     enableUtility: true,
-    executionTimeout: 5000,
+    executionTimeout: 30000,
     maxMemory: 50 * 1024 * 1024,
     rateLimit: 100,
     maxConcurrent: 5,

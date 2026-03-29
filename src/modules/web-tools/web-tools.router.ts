@@ -16,7 +16,8 @@ const searchWebInputSchema = z.object({
   query: z.string().min(1),
   numResults: z.number().min(1).max(20).optional().default(10),
   provider: z.enum(['searxng', 'duckduckgo', 'google', 'auto']).optional().default('auto'),
-  searxngInstance: z.string().url().optional(),
+  // Allow empty string (treated as undefined) or valid URL
+  searxngInstance: z.string().optional().transform(val => val && val.trim() ? val : undefined).pipe(z.string().url().optional()),
 });
 
 const fetchWebpageInputSchema = z.object({

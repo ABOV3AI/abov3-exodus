@@ -83,7 +83,7 @@ export const useToolsStore = create<ToolsState>()(
       enableTextBasedTools: true,
 
       // Sensible defaults
-      executionTimeout: 5000, // 5 seconds
+      executionTimeout: 30000, // 30 seconds (increased for network operations)
       maxMemory: 50 * 1024 * 1024, // 50MB
       rateLimit: 100, // 100 calls per minute
       maxConcurrent: 5,
