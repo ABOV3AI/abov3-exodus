@@ -12,11 +12,9 @@ import { createChatGenerateDispatch } from '../dispatch/chatGenerate/chatGenerat
 import { heartbeatsWhileAwaiting } from '../dispatch/heartbeatsWhileAwaiting';
 import {
   truncateContext,
-  injectMemoriesIntoSystem,
   estimateRequestTokens,
   getModelContextLimit,
   calculateSafeTokenLimit,
-  type RetrievedMemory,
 } from '../dispatch/chatGenerate/context-manager';
 
 
@@ -87,29 +85,12 @@ export async function* chatGenerateContentImpl(
   const currentTokens = estimateRequestTokens(chatGenerate);
 
   if (currentTokens > maxContextTokens) {
-    // Extract conversation ID from context if available
-    const conversationId = input.context.name === 'conversation' ? input.context.ref : undefined;
-
-    // Memory storage callback - stores truncated content in NepheshMemory
-    const storeMemoryCallback = conversationId
-      ? async (content: string, convId: string) => {
-          try {
-            // Dynamic import to avoid circular dependencies and keep edge-compatible
-            const { addMemory } = await import('~/modules/nephesh/memory/memory-service');
-            // Use a default profile ID for context memories (can be enhanced later)
-            await addMemory('context-manager', content, 'conversation', 5, convId);
-          } catch (e) {
-            console.warn('[AIX ContextManager] Failed to store memory:', e);
-          }
-        }
-      : undefined;
-
-    // Truncate context to fit within limits
+    // Truncate context to fit within limits (without memory storage for now)
     const truncationResult = await truncateContext(
       chatGenerate,
       maxContextTokens,
-      conversationId,
-      storeMemoryCallback,
+      undefined, // conversationId - not used without memory
+      undefined, // storeMemoryCallback - disabled for simplicity
     );
 
     // Use the truncated request
@@ -120,47 +101,8 @@ export async function* chatGenerateContentImpl(
       console.log(
         `[AIX ContextManager] Truncated ${truncationResult.truncatedCount} messages ` +
         `(${truncationResult.originalTokens} -> ${truncationResult.finalTokens} tokens) ` +
-        `for ${prettyDialect}. Stored ${truncationResult.storedMemoryCount} memories.`
+        `for ${prettyDialect}.`
       );
-    }
-
-    // Retrieve relevant memories and inject into system message (if conversation context)
-    if (conversationId && truncationResult.storedMemoryCount > 0) {
-      try {
-        const { searchMemory } = await import('~/modules/nephesh/memory/memory-service');
-        // Get recent message content for similarity search
-        const recentContent = chatGenerate.chatSequence
-          .slice(-3)
-          .map(m => {
-            const parts = m.parts || [];
-            return parts
-              .filter((p: any) => p.pt === 'text')
-              .map((p: any) => p.text || '')
-              .join(' ');
-          })
-          .join(' ');
-
-        if (recentContent.length > 20) {
-          const memories = await searchMemory('context-manager', recentContent, 3);
-          if (memories.length > 0) {
-            const retrievedMemories: RetrievedMemory[] = memories.map(m => ({
-              content: m.summary || m.content,
-              source: m.source,
-              timestamp: m.timestamp,
-            }));
-
-            chatGenerate = {
-              ...chatGenerate,
-              systemMessage: injectMemoriesIntoSystem(chatGenerate.systemMessage, retrievedMemories),
-            };
-
-            console.log(`[AIX ContextManager] Injected ${retrievedMemories.length} memories into system message`);
-          }
-        }
-      } catch (e) {
-        // Non-critical - continue without memory injection
-        console.warn('[AIX ContextManager] Memory retrieval failed:', e);
-      }
     }
   }
 
