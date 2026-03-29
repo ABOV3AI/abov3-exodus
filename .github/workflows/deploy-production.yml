@@ -60,7 +60,11 @@ jobs:
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+          # GHCR requires lowercase repository names
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "repo_lower=$REPO_LOWER" >> $GITHUB_OUTPUT
           echo "Deploying version: $VERSION"
+          echo "Repository: $REPO_LOWER"
 
       # ===================================================
       # Step 3: Set up kubectl
@@ -92,7 +96,7 @@ jobs:
 
       - name: Wait for Docker image
         run: |
-          IMAGE="ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}"
+          IMAGE="ghcr.io/${{ steps.version.outputs.repo_lower }}:${{ steps.version.outputs.version }}"
           echo "Waiting for image: $IMAGE"
           echo "This may take a few minutes while the Docker build workflow completes..."
 
@@ -143,7 +147,7 @@ jobs:
       # ===================================================
       - name: Update deployment image
         run: |
-          IMAGE="ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}"
+          IMAGE="ghcr.io/${{ steps.version.outputs.repo_lower }}:${{ steps.version.outputs.version }}"
           echo "Updating deployment to image: $IMAGE"
 
           kubectl set image deployment/abov3-exodus \
@@ -289,7 +293,7 @@ jobs:
           echo "======================================"
           echo "Version:         ${{ steps.version.outputs.version }}"
           echo "Previous image:  ${{ env.current_image }}"
-          echo "New image:       ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}"
+          echo "New image:       ghcr.io/${{ steps.version.outputs.repo_lower }}:${{ steps.version.outputs.version }}"
           echo "Previous rev:    ${{ env.current_revision }}"
 
           NEW_REVISION=$(kubectl get deployment abov3-exodus -o jsonpath='{.metadata.annotations.deployment\.kubernetes\.io/revision}')
