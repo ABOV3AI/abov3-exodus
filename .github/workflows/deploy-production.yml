@@ -90,19 +90,33 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Verify Docker image
+      - name: Wait for Docker image
         run: |
           IMAGE="ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}"
-          echo "Checking if image exists: $IMAGE"
+          echo "Waiting for image: $IMAGE"
+          echo "This may take a few minutes while the Docker build workflow completes..."
 
-          # Try to pull image metadata
-          if ! docker manifest inspect $IMAGE > /dev/null 2>&1; then
-            echo "❌ ERROR: Docker image not found: $IMAGE"
-            echo "Make sure the docker-image.yml workflow has completed successfully."
-            exit 1
-          fi
+          MAX_ATTEMPTS=20  # 20 attempts * 30 seconds = 10 minutes max
+          ATTEMPT=1
 
-          echo "✅ Docker image verified: $IMAGE"
+          while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+            echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: Checking if image exists..."
+
+            if docker manifest inspect $IMAGE > /dev/null 2>&1; then
+              echo "✅ Docker image verified: $IMAGE"
+              exit 0
+            fi
+
+            if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
+              echo "❌ ERROR: Docker image not found after $MAX_ATTEMPTS attempts: $IMAGE"
+              echo "Make sure the docker-image.yml workflow completed successfully."
+              exit 1
+            fi
+
+            echo "Image not ready yet. Waiting 30 seconds..."
+            sleep 30
+            ATTEMPT=$((ATTEMPT + 1))
+          done
 
       # ===================================================
       # Step 5: Backup Current State
