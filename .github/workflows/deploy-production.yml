@@ -81,8 +81,15 @@ jobs:
           kubectl get nodes
 
       # ===================================================
-      # Step 4: Verify Docker Image Exists
+      # Step 4: Login to GHCR and Verify Docker Image Exists
       # ===================================================
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Verify Docker image
         run: |
           IMAGE="ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}"
