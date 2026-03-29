@@ -29,6 +29,19 @@ import type {
  * Create Presentation (PPTX) Executor
  * Supports themes, tables, charts, shapes, images, and multiple layouts
  */
+// Valid theme presets
+const VALID_THEME_PRESETS = ['corporate', 'modern', 'dark', 'nature', 'tech'];
+
+// Valid layout types
+const VALID_LAYOUTS = [
+  // Basic layouts
+  'title', 'content', 'two-column', 'section', 'comparison', 'blank',
+  // Professional layouts
+  'hero', 'image-left', 'image-right', 'image-full',
+  'grid-2x2', 'grid-3', 'timeline', 'agenda',
+  'team', 'stats', 'quote', 'closing',
+];
+
 const createPresentationExecutor: ToolExecutor = async (args, context) => {
   try {
     const {
@@ -59,6 +72,19 @@ const createPresentationExecutor: ToolExecutor = async (args, context) => {
       return { error: 'At least one slide is required' };
     }
 
+    // Validate theme preset if specified
+    if (theme?.preset && !VALID_THEME_PRESETS.includes(theme.preset)) {
+      return { error: `Invalid theme preset: "${theme.preset}". Valid presets: ${VALID_THEME_PRESETS.join(', ')}` };
+    }
+
+    // Validate layouts
+    for (let i = 0; i < slides.length; i++) {
+      const slide = slides[i];
+      if (slide.layout && !VALID_LAYOUTS.includes(slide.layout)) {
+        return { error: `Invalid layout on slide ${i + 1}: "${slide.layout}". Valid layouts: ${VALID_LAYOUTS.join(', ')}` };
+      }
+    }
+
     // Get project handle
     const activeProject = useProjectsStore.getState().getActiveProject();
     const projectHandle = context.projectHandle || activeProject?.handle || undefined;
@@ -86,16 +112,32 @@ const createPresentationExecutor: ToolExecutor = async (args, context) => {
 
     // Build summary
     const features: string[] = [];
-    if (theme) features.push('custom theme');
+    if (theme?.preset) features.push(`${theme.preset} theme`);
+    else if (theme) features.push('custom theme');
+    if (theme?.enableShadows !== false && theme?.preset) features.push('shadows enabled');
+    if (slides.some(s => s.stats?.length)) features.push('statistics');
+    if (slides.some(s => s.quote)) features.push('quotes');
+    if (slides.some(s => s.backgroundImage)) features.push('background images');
     if (slides.some(s => s.tables?.length)) features.push('tables');
     if (slides.some(s => s.charts?.length)) features.push('charts');
     if (slides.some(s => s.images?.length)) features.push('images');
     if (slides.some(s => s.shapes?.length)) features.push('shapes');
 
+    // Count layout types used
+    const layoutCounts = slides.reduce((acc, s) => {
+      const layout = s.layout || 'content';
+      acc[layout] = (acc[layout] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    const layoutSummary = Object.entries(layoutCounts)
+      .map(([layout, count]) => `${count}x ${layout}`)
+      .join(', ');
+
     const featureSummary = features.length > 0 ? `\n- Features: ${features.join(', ')}` : '';
+    const layoutInfo = `\n- Layouts: ${layoutSummary}`;
 
     return {
-      result: `Successfully created presentation: ${path}\n- ${slides.length} slide(s)${featureSummary}\n- File size: ${(blob.size / 1024).toFixed(1)} KB`,
+      result: `Successfully created presentation: ${path}\n- ${slides.length} slide(s)${featureSummary}${layoutInfo}\n- File size: ${(blob.size / 1024).toFixed(1)} KB`,
     };
   } catch (error: any) {
     return { error: `Failed to create presentation: ${error.message}` };

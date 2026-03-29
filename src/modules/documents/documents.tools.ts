@@ -7,34 +7,85 @@ import type { AixTools_ToolDefinition } from '~/modules/aix/server/api/aix.wiret
 
 export const DOCUMENT_TOOLS: AixTools_ToolDefinition[] = [
   // ============================================================
-  // PowerPoint Presentation Tool
+  // PowerPoint Presentation Tool (Professional Edition)
   // ============================================================
   {
     type: 'function_call',
     function_call: {
       name: 'create_presentation',
-      description: `Create a professional PowerPoint presentation (.pptx) file with slides, themes, tables, charts, and images.
+      description: `Create a professional, visually polished PowerPoint presentation (.pptx).
 
-Features:
-- Multiple slide layouts: title, content, two-column, section, comparison, blank
-- Custom themes with background, title, text, and accent colors
-- Tables with cell styling and borders
-- Charts (bar, line, pie, doughnut, area)
-- Shapes (rectangle, ellipse, triangle, line, arrow)
-- Images via URL or base64
-- Speaker notes
-- Custom text positioning
+## PROFESSIONAL DESIGN GUIDELINES
+
+**Step 1: Choose a theme preset** (RECOMMENDED for professional results):
+- "corporate": Navy blue, clean look - ideal for business presentations
+- "modern": Minimalist white with bold typography - perfect for tech demos
+- "dark": Sophisticated dark theme with gold accents - great for executive presentations
+- "nature": Earthy greens with organic feel - ideal for environmental/health topics
+- "tech": Dark with vibrant purple/cyan - perfect for tech/startup presentations
+
+**Step 2: Customize if needed** (optional):
+You can override any preset color by specifying custom values:
+- backgroundColor, primaryColor, textColor, accentColor, surfaceColor
+- fontFamily, titleFontFamily
+- enableShadows: true/false
+
+**Step 3: Choose the right layout for each slide**:
+OPENING:
+- "title": Opening slide with centered title and subtitle (ALWAYS use for first slide)
+
+KEY MESSAGES:
+- "hero": Large impactful statement - use for key takeaways
+- "quote": Centered quote with attribution - use for testimonials
+
+CONTENT:
+- "content": Standard bullet points
+- "two-column": Split content into two columns
+- "comparison": Side-by-side comparison with headers
+
+DATA & VISUALS:
+- "stats": Display 2-4 key statistics with big numbers and labels
+- "image-left" / "image-right": Image with text beside it
+- "image-full": Full-bleed background image with text overlay
+- "grid-2x2" / "grid-3": Equal grid sections
+
+STRUCTURE:
+- "section": Section divider between major topics
+- "agenda": Numbered agenda items
+- "timeline": Horizontal timeline with milestones
+
+CLOSING:
+- "closing": Thank you / Q&A / contact slide (ALWAYS use for last slide)
+
+**Professional presentation structure example**:
+1. Title slide (layout: "title")
+2. Agenda (layout: "agenda" or "content")
+3. Key insight (layout: "hero")
+4. Details (layout: "content" or "two-column")
+5. Statistics (layout: "stats")
+6. Visual (layout: "image-left" or "image-right")
+7. Quote/Testimonial (layout: "quote")
+8. Section divider (layout: "section")
+9. More content...
+10. Closing (layout: "closing")
+
+**Content best practices**:
+- Keep bullet points concise (5-7 words each)
+- Use 3-5 bullets per slide maximum
+- Include speaker notes for key talking points
+- Use stats layout for impressive numbers
+- End with a closing slide
 
 The path must be relative to the project root and end with .pptx.`,
       input_schema: {
         properties: {
           path: {
             type: 'string',
-            description: 'Output file path relative to project root (must end with .pptx, e.g., "output/presentation.pptx")',
+            description: 'Output file path (must end with .pptx)',
           },
           title: {
             type: 'string',
-            description: 'Presentation title (appears in metadata)',
+            description: 'Presentation title',
           },
           author: {
             type: 'string',
@@ -46,13 +97,25 @@ The path must be relative to the project root and end with .pptx.`,
           },
           theme: {
             type: 'object',
-            description: `Theme settings for the presentation:
-- backgroundColor: Hex color for slide backgrounds (e.g., "1a1a2e" for dark, default "FFFFFF")
-- primaryColor: Hex color for titles (e.g., "eaeaea", default "333333")
-- textColor: Hex color for body text (e.g., "cccccc", default "666666")
-- accentColor: Hex color for accents/highlights (default "0066CC")
-- fontFamily: Font for body text (default "Arial")
-- titleFontFamily: Font for titles (optional, defaults to fontFamily)`,
+            description: `Theme configuration. Use a preset for professional results, customize as needed.
+
+PRESETS (recommended):
+- preset: "corporate" | "modern" | "dark" | "nature" | "tech"
+- enableShadows: true (default for presets) - adds depth and polish
+
+CUSTOM COLORS (override preset or use standalone):
+- backgroundColor: Slide background (hex, e.g., "1a1a2e")
+- primaryColor: Title text (hex)
+- textColor: Body text (hex)
+- accentColor: Highlights, stats, key elements (hex)
+- surfaceColor: Cards/shapes background (hex)
+- secondaryColor: Subtitles (hex)
+
+CUSTOM FONTS:
+- fontFamily: Body text font (e.g., "Segoe UI")
+- titleFontFamily: Title font (e.g., "Georgia")
+
+Example: { "preset": "corporate", "accentColor": "FF5500" } uses corporate theme with custom orange accent.`,
           },
           slideSize: {
             type: 'string',
@@ -60,18 +123,28 @@ The path must be relative to the project root and end with .pptx.`,
           },
           slides: {
             type: 'array',
-            description: `Array of slides. Each slide object supports:
-- title: Slide title text
-- subtitle: Subtitle (for title/section slides)
-- content: Array of bullet point strings
-- layout: "title", "content", "two-column", "section", "comparison", or "blank"
-- notes: Speaker notes text
-- backgroundColor: Override theme background for this slide
-- tables: Array of table objects with rows/cells
-- charts: Array of chart objects (type, data, title)
-- shapes: Array of shape objects (type, x, y, w, h, fillColor, lineColor)
-- images: Array of image objects (url or base64, x, y, width, height)
-- textElements: Array of custom positioned text (text, x, y, fontSize, color, bold, italic)`,
+            description: `Array of slides. Each slide supports:
+
+BASIC CONTENT:
+- layout: Choose from layouts above (see guidelines)
+- title: Slide title
+- subtitle: For title/hero/section slides
+- content: Array of bullet points (keep concise!)
+- notes: Speaker notes
+
+SPECIAL LAYOUTS:
+- stats: Array of {value, label, color?} for stats layout
+  Example: [{"value": "95%", "label": "Customer satisfaction"}, {"value": "10K+", "label": "Active users"}]
+- quote: {text, attribution?} for quote layout
+  Example: {"text": "This changed everything.", "attribution": "Jane Doe, CEO"}
+- backgroundImage: {url, overlay?, overlayOpacity?} for dramatic effect
+
+ADVANCED (optional):
+- tables: Array of tables with rows/cells
+- charts: Array of charts (bar, line, pie, doughnut, area)
+- images: Array of images (url or base64, x, y, width, height)
+- shapes: Array of shapes (rectangle, ellipse, triangle, line, arrow)
+- textElements: Custom positioned text elements`,
           },
         },
         required: ['path', 'title', 'slides'],

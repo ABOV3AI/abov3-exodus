@@ -94,12 +94,70 @@ export interface PptxChart {
   showValues?: boolean;
 }
 
+/**
+ * Statistics data for stats layout
+ */
+export interface PptxStatistic {
+  value: string;              // Display value (e.g., "95%", "10K+", "$2.5M")
+  label: string;              // Label below the value
+  color?: string;             // Override accent color for this stat (hex)
+}
+
+/**
+ * Quote data for quote layout
+ */
+export interface PptxQuote {
+  text: string;               // Quote text
+  attribution?: string;       // Attribution (e.g., "- John Doe, CEO")
+}
+
+/**
+ * Background image configuration
+ */
+export interface PptxBackgroundImage {
+  url?: string;               // URL to fetch image
+  base64?: string;            // Base64-encoded image data
+  overlay?: string;           // Hex color for overlay (for text readability)
+  overlayOpacity?: number;    // Overlay opacity 0-100 (default: 50)
+}
+
 export interface PptxSlide {
   title?: string;
   subtitle?: string;
   content?: string[];           // Bullet points
   notes?: string;               // Speaker notes
-  layout?: 'title' | 'content' | 'two-column' | 'section' | 'comparison' | 'blank';
+
+  // Layout type - choose the best layout for your content
+  layout?:
+    // Basic layouts
+    | 'title'           // Opening slide with centered title
+    | 'content'         // Title + bullet points
+    | 'two-column'      // Split content into two columns
+    | 'section'         // Section divider
+    | 'comparison'      // Side-by-side comparison with headers
+    | 'blank'           // Empty canvas for custom content
+    // Professional layouts
+    | 'hero'            // Large impactful statement
+    | 'image-left'      // Image on left, text on right
+    | 'image-right'     // Text on left, image on right
+    | 'image-full'      // Full-bleed background image with overlay
+    | 'grid-2x2'        // 4 equal sections
+    | 'grid-3'          // 3 equal columns
+    | 'timeline'        // Horizontal timeline with milestones
+    | 'agenda'          // Numbered agenda items
+    | 'team'            // Team member profile cards
+    | 'stats'           // Big number statistics
+    | 'quote'           // Centered quote with attribution
+    | 'closing';        // Thank you / Q&A / contact slide
+
+  // Statistics data (for 'stats' layout)
+  stats?: PptxStatistic[];
+
+  // Quote data (for 'quote' layout)
+  quote?: PptxQuote;
+
+  // Background image with optional overlay
+  backgroundImage?: PptxBackgroundImage;
 
   // Advanced content
   textElements?: PptxTextElement[];  // Custom positioned text
@@ -114,11 +172,22 @@ export interface PptxSlide {
 }
 
 export interface PptxTheme {
+  // Use a preset for instant professional styling (recommended)
+  preset?: 'corporate' | 'modern' | 'dark' | 'nature' | 'tech';
+
+  // Enable shadows for depth and visual polish (default: true for presets)
+  enableShadows?: boolean;
+
+  // Custom colors (override preset colors or use without preset)
   backgroundColor?: string;     // Hex color (default: FFFFFF)
   primaryColor?: string;        // Title text color (default: 333333)
   textColor?: string;           // Body text color (default: 666666)
   accentColor?: string;         // Accent/highlight color
-  fontFamily?: string;          // Font family for text
+  surfaceColor?: string;        // Cards/shapes background color
+  secondaryColor?: string;      // Subtitles, secondary text
+
+  // Custom fonts (override preset fonts or use without preset)
+  fontFamily?: string;          // Font family for body text
   titleFontFamily?: string;     // Font family for titles (if different)
 }
 
