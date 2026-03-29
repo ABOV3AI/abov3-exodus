@@ -118,6 +118,8 @@ export const ModelDescription_schema = z.object({
   benchmark: BenchmarksScores_schema.optional(),
   chatPrice: PricingChatGenerate_schema.optional(),
   hidden: z.boolean().optional(),
+  // User defaults - set by vendor to enable features by default
+  defaultUserToolsEnabled: z.boolean().optional(), // default value for userToolsEnabled (API function calling)
   // TODO: add inputTypes/Kinds..
 });
 
