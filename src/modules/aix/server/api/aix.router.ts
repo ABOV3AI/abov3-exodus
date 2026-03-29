@@ -10,6 +10,14 @@ import { ChatGenerateTransmitter } from '../dispatch/chatGenerate/ChatGenerateTr
 import { PerformanceProfiler } from '../dispatch/PerformanceProfiler';
 import { createChatGenerateDispatch } from '../dispatch/chatGenerate/chatGenerate.dispatch';
 import { heartbeatsWhileAwaiting } from '../dispatch/heartbeatsWhileAwaiting';
+import {
+  truncateContext,
+  injectMemoriesIntoSystem,
+  estimateRequestTokens,
+  getModelContextLimit,
+  calculateSafeTokenLimit,
+  type RetrievedMemory,
+} from '../dispatch/chatGenerate/context-manager';
 
 
 /**
@@ -64,10 +72,97 @@ export async function* chatGenerateContentImpl(
   // Tools are stripped in the adapter when OAuth is used
 
   const accessDialect = access.dialect;
-  const prettyDialect = serverCapitalizeFirstLetter(accessDialect);
+  // Use "ABOV3" as the display name for ARK Cloud (api.abov3.ai)
+  const isArkCloud = accessDialect === 'ollama' && 'ollamaHost' in access && (access as any).ollamaHost?.includes('api.abov3.ai');
+  const prettyDialect = isArkCloud ? 'ABOV3' : serverCapitalizeFirstLetter(accessDialect);
 
   // Applies per-model streaming suppression; added for o3 without verification
   const streaming = model.forceNoStream ? false : aixStreaming;
+
+
+  // Context Management: Automatic truncation to prevent "prompt too long" errors
+  // This is transparent to users - context is managed server-side
+  const contextWindow = getModelContextLimit(model.id, model.maxTokens);
+  const maxContextTokens = calculateSafeTokenLimit(contextWindow, 0.1); // 10% buffer
+  const currentTokens = estimateRequestTokens(chatGenerate);
+
+  if (currentTokens > maxContextTokens) {
+    // Extract conversation ID from context if available
+    const conversationId = input.context.name === 'conversation' ? input.context.ref : undefined;
+
+    // Memory storage callback - stores truncated content in NepheshMemory
+    const storeMemoryCallback = conversationId
+      ? async (content: string, convId: string) => {
+          try {
+            // Dynamic import to avoid circular dependencies and keep edge-compatible
+            const { addMemory } = await import('~/modules/nephesh/memory/memory-service');
+            // Use a default profile ID for context memories (can be enhanced later)
+            await addMemory('context-manager', content, 'conversation', 5, convId);
+          } catch (e) {
+            console.warn('[AIX ContextManager] Failed to store memory:', e);
+          }
+        }
+      : undefined;
+
+    // Truncate context to fit within limits
+    const truncationResult = await truncateContext(
+      chatGenerate,
+      maxContextTokens,
+      conversationId,
+      storeMemoryCallback,
+    );
+
+    // Use the truncated request
+    chatGenerate = truncationResult.request;
+
+    // Log truncation for debugging
+    if (truncationResult.truncatedCount > 0) {
+      console.log(
+        `[AIX ContextManager] Truncated ${truncationResult.truncatedCount} messages ` +
+        `(${truncationResult.originalTokens} -> ${truncationResult.finalTokens} tokens) ` +
+        `for ${prettyDialect}. Stored ${truncationResult.storedMemoryCount} memories.`
+      );
+    }
+
+    // Retrieve relevant memories and inject into system message (if conversation context)
+    if (conversationId && truncationResult.storedMemoryCount > 0) {
+      try {
+        const { searchMemory } = await import('~/modules/nephesh/memory/memory-service');
+        // Get recent message content for similarity search
+        const recentContent = chatGenerate.chatSequence
+          .slice(-3)
+          .map(m => {
+            const parts = m.parts || [];
+            return parts
+              .filter((p: any) => p.pt === 'text')
+              .map((p: any) => p.text || '')
+              .join(' ');
+          })
+          .join(' ');
+
+        if (recentContent.length > 20) {
+          const memories = await searchMemory('context-manager', recentContent, 3);
+          if (memories.length > 0) {
+            const retrievedMemories: RetrievedMemory[] = memories.map(m => ({
+              content: m.summary || m.content,
+              source: m.source,
+              timestamp: m.timestamp,
+            }));
+
+            chatGenerate = {
+              ...chatGenerate,
+              systemMessage: injectMemoriesIntoSystem(chatGenerate.systemMessage, retrievedMemories),
+            };
+
+            console.log(`[AIX ContextManager] Injected ${retrievedMemories.length} memories into system message`);
+          }
+        }
+      } catch (e) {
+        // Non-critical - continue without memory injection
+        console.warn('[AIX ContextManager] Memory retrieval failed:', e);
+      }
+    }
+  }
 
 
   // Intake Transmitters

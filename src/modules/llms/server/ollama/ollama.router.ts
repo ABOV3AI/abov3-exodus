@@ -27,10 +27,19 @@ export function ollamaAccess(access: OllamaAccessSchema, apiPath: string): { hea
 
   const ollamaHost = fixupHost(access.ollamaHost || env.OLLAMA_API_HOST || DEFAULT_OLLAMA_HOST, apiPath);
 
+  // Build headers with optional API key for ARK Cloud / Ollama Pro
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  // Pass through user's ARK Cloud key (optional metering/priority)
+  // The proxy at api.abov3.ai will inject the main OLLAMA_API_KEY server-side
+  if (access.ollamaApiKey) {
+    headers['X-ARK-User-Key'] = access.ollamaApiKey;
+  }
+
   return {
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers,
     url: ollamaHost + apiPath,
   };
 
@@ -100,6 +109,8 @@ export const ollamaAccessSchema = z.object({
   dialect: z.enum(['ollama']),
   ollamaHost: z.string().trim(),
   ollamaJson: z.boolean(),
+  ollamaApiKey: z.string().optional(),  // Optional API key for ARK Cloud / Ollama Pro
+  ollamaUseNativeEndpoint: z.boolean().optional(),  // Use native /api/chat instead of OpenAI-compatible /v1/chat/completions
 });
 export type OllamaAccessSchema = z.infer<typeof ollamaAccessSchema>;
 
@@ -197,8 +208,35 @@ export const llmOllamaRouter = createTRPCRouter({
         return { ...model, ...modelInfo };
       }));
 
-      return {
-        models: detailedModels.map(model => {
+      // Filter out raw/unbranded models for ARK Cloud (api.abov3.ai)
+      const isArkCloud = input.access.ollamaHost?.includes('api.abov3.ai') || input.access.ollamaHost?.includes('ark');
+
+      const isRawModel = (modelName: string, modelTag: string | undefined, label: string): boolean => {
+        if (!isArkCloud) return false; // Only filter for ARK Cloud
+
+        const tagLower = modelTag?.toLowerCase() || '';
+        const nameLower = modelName.toLowerCase();
+        const labelLower = label.toLowerCase();
+
+        // Check label for "(raw)" pattern (as seen in UI)
+        if (labelLower.includes('(raw)')) return true;
+
+        // Check tag patterns
+        const RAW_TAG_PATTERNS = ['raw', 'base', 'instruct-fp16', 'gguf', 'fp16', 'bf16'];
+        if (RAW_TAG_PATTERNS.some(pattern =>
+          tagLower === pattern ||
+          tagLower.endsWith('-' + pattern) ||
+          tagLower.startsWith(pattern + '-')
+        )) return true;
+
+        // Check name patterns
+        if (nameLower.includes('-raw') || nameLower.includes('_raw')) return true;
+
+        return false;
+      };
+
+      // Map and filter models
+      const mappedModels = detailedModels.map(model => {
           // the model name is in the format "name:tag" (default tag = 'latest')
           const [modelName, modelTag] = model.name.split(':');
 
@@ -249,6 +287,9 @@ export const llmOllamaRouter = createTRPCRouter({
 
           // console.log('>>> ollama model', model.name, model.template, model.modelfile, '\n');
 
+          // Check if this is a raw model to be filtered
+          const isRaw = isRawModel(modelName, modelTag, label);
+
           return {
             id: model.name,
             label,
@@ -258,8 +299,13 @@ export const llmOllamaRouter = createTRPCRouter({
             contextWindow,
             ...(contextWindow ? { maxCompletionTokens: Math.round(contextWindow / 2) } : {}),
             interfaces,
+            _isRaw: isRaw, // Internal flag for filtering
           };
-        }),
+        });
+
+      // Filter out raw models and return
+      return {
+        models: mappedModels.filter(m => !(m as any)._isRaw).map(({ _isRaw, ...model }) => model),
       };
     }),
 
