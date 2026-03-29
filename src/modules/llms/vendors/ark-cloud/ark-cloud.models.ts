@@ -7,7 +7,7 @@
  * Additional Ollama models are fetched dynamically from the API.
  */
 
-import { LLM_IF_OAI_Chat, LLM_IF_OAI_Fn, LLM_IF_OAI_Reasoning } from '~/common/stores/llms/llms.types';
+import { LLM_IF_OAI_Chat, LLM_IF_OAI_Fn, LLM_IF_OAI_Reasoning, LLM_IF_OAI_Vision } from '~/common/stores/llms/llms.types';
 
 import type { ModelDescriptionSchema } from '../../server/llm.server.types';
 
@@ -34,7 +34,7 @@ export const arkCloudModels: ModelDescriptionSchema[] = [
     description: 'Flagship — largest model with full capabilities',
     contextWindow: 128000,
     maxCompletionTokens: 16384,
-    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Fn, LLM_IF_OAI_Reasoning],
+    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Fn, LLM_IF_OAI_Reasoning, LLM_IF_OAI_Vision],
     chatPrice: { input: 'free', output: 'free' },
     defaultUserToolsEnabled: true,  // Enable MCP/tools by default for ABOV3 models
   },
@@ -44,7 +44,7 @@ export const arkCloudModels: ModelDescriptionSchema[] = [
     description: 'Workhorse — coding specialist with tools',
     contextWindow: 128000,
     maxCompletionTokens: 16384,
-    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Fn, LLM_IF_OAI_Reasoning],
+    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Fn, LLM_IF_OAI_Reasoning, LLM_IF_OAI_Vision],
     chatPrice: { input: 'free', output: 'free' },
     defaultUserToolsEnabled: true,  // Enable MCP/tools by default for ABOV3 models
   },
@@ -54,7 +54,7 @@ export const arkCloudModels: ModelDescriptionSchema[] = [
     description: 'Reasoning — deep reasoning + agentic capabilities',
     contextWindow: 128000,
     maxCompletionTokens: 16384,
-    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Fn, LLM_IF_OAI_Reasoning],
+    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Fn, LLM_IF_OAI_Reasoning, LLM_IF_OAI_Vision],
     chatPrice: { input: 'free', output: 'free' },
     defaultUserToolsEnabled: true,  // Enable MCP/tools by default for ABOV3 models
   },
@@ -64,7 +64,7 @@ export const arkCloudModels: ModelDescriptionSchema[] = [
     description: 'Efficient — fast inference with tools',
     contextWindow: 32000,
     maxCompletionTokens: 8192,
-    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Fn],
+    interfaces: [LLM_IF_OAI_Chat, LLM_IF_OAI_Fn, LLM_IF_OAI_Vision],
     chatPrice: { input: 'free', output: 'free' },
     defaultUserToolsEnabled: true,  // Enable MCP/tools by default for ABOV3 models
   },
