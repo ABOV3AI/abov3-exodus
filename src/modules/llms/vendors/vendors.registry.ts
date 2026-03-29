@@ -1,6 +1,7 @@
 import { ModelVendorABOV3 } from './abov3/abov3.vendor';
 import { ModelVendorAlibaba } from './alibaba/alibaba.vendor';
 import { ModelVendorAnthropic } from './anthropic/anthropic.vendor';
+import { ModelVendorArkCloud } from './ark-cloud/ark-cloud.vendor';
 import { ModelVendorArkSLM } from './ark-slm/ark-slm.vendor';
 import { ModelVendorAzure } from './azure/azure.vendor';
 import { ModelVendorDeepseek } from './deepseek/deepseekai.vendor';
@@ -24,6 +25,7 @@ export type ModelVendorId =
   | 'abov3'
   | 'alibaba'
   | 'anthropic'
+  | 'ark-cloud'
   | 'ark-slm'
   | 'azure'
   | 'deepseek'
@@ -46,6 +48,7 @@ const MODEL_VENDOR_REGISTRY: Record<ModelVendorId, IModelVendor> = {
   abov3: ModelVendorABOV3,
   alibaba: ModelVendorAlibaba,
   anthropic: ModelVendorAnthropic,
+  'ark-cloud': ModelVendorArkCloud,
   'ark-slm': ModelVendorArkSLM,
   azure: ModelVendorAzure,
   deepseek: ModelVendorDeepseek,
