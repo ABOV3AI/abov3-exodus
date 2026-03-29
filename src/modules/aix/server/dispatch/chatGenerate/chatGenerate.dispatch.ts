@@ -15,6 +15,7 @@ import { aixToAnthropicMessageCreate } from './adapters/anthropic.messageCreate'
 import { aixToGeminiGenerateContent } from './adapters/gemini.generateContent';
 import { aixToOpenAIChatCompletions } from './adapters/openai.chatCompletions';
 import { aixToOpenAIResponses } from './adapters/openai.responsesCreate';
+import { aixToOllamaNativeChat } from './adapters/ollama.native';
 
 import type { IParticleTransmitter } from './IParticleTransmitter';
 import { createABOV3MessageParser, createABOV3MessageParserNS } from './parsers/abov3.parser';
@@ -22,6 +23,7 @@ import { createAnthropicMessageParser, createAnthropicMessageParserNS } from './
 import { createGeminiGenerateContentResponseParser } from './parsers/gemini.parser';
 import { createOpenAIChatCompletionsChunkParser, createOpenAIChatCompletionsParserNS } from './parsers/openai.parser';
 import { createOpenAIResponseParserNS, createOpenAIResponsesEventParser } from './parsers/openai.responses.parser';
+import { createOllamaNativeChatParser, createOllamaNativeChatParserNS } from './parsers/ollama.native.parser';
 
 
 /**
@@ -94,20 +96,33 @@ export function createChatGenerateDispatch(access: AixAPI_Access, model: AixAPI_
      * - as such, we 'cast' here to the dispatch to an OpenAI dispatch, while using Ollama access
      * - we still use the ollama.router for the models listing and aministration APIs
      *
-     * For reference we show the old code for body/demuxerFormat/chatGenerateParse also below
+     * IMPORTANT: Ollama Pro (cloud) redirects /v1/chat/completions to ollama.com, breaking the proxy.
+     * Use ollamaUseNativeEndpoint=true to use native /api/chat endpoint which works correctly with Ollama Pro.
      */
     case 'ollama': {
       const projectMode = (access as any).projectMode ?? 'chat';
       const projectPath = (access as any).projectPath ?? undefined;
+      const useNativeEndpoint = access.ollamaUseNativeEndpoint === true;
+
+      // Use native Ollama /api/chat endpoint (for Ollama Pro / ARK Cloud)
+      if (useNativeEndpoint) {
+        return {
+          request: {
+            ...ollamaAccess(access, '/api/chat'),
+            body: aixToOllamaNativeChat(model, chatGenerate, access.ollamaJson, streaming),
+          },
+          demuxerFormat: streaming ? 'json-nl' : null,
+          chatGenerateParse: streaming ? createOllamaNativeChatParser() : createOllamaNativeChatParserNS(),
+        };
+      }
+
+      // Use OpenAI-compatible endpoint (for local Ollama)
       return {
         request: {
-          ...ollamaAccess(access, '/v1/chat/completions'), // use the OpenAI-compatible endpoint
-          // body: ollamaChatCompletionPayload(model, _hist, access.ollamaJson, streaming),
+          ...ollamaAccess(access, '/v1/chat/completions'),
           body: aixToOpenAIChatCompletions('openai', model, chatGenerate, access.ollamaJson, streaming, projectMode, projectPath),
         },
-        // demuxerFormat: streaming ? 'json-nl' : null,
         demuxerFormat: streaming ? 'fast-sse' : null,
-        // chatGenerateParse: createDispatchParserOllama(),
         chatGenerateParse: streaming ? createOpenAIChatCompletionsChunkParser() : createOpenAIChatCompletionsParserNS(),
       };
     }

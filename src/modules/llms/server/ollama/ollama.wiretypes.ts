@@ -25,13 +25,19 @@ export const wireOllamaListModelsSchema = z.object({
 
 /**
  * Show per-Model Information (/api/show) - Response
+ * Note: Ollama Pro returns different fields than local Ollama
  */
 export const wireOllamaModelInfoSchema = z.object({
+  // Local Ollama fields
   license: z.string().optional(),
-  modelfile: z.string(),
+  modelfile: z.string().optional(),  // Not returned by Ollama Pro
   parameters: z.string().optional(),
   template: z.string().optional(),
   details: wireOllamaModelDetailsSchema.nullable().optional(),
+  // Ollama Pro additional fields
+  model_info: z.record(z.string(), z.unknown()).optional(),
+  capabilities: z.array(z.string()).optional(),
+  modified_at: z.string().optional(),
 });
 
 

@@ -85,10 +85,11 @@ function _createDLLMFromModelDescription(d: ModelDescriptionSchema, service: DMo
     sId: service.id,
     vId: service.vId,
 
-    // user edited properties: not set
+    // user edited properties: set from vendor defaults if provided
     // userLabel: undefined,
     // userHidden: undefined,
     // userParameters: undefined,
+    ...(d.defaultUserToolsEnabled !== undefined && { userToolsEnabled: d.defaultUserToolsEnabled }),
   };
 
   // set other params from spec
