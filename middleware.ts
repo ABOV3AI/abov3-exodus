@@ -3,11 +3,15 @@
  *
  * PRODUCTION SECURITY: All routes are protected by default.
  * Only explicitly public routes are accessible without authentication.
+ *
+ * NOTE: Feature permissions are checked directly from the database to ensure
+ * permission changes take effect immediately (not cached in JWT token).
  */
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { auth } from '~/server/auth/auth';
+import { hasFeatureAccess, type FeatureFlag } from '~/server/auth/permissions';
 
 // Routes that are PUBLIC (no auth required)
 const PUBLIC_ROUTES = [
@@ -72,36 +76,30 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check if this is a feature-protected route
-  const feature = Object.entries(PROTECTED_FEATURES).find(([route]) =>
+  const featureEntry = Object.entries(PROTECTED_FEATURES).find(([route]) =>
     pathname.startsWith(route)
-  )?.[1];
+  );
 
-  // If feature-protected route, check feature access
-  if (feature) {
-    try {
-      // Call internal API to check feature access
-      const checkUrl = new URL('/api/auth/check-feature', request.url);
-      const checkRes = await fetch(checkUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Cookie: request.headers.get('cookie') || '',
-        },
-        body: JSON.stringify({
-          userId: session.user.id,
-          feature,
-        }),
-      });
+  // If feature-protected route, check feature access directly from DATABASE
+  // This ensures permission changes take effect immediately without requiring re-login
+  if (featureEntry) {
+    const feature = featureEntry[1] as FeatureFlag;
+    const userId = session.user?.id;
 
-      if (!checkRes.ok) {
-        // No access - redirect to unauthorized page
-        return NextResponse.redirect(new URL('/unauthorized', request.url));
-      }
-    } catch (error) {
-      console.error('[middleware] Feature check failed:', error);
-      // On error, deny access for security
+    if (!userId) {
+      console.log(`[middleware] Access denied: no userId for feature=${feature}`);
       return NextResponse.redirect(new URL('/unauthorized', request.url));
     }
+
+    // Check access directly from database (not cached JWT token)
+    const hasAccess = await hasFeatureAccess(userId, feature);
+
+    if (!hasAccess) {
+      console.log(`[middleware] Access denied: user=${session.user?.email} userId=${userId} feature=${feature}`);
+      return NextResponse.redirect(new URL('/unauthorized', request.url));
+    }
+
+    console.log(`[middleware] Access granted: user=${session.user?.email} feature=${feature}`);
   }
 
   return NextResponse.next();
