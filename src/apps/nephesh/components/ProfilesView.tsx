@@ -13,7 +13,7 @@ import PauseIcon from '@mui/icons-material/Pause';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 import { nepheshActions, useNepheshUI } from '../store-nephesh';
-import { apiQuery } from '~/common/util/trpc.client';
+import { apiQueryCloud } from '~/common/util/trpc.client';
 
 
 export function ProfilesView() {
@@ -21,19 +21,19 @@ export function ProfilesView() {
   const { selectedProfileId } = useNepheshUI();
 
   // Fetch the selected profile
-  const { data: selectedProfile } = apiQuery.nephesh.getProfile.useQuery(
+  const { data: selectedProfile } = apiQueryCloud.nephesh.getProfile.useQuery(
     { profileId: selectedProfileId || '' },
     { enabled: !!selectedProfileId }
   );
 
   // Toggle mutation
-  const toggleMutation = apiQuery.nephesh.toggleProfile.useMutation();
+  const toggleMutation = apiQueryCloud.nephesh.toggleProfile.useMutation();
 
   // Delete mutation
-  const deleteMutation = apiQuery.nephesh.deleteProfile.useMutation();
+  const deleteMutation = apiQueryCloud.nephesh.deleteProfile.useMutation();
 
   // Get profile stats
-  const { data: stats } = apiQuery.nephesh.getProfileStats.useQuery(
+  const { data: stats } = apiQueryCloud.nephesh.getProfileStats.useQuery(
     { profileId: selectedProfile?.id || '' },
     {
       enabled: !!selectedProfile?.id,

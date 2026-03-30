@@ -13,7 +13,7 @@ import {
 } from '@mui/joy';
 import SaveIcon from '@mui/icons-material/Save';
 
-import { apiQuery } from '~/common/util/trpc.client';
+import { apiQueryCloud } from '~/common/util/trpc.client';
 import { nepheshActions, useNepheshUI } from '../store-nephesh';
 import { useVisibleLLMs } from '~/common/stores/llms/llms.hooks';
 
@@ -23,7 +23,7 @@ export function ProfileEditor() {
   const { isEditorOpen, editorProfileId } = useNepheshUI();
 
   // Load existing profile if editing
-  const { data: existingProfile } = apiQuery.nephesh.getProfile.useQuery(
+  const { data: existingProfile } = apiQueryCloud.nephesh.getProfile.useQuery(
     { profileId: editorProfileId || '' },
     { enabled: !!editorProfileId }
   );
@@ -51,8 +51,8 @@ export function ProfileEditor() {
   const [mcp, setMcp] = React.useState(enabledTools?.mcp || false);
 
   // Mutations
-  const createMutation = apiQuery.nephesh.createProfile.useMutation();
-  const updateMutation = apiQuery.nephesh.updateProfile.useMutation();
+  const createMutation = apiQueryCloud.nephesh.createProfile.useMutation();
+  const updateMutation = apiQueryCloud.nephesh.updateProfile.useMutation();
 
   // Set default LLM if not set
   React.useEffect(() => {

@@ -184,18 +184,28 @@ export const authConfig: NextAuthConfig = {
         token.name = user.name;
         token.picture = user.image;
 
-        // Fetch additional user data
+        // Fetch additional user data including role and permissions
         const dbUser = await prismaDb.user.findUnique({
           where: { id: user.id },
           select: {
             isAdmin: true,
+            isMasterDev: true,
+            role: true,
             storageMode: true,
+            permissions: {
+              where: { granted: true },
+              select: { feature: true },
+            },
           },
         });
 
         if (dbUser) {
           token.isAdmin = dbUser.isAdmin;
+          token.isMasterDev = dbUser.isMasterDev;
+          token.role = dbUser.role;
           token.storageMode = dbUser.storageMode;
+          // Store granted features for middleware access checking
+          token.features = dbUser.permissions.map((p) => p.feature);
         }
       }
 
@@ -216,7 +226,13 @@ export const authConfig: NextAuthConfig = {
         // @ts-ignore - custom properties
         session.user.isAdmin = token.isAdmin as boolean;
         // @ts-ignore - custom properties
+        session.user.isMasterDev = token.isMasterDev as boolean;
+        // @ts-ignore - custom properties
+        session.user.role = token.role as string;
+        // @ts-ignore - custom properties
         session.user.storageMode = token.storageMode as string;
+        // @ts-ignore - custom properties
+        session.user.features = token.features as string[];
       }
 
       return session;

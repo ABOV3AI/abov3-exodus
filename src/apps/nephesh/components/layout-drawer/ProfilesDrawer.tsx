@@ -13,7 +13,7 @@ import PauseCircleIcon from '@mui/icons-material/PauseCircle';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 
 import { nepheshActions, useNepheshUI } from '../../store-nephesh';
-import { apiQuery } from '~/common/util/trpc.client';
+import { apiQueryCloud } from '~/common/util/trpc.client';
 
 
 export function ProfilesDrawer() {
@@ -22,7 +22,7 @@ export function ProfilesDrawer() {
   const { selectedProfileId } = useNepheshUI();
 
   // Fetch profiles from server
-  const { data: profiles, isLoading } = apiQuery.nephesh.listProfiles.useQuery(undefined);
+  const { data: profiles, isLoading } = apiQueryCloud.nephesh.listProfiles.useQuery(undefined);
 
   // Use empty array as fallback
   const displayProfiles = profiles || [];

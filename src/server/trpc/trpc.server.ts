@@ -163,7 +163,13 @@ const createFeatureProcedure = (feature: FeatureFlag) => {
     }
 
     // Dynamic import to avoid bundling issues in Edge Runtime
-    const { hasFeatureAccess } = await import('~/server/auth/permissions');
+    const { hasFeatureAccess, ensureNepheshAccess } = await import('~/server/auth/permissions');
+
+    // Auto-grant NEPHESH access in demo mode (for investor presentations)
+    if (feature === 'NEPHESH' && process.env.NEPHESH_AUTO_GRANT === 'true') {
+      await ensureNepheshAccess(ctx.userId);
+    }
+
     const hasAccess = await hasFeatureAccess(ctx.userId, feature);
     if (!hasAccess) {
       throw new TRPCError({

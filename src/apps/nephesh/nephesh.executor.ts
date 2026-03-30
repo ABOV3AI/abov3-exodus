@@ -7,7 +7,7 @@
 
 import { profilesManager } from '~/modules/nephesh/profiles/ProfilesManager';
 import type { NepheshProfile, NepheshJob } from '~/modules/nephesh/nephesh.types';
-import { apiAsync } from '~/common/util/trpc.client';
+import { apiAsyncNode } from '~/common/util/trpc.client';
 
 /**
  * Execute a job client-side using ProfileHandler
@@ -19,7 +19,7 @@ export async function executeJobClientSide(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Update job to RUNNING
-    await apiAsync.nephesh.updateJob.mutate({
+    await apiAsyncNode.nephesh.updateJob.mutate({
       jobId: job.id,
       status: 'RUNNING',
     });
@@ -38,7 +38,7 @@ export async function executeJobClientSide(
     onProgress?.('Execution complete, saving results...');
 
     // Update job with results
-    await apiAsync.nephesh.updateJob.mutate({
+    await apiAsyncNode.nephesh.updateJob.mutate({
       jobId: job.id,
       status: result.error ? 'ERROR' : 'COMPLETED',
       resultMessages: result.messages as any,
@@ -50,7 +50,7 @@ export async function executeJobClientSide(
 
   } catch (error: any) {
     // Update job with error
-    await apiAsync.nephesh.updateJob.mutate({
+    await apiAsyncNode.nephesh.updateJob.mutate({
       jobId: job.id,
       status: 'ERROR',
       error: error.message || 'Unknown error',

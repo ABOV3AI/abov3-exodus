@@ -7,6 +7,7 @@ import { adminRouter } from './routers/admin.router';
 import { flowcoreRouter } from '../api/routers/flowcore.router';
 import { syncRouter } from './routers/sync.router';
 import { paulineRouter } from '~/modules/pauline/pauline.router';
+import { nepheshRouter } from '~/modules/nephesh/server/nephesh.router';
 
 /**
  * Cloud rooter, which is geolocated in 1 location and separate from the other routers.
@@ -22,6 +23,7 @@ export const appRouterCloud = createTRPCRouter({
   flowcore: flowcoreRouter,
   sync: syncRouter,
   pauline: paulineRouter,
+  nephesh: nepheshRouter,
 });
 
 // export type definition of API

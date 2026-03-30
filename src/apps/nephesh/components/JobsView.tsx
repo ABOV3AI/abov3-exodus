@@ -8,7 +8,7 @@ import * as React from 'react';
 
 import { Box, Card, CardContent, Chip, Stack, Typography } from '@mui/joy';
 
-import { apiQuery } from '~/common/util/trpc.client';
+import { apiQueryCloud } from '~/common/util/trpc.client';
 import { useNepheshUI } from '../store-nephesh';
 
 
@@ -17,7 +17,7 @@ export function JobsView() {
   const { jobsFilter } = useNepheshUI();
 
   // Fetch jobs
-  const { data: jobs, isLoading } = apiQuery.nephesh.listJobs.useQuery({
+  const { data: jobs, isLoading } = apiQueryCloud.nephesh.listJobs.useQuery({
     profileId: jobsFilter.profileId,
     status: jobsFilter.status,
     limit: 50,

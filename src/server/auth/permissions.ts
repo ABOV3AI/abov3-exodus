@@ -24,7 +24,12 @@ export const ALL_FEATURES: FeatureFlag[] = ['NEPHESH', 'TRAIN', 'FLOWCORE', 'ADM
  * 3. User has explicit permission grant for the feature
  */
 export async function hasFeatureAccess(userId: string, feature: FeatureFlag): Promise<boolean> {
-  if (!userId) return false;
+  console.log(`[permissions] Checking access for userId="${userId}" feature="${feature}"`);
+
+  if (!userId) {
+    console.log('[permissions] No userId provided, denying access');
+    return false;
+  }
 
   try {
     const user = await prismaDb.user.findUnique({
@@ -32,16 +37,29 @@ export async function hasFeatureAccess(userId: string, feature: FeatureFlag): Pr
       include: { permissions: true },
     });
 
-    if (!user) return false;
+    if (!user) {
+      console.log(`[permissions] User not found for userId="${userId}", denying access`);
+      return false;
+    }
+
+    console.log(`[permissions] User found: email="${user.email}" isMasterDev=${user.isMasterDev} role="${user.role}" isAdmin=${user.isAdmin}`);
 
     // Master dev always has full access
-    if (user.isMasterDev) return true;
+    if (user.isMasterDev) {
+      console.log('[permissions] User is Master Developer, granting full access');
+      return true;
+    }
 
     // ADMIN and MASTER roles have all access
-    if (user.role === 'ADMIN' || user.role === 'MASTER') return true;
+    if (user.role === 'ADMIN' || user.role === 'MASTER') {
+      console.log(`[permissions] User has ${user.role} role, granting full access`);
+      return true;
+    }
 
     // Check specific permission grant
-    return user.permissions.some((p) => p.feature === feature && p.granted);
+    const hasPermission = user.permissions.some((p) => p.feature === feature && p.granted);
+    console.log(`[permissions] Explicit permission check result: ${hasPermission} (permissions count: ${user.permissions.length})`);
+    return hasPermission;
   } catch (error) {
     console.error('[permissions] Error checking feature access:', error);
     return false;
@@ -193,5 +211,35 @@ export async function getUserRoleInfo(
     return user;
   } catch {
     return null;
+  }
+}
+
+/**
+ * Ensure a user has NEPHESH access (auto-grant for demo mode)
+ *
+ * This function is used when NEPHESH_AUTO_GRANT=true to automatically
+ * grant NEPHESH access to authenticated users for investor demos.
+ */
+export async function ensureNepheshAccess(userId: string): Promise<void> {
+  if (!userId) return;
+
+  try {
+    const existing = await prismaDb.userPermission.findUnique({
+      where: { userId_feature: { userId, feature: 'NEPHESH' } },
+    });
+
+    if (!existing) {
+      console.log(`[permissions] Auto-granting NEPHESH access to user ${userId}`);
+      await prismaDb.userPermission.create({
+        data: {
+          userId,
+          feature: 'NEPHESH',
+          granted: true,
+          grantedBy: 'SYSTEM_AUTO_GRANT',
+        },
+      });
+    }
+  } catch (error) {
+    console.error('[permissions] Error auto-granting NEPHESH access:', error);
   }
 }
