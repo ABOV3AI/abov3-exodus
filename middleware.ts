@@ -4,14 +4,18 @@
  * PRODUCTION SECURITY: All routes are protected by default.
  * Only explicitly public routes are accessible without authentication.
  *
- * NOTE: Feature permissions are checked directly from the database to ensure
- * permission changes take effect immediately (not cached in JWT token).
+ * NOTE: Feature permissions are checked from the JWT session token which contains
+ * the user's features (cached at login time). The features include:
+ * - Explicit permission grants from UserPermission table
+ * - Role-based access (ADMIN/MASTER roles have all features)
+ * - Master developer flag (isMasterDev)
+ *
+ * For immediate permission updates, users need to log out and back in.
  */
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { auth } from '~/server/auth/auth';
-import { hasFeatureAccess, type FeatureFlag } from '~/server/auth/permissions';
 
 // Routes that are PUBLIC (no auth required)
 const PUBLIC_ROUTES = [
@@ -41,6 +45,9 @@ const PROTECTED_FEATURES: Record<string, string> = {
   '/train': 'TRAIN',
   '/flowcore': 'FLOWCORE',
 };
+
+// All features list for admin/master check
+const ALL_FEATURES = ['NEPHESH', 'TRAIN', 'FLOWCORE', 'ADMIN_PANEL', 'ABOV3_MODELS'];
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
@@ -80,29 +87,50 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith(route)
   );
 
-  // If feature-protected route, check feature access directly from DATABASE
-  // This ensures permission changes take effect immediately without requiring re-login
+  // If feature-protected route, check feature access from session
   if (featureEntry) {
-    const feature = featureEntry[1] as FeatureFlag;
-    const userId = session.user?.id;
+    const feature = featureEntry[1];
+    const user = session.user as any; // Cast to any to access custom properties
 
-    if (!userId) {
-      console.log(`[middleware] Access denied: no userId for feature=${feature}`);
-      return NextResponse.redirect(new URL('/unauthorized', request.url));
-    }
-
-    // Check access directly from database (not cached JWT token)
-    const hasAccess = await hasFeatureAccess(userId, feature);
+    // Check access using session data (avoids Edge Runtime Prisma issues)
+    const hasAccess = checkFeatureAccess(user, feature);
 
     if (!hasAccess) {
-      console.log(`[middleware] Access denied: user=${session.user?.email} userId=${userId} feature=${feature}`);
+      console.log(`[middleware] Access denied: user=${user.email} feature=${feature} role=${user.role} features=${JSON.stringify(user.features || [])}`);
       return NextResponse.redirect(new URL('/unauthorized', request.url));
     }
 
-    console.log(`[middleware] Access granted: user=${session.user?.email} feature=${feature}`);
+    console.log(`[middleware] Access granted: user=${user.email} feature=${feature}`);
   }
 
   return NextResponse.next();
+}
+
+/**
+ * Check if user has access to a feature using session data
+ * This avoids database queries in Edge Runtime
+ */
+function checkFeatureAccess(user: any, feature: string): boolean {
+  if (!user) return false;
+
+  // Master developer always has full access
+  if (user.isMasterDev === true) {
+    return true;
+  }
+
+  // ADMIN and MASTER roles have all access
+  if (user.role === 'ADMIN' || user.role === 'MASTER') {
+    return true;
+  }
+
+  // isAdmin flag (legacy) grants all access
+  if (user.isAdmin === true) {
+    return true;
+  }
+
+  // Check if feature is in user's granted features list
+  const userFeatures = user.features || [];
+  return userFeatures.includes(feature);
 }
 
 // Run middleware on ALL routes except static files
