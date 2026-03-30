@@ -6,7 +6,7 @@ import { Box } from '@mui/joy';
 import { themeBgApp, themeZIndexPageBar } from '~/common/app.theme';
 import type { NavItemApp } from '~/common/app.nav';
 
-// import { MobileNav } from './MobileNav';
+import { MobileNav } from './nav/MobileNav';
 import { OptimaBar } from '~/common/layout/optima/bar/OptimaBar';
 import { optimaHasMOTD, OptimaMOTD } from '~/common/layout/optima/OptimaMOTD';
 
@@ -37,6 +37,15 @@ const pageCoreMobileNavSx: SxProps = {
   flex: 0,
 };
 
+// Container for page content that properly constrains within flex layout
+const pageCoreContentSx: SxProps = {
+  flex: 1,
+  display: 'flex',
+  flexDirection: 'column',
+  minHeight: 0, // Critical: allows flex item to shrink below its content size
+  overflow: 'hidden', // Prevents content from overflowing into MobileNav space
+};
+
 
 export const PageCore = (props: {
   component: React.ElementType,
@@ -61,17 +70,19 @@ export const PageCore = (props: {
       sx={pageCoreBarSx}
     />
 
-    {/* Page (NextJS) must make the assumption they're in a flex-col layout */}
-    {props.children}
+    {/* Page content wrapper - constrains content so MobileNav stays visible */}
+    <Box sx={pageCoreContentSx}>
+      {props.children}
+    </Box>
 
     {/* [Mobile] Nav bar at the bottom */}
-    {/*{!!props.isMobile && (*/}
-    {/*  <MobileNav*/}
-    {/*    component='nav'*/}
-    {/*    currentApp={props.currentApp}*/}
-    {/*    hideOnFocusMode*/}
-    {/*    sx={pageCoreMobileNavSx}*/}
-    {/*  />*/}
-    {/*)}*/}
+    {!!props.isMobile && (
+      <MobileNav
+        component='nav'
+        currentApp={props.currentApp}
+        hideOnFocusMode
+        sx={pageCoreMobileNavSx}
+      />
+    )}
 
   </Box>;
