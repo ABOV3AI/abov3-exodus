@@ -593,7 +593,21 @@ export const useChatStore = create<ConversationsStore>()(/*devtools(*/
           .map((conversation: DConversation) => {
             // remove the converation AbortController (current data structure version)
             const { _abortController, ...rest } = conversation;
-            return rest;
+            return {
+              ...rest,
+              // Clean up messages before saving to prevent loading state issues on refresh
+              messages: rest.messages.map((message: DMessage) => {
+                // Remove transient pendingIncomplete flag - will show as error on reload
+                const { pendingIncomplete: _pending, ...cleanMessage } = message;
+                // Filter out placeholder void fragments (convert to error on reload in onRehydrateStorage)
+                return {
+                  ...cleanMessage,
+                  fragments: cleanMessage.fragments.filter(f =>
+                    !(f.ft === 'void' && 'part' in f && f.part.pt === 'ph')
+                  ),
+                };
+              }),
+            };
           }),
       }),
 
