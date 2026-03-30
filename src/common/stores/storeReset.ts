@@ -44,6 +44,7 @@ import { useClientWorkspaceStore } from './workspace/store-client-workspace';
 import { useTrainingStoreImpl } from '~/apps/training/store-training';
 import { useFlowCoreStore } from '~/apps/flowcore/store-flowcore';
 import { useFlowCoreStoreEnhanced } from '~/apps/flowcore/store-flowcore-enhanced';
+import { useLogicSherpaStore } from '~/common/logic/store-logic-sherpa';
 
 
 /**
@@ -455,6 +456,18 @@ export function resetFlowCoreEnhancedStore(): void {
 
 
 /**
+ * Reset Sherpa store (forces model reconfiguration on next login)
+ */
+export function resetSherpaStore(): void {
+  useLogicSherpaStore.setState({
+    lastLlmReconfigHash: '', // Force model reconfiguration on next login
+    chatComposerPrefill: null,
+  });
+  console.log('[StoreReset] Sherpa store reset (will force model reconfig)');
+}
+
+
+/**
  * Clear IndexedDB entries for all user stores
  * This ensures data doesn't persist between users on the same browser
  */
@@ -551,6 +564,9 @@ export async function resetAllUserStores(): Promise<void> {
   resetTrainingStore();
   resetFlowCoreStore();
   resetFlowCoreEnhancedStore();
+
+  // Reset sherpa store to force model reconfiguration on next login
+  resetSherpaStore();
 
   // Clear IndexedDB to prevent data leakage
   await clearIndexedDBStores();
