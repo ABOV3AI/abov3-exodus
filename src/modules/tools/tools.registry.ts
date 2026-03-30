@@ -231,6 +231,13 @@ export function initializeToolRegistry(): void {
     })
     .catch(err => console.warn('[Tools] Failed to load document tools:', err));
 
+  // Vision tools (image analysis, OCR)
+  import('../vision/vision.executor')
+    .then(module => {
+      module.VISION_TOOL_DEFINITIONS.forEach(tool => registerTool(tool));
+    })
+    .catch(err => console.warn('[Tools] Failed to load vision tools:', err));
+
   if (process.env.NODE_ENV === 'development') {
     // Log after a short delay to let imports complete
     setTimeout(() => {

@@ -12,8 +12,8 @@ import { llmGeminiRouter } from '~/modules/llms/server/gemini/gemini.router';
 import { llmOllamaRouter } from '~/modules/llms/server/ollama/ollama.router';
 import { llmOpenAIRouter } from '~/modules/llms/server/openai/openai.router';
 import { youtubeRouter } from '~/modules/youtube/youtube.router';
+import { visionRouter } from '~/modules/vision/vision.router';
 import { webToolsRouter } from '~/modules/web-tools/web-tools.router';
-import { nepheshRouter } from '~/modules/nephesh/server/nephesh.router';
 
 /**
  * Primary rooter, and will be sitting on an Edge Runtime.
@@ -30,9 +30,9 @@ export const appRouterEdge = createTRPCRouter({
   llmGemini: llmGeminiRouter,
   llmOllama: llmOllamaRouter,
   llmOpenAI: llmOpenAIRouter,
+  vision: visionRouter,
   youtube: youtubeRouter,
   webTools: webToolsRouter,
-  nephesh: nepheshRouter,
 });
 
 // export type definition of API
