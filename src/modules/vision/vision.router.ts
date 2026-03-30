@@ -15,8 +15,127 @@ import { env } from '~/server/env';
 
 // Default settings
 const DEFAULT_OLLAMA_HOST = 'http://127.0.0.1:11434';
-const DEFAULT_VISION_MODEL = 'llava:13b';  // Good balance of quality and speed
 const VISION_API_PATH = '/api/chat';
+
+// Vision models in order of preference (will try to find first available)
+const VISION_MODEL_PREFERENCES = [
+  // Qwen3-vl variants (preferred - best quality)
+  'qwen3-vl:235b-instruct',
+  'qwen3-vl:235b',
+  'qwen3-vl:72b',
+  'qwen3-vl:32b',
+  'qwen3-vl',
+  // Qwen2.5-vl variants
+  'qwen2.5-vl:72b',
+  'qwen2.5-vl:32b',
+  'qwen2.5-vl:7b',
+  // Llama3.2-vision
+  'llama3.2-vision:90b',
+  'llama3.2-vision:11b',
+  // Devstral (fallback)
+  'devstral-small:24b',
+  'devstral-small',
+  'devstral',
+  // Other vision models
+  'llava:34b',
+  'llava:13b',
+  'llava:7b',
+  'llava',
+  'bakllava',
+  'moondream',
+  'minicpm-v',
+];
+
+// Cache for detected vision model (per host)
+const detectedModelCache: Map<string, { model: string; timestamp: number }> = new Map();
+const CACHE_TTL_MS = 5 * 60 * 1000;  // 5 minutes
+
+
+/**
+ * Detect the best available vision model on the Ollama server
+ */
+async function detectVisionModel(ollamaHost: string): Promise<string | null> {
+  // Check cache first
+  const cached = detectedModelCache.get(ollamaHost);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.model;
+  }
+
+  try {
+    const response = await fetch(`${ollamaHost}/api/tags`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      console.warn(`[Vision] Failed to list models: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    const availableModels = (data.models || []).map((m: any) => m.name || m.model);
+
+    // Find the best available vision model based on our preference order
+    for (const preferred of VISION_MODEL_PREFERENCES) {
+      // Check for exact match or prefix match (e.g., "llava" matches "llava:latest")
+      const match = availableModels.find((m: string) =>
+        m === preferred ||
+        m.startsWith(preferred + ':') ||
+        m.startsWith(preferred.split(':')[0] + ':')
+      );
+      if (match) {
+        console.log(`[Vision] Detected vision model: ${match}`);
+        detectedModelCache.set(ollamaHost, { model: match, timestamp: Date.now() });
+        return match;
+      }
+    }
+
+    // Try to find any model with vision-related names
+    const visionKeywords = ['qwen3-vl', 'qwen2.5-vl', 'devstral', 'llava', 'vision', 'vl', 'bakllava', 'moondream', 'minicpm'];
+    for (const model of availableModels) {
+      const modelLower = model.toLowerCase();
+      if (visionKeywords.some(kw => modelLower.includes(kw))) {
+        console.log(`[Vision] Found vision model by keyword: ${model}`);
+        detectedModelCache.set(ollamaHost, { model, timestamp: Date.now() });
+        return model;
+      }
+    }
+
+    console.warn('[Vision] No vision model found on server. Available models:', availableModels.join(', '));
+    return null;
+  } catch (error: any) {
+    console.error('[Vision] Error detecting models:', error.message);
+    return null;
+  }
+}
+
+
+/**
+ * Get the vision model to use (configured, detected, or error)
+ */
+async function getVisionModel(ollamaHost: string, overrideModel?: string): Promise<string> {
+  // 1. Use explicit override if provided
+  if (overrideModel) {
+    return overrideModel;
+  }
+
+  // 2. Use environment variable if set
+  if (env.OLLAMA_VISION_MODEL) {
+    return env.OLLAMA_VISION_MODEL;
+  }
+
+  // 3. Auto-detect from available models
+  const detected = await detectVisionModel(ollamaHost);
+  if (detected) {
+    return detected;
+  }
+
+  // 4. Throw error - no vision model available
+  throw new TRPCError({
+    code: 'PRECONDITION_FAILED',
+    message: 'No vision model available. Please install a vision model on Ollama (e.g., ollama pull llava:13b) or set OLLAMA_VISION_MODEL environment variable.',
+  });
+}
 
 
 // Input schemas
@@ -160,7 +279,7 @@ export const visionRouter = createTRPCRouter({
     .output(visionResultSchema)
     .mutation(async ({ input }) => {
       const ollamaHost = input.ollamaHost || env.OLLAMA_API_HOST || DEFAULT_OLLAMA_HOST;
-      const model = input.visionModel || DEFAULT_VISION_MODEL;
+      const model = await getVisionModel(ollamaHost, input.visionModel);
       const prompt = buildAnalysisPrompt(input.question, input.detailLevel);
 
       const result = await callVisionModel(ollamaHost, model, input.imageBase64, prompt);
@@ -180,7 +299,7 @@ export const visionRouter = createTRPCRouter({
     .output(visionResultSchema)
     .mutation(async ({ input }) => {
       const ollamaHost = input.ollamaHost || env.OLLAMA_API_HOST || DEFAULT_OLLAMA_HOST;
-      const model = input.visionModel || DEFAULT_VISION_MODEL;
+      const model = await getVisionModel(ollamaHost, input.visionModel);
       const prompt = buildExtractionPrompt(input.contentType);
 
       const result = await callVisionModel(ollamaHost, model, input.imageBase64, prompt);
@@ -221,15 +340,21 @@ export const visionRouter = createTRPCRouter({
         const data = await response.json();
         const models = (data.models || [])
           .map((m: any) => m.name || m.model)
-          .filter((name: string) =>
+          .filter((name: string) => {
             // Filter for known vision models
-            name.includes('llava') ||
-            name.includes('bakllava') ||
-            name.includes('moondream') ||
-            name.includes('llama3.2-vision') ||
-            name.includes('qwen2.5-vl') ||
-            name.includes('minicpm-v')
-          );
+            const nameLower = name.toLowerCase();
+            return (
+              nameLower.includes('qwen3-vl') ||
+              nameLower.includes('qwen2.5-vl') ||
+              nameLower.includes('devstral') ||
+              nameLower.includes('llava') ||
+              nameLower.includes('bakllava') ||
+              nameLower.includes('moondream') ||
+              nameLower.includes('llama3.2-vision') ||
+              nameLower.includes('minicpm-v') ||
+              nameLower.includes('vision')
+            );
+          });
 
         return {
           available: models.length > 0,

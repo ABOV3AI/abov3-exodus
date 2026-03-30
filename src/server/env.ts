@@ -60,6 +60,7 @@ export const env = createEnv({
 
     // LLM: Ollama
     OLLAMA_API_HOST: z.url().optional(),
+    OLLAMA_VISION_MODEL: z.string().optional(),  // Vision model for image analysis (e.g., llava:13b, qwen2.5-vl:72b)
 
     // LLM: OpenPipe
     OPENPIPE_API_KEY: z.string().optional(),
@@ -97,6 +98,13 @@ export const env = createEnv({
     // Text-To-Speech: ABOV3 Pauline - pauline.ts
     PAULINE_ENDPOINT: z.string().optional(),
     PAULINE_VOICE_ID: z.string().optional(),
+
+
+    // NEPHESH Memory Embeddings
+    // Provider: 'ark-cloud' (default, uses api.abov3.ai) or 'openai'
+    EMBEDDING_PROVIDER: z.enum(['ark-cloud', 'openai']).optional(),
+    // Model for ARK Cloud (default: nomic-embed-text, 768 dimensions)
+    ARK_CLOUD_EMBEDDING_MODEL: z.string().optional(),
 
 
     // Backend: HTTP Basic Authentication

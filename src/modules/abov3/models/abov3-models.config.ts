@@ -49,14 +49,14 @@ export const ABOV3_MODELS: Record<string, ABOV3ModelConfig> = {
   exodus: {
     id: 'exodus',
     displayName: 'ABOV3-Exodus 2.1',
-    description: 'Workhorse — coding specialist with tools',
-    ollamaModel: 'qwen3.5:397b',  // Qwen3.5 397B - trying for tool calling support
+    description: 'Workhorse — coding specialist with vision + tools',
+    ollamaModel: 'qwen3.5:397b',  // Qwen3.5 397B - supports vision natively
     branded: true,
     tier: 'workhorse',
     icon: '⚡',
     contextWindow: 128000,
-    capabilities: ['tools', 'thinking', 'coding', 'multilingual'],
-    hasVision: false,
+    capabilities: ['vision', 'tools', 'thinking', 'coding', 'multilingual'],
+    hasVision: true,  // qwen3.5 natively supports vision
     hasTools: true,
   },
   elohim: {
@@ -103,14 +103,14 @@ export const ABOV3_MODELS: Record<string, ABOV3ModelConfig> = {
   'qwen3.5-397b-raw': {
     id: 'qwen3.5-397b-raw',
     displayName: 'Qwen3.5 397B (Raw)',
-    description: 'Large model — Raw, no ABOV3 system prompt',
+    description: 'Large model with vision — Raw, no ABOV3 system prompt',
     ollamaModel: 'qwen3.5:397b',
     branded: false,
     tier: 'workhorse',
     icon: '🧪',
     contextWindow: 128000,
-    capabilities: ['tools', 'thinking', 'coding', 'multilingual'],
-    hasVision: false,
+    capabilities: ['vision', 'tools', 'thinking', 'coding', 'multilingual'],
+    hasVision: true,  // qwen3.5 natively supports vision
     hasTools: true,
   },
   'gpt-oss-120b-raw': {
