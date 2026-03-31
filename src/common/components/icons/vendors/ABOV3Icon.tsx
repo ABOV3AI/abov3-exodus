@@ -7,11 +7,21 @@ export function ABOV3Icon(props: SvgIconProps) {
   const { fontSize, sx, ...otherProps } = props;
   const size = fontSize === 'xl' ? '32px' : fontSize === 'lg' ? '28px' : '24px';
 
+  // Track mounted state to avoid hydration mismatch
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Get current color mode to use appropriate icon
   const { mode, systemMode } = useColorScheme();
-  const isDarkMode = mode === 'dark' || (mode === 'system' && systemMode === 'dark');
 
-  // Use white icon on dark background for dark mode, black icon for light mode
+  // Determine dark mode - during SSR/initial render, default to light mode icon
+  // After hydration, use actual color scheme
+  const isDarkMode = mounted && (mode === 'dark' || (mode === 'system' && systemMode === 'dark'));
+
+  // Use white icon (with black background) for dark mode, black icon (transparent bg) for light mode
   const logoSrc = isDarkMode ? '/images/abov3-logo-white.png' : '/images/abov3-logo-black.png';
 
   return (
