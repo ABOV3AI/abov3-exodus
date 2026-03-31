@@ -14,25 +14,25 @@ export function ABOV3Icon(props: SvgIconProps) {
     setMounted(true);
   }, []);
 
-  // Get current color mode to use appropriate icon
+  // Get current color mode for CSS filter
   const { mode, systemMode } = useColorScheme();
 
-  // Determine dark mode - during SSR/initial render, default to light mode icon
+  // Determine dark mode - during SSR/initial render, default to light mode
   // After hydration, use actual color scheme
   const isDarkMode = mounted && (mode === 'dark' || (mode === 'system' && systemMode === 'dark'));
 
-  // Use white icon (with black background) for dark mode, black icon (transparent bg) for light mode
-  const logoSrc = isDarkMode ? '/images/abov3-logo-white.png' : '/images/abov3-logo-black.png';
-
   return (
     <img
-      src={logoSrc}
+      src='/images/abov3-logo-outline.png'
       alt='ABOV3'
       style={{
         width: size,
         height: size,
         objectFit: 'contain',
         borderRadius: '4px',
+        // Invert colors in dark mode to make gray outline appear white
+        filter: isDarkMode ? 'invert(1) brightness(2)' : 'none',
+        transition: 'filter 0.2s ease',
       }}
       className={otherProps.className}
       id={otherProps.id}
