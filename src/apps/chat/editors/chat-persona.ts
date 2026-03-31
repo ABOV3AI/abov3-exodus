@@ -13,6 +13,7 @@ import { getUXLabsHighPerformance } from '~/common/stores/store-ux-labs';
 import { PersonaChatMessageSpeak } from './persona/PersonaChatMessageSpeak';
 import { getChatAutoAI, getIsNotificationEnabledForModel } from '../store-app-chat';
 import { getInstantAppChatPanesCount } from '../components/panes/store-panes-manager';
+import { runImageGenerationUpdatingState } from './image-generate';
 
 // Tools integration - unified system
 import { useProjectsStore } from '~/apps/projects/store-projects';
@@ -365,6 +366,30 @@ export async function runPersonaOnConversationHead(
         // The AI needs to see the tool responses (including errors) to adjust its behavior
         await runPersonaOnConversationHead(assistantLlmId, conversationId);
         return true; // Return early as the recursive call will handle the rest
+      }
+    }
+  }
+
+  // Handle [[GENERATE_IMAGE: prompt]] markers from ABOV3 models
+  // These models use this special format to trigger built-in T2I instead of MCP tools
+  if (lastDeepCopy.fragments) {
+    const textFragments = lastDeepCopy.fragments.filter(frag => frag.part.pt === 'text');
+    for (const textFrag of textFragments) {
+      const part = textFrag.part;
+      if (part.pt !== 'text') continue;
+
+      const text = part.text;
+      // Match [[GENERATE_IMAGE: prompt]] pattern
+      const imageMatch = text.match(/\[\[GENERATE_IMAGE:\s*(.+?)\]\]/i);
+      if (imageMatch && imageMatch[1]) {
+        const imagePrompt = imageMatch[1].trim();
+        console.log('[Image Generation] Detected [[GENERATE_IMAGE:]] marker, prompt:', imagePrompt);
+
+        // Trigger the built-in T2I system (Pollinations or other configured provider)
+        await runImageGenerationUpdatingState(cHandler, imagePrompt);
+
+        // Continue without returning - let the conversation proceed normally
+        // The image will be appended as a new assistant message
       }
     }
   }
