@@ -44,8 +44,27 @@ export function ProjectsSidebar() {
   const [configProject, setConfigProject] = React.useState<Project | null>(null);
   const [configFullPath, setConfigFullPath] = React.useState('');
 
+  // Track mode changes
+  const [previousMode, setPreviousMode] = React.useState<typeof mode>(mode);
+
   const activeProject = getActiveProject();
   const isReadOnly = mode === 'research'; // Research mode is read-only
+
+  // Monitor mode changes and log notification
+  React.useEffect(() => {
+    if (previousMode !== mode) {
+      const modeNames = {
+        chat: 'Chat Mode',
+        research: 'Research Mode',
+        coding: 'Coding Mode',
+      };
+
+      console.log(`%c[Mode Switch] ${modeNames[previousMode]} → ${modeNames[mode]}`, 'color: #4CAF50; font-weight: bold');
+      console.log('%c[Mode Switch] The new mode will apply to your next message to the AI', 'color: #4CAF50');
+
+      setPreviousMode(mode);
+    }
+  }, [mode, previousMode]);
 
   // Refresh file tree when window regains focus (to catch external changes)
   React.useEffect(() => {
@@ -99,10 +118,6 @@ export function ProjectsSidebar() {
     };
   }, [isResizing]);
 
-  // State for new project path prompt
-  const [newProjectHandle, setNewProjectHandle] = React.useState<FileSystemDirectoryHandle | null>(null);
-  const [newProjectPath, setNewProjectPath] = React.useState('');
-
   const handleAddProject = async () => {
     try {
       // Request directory access using File System Access API
@@ -110,26 +125,32 @@ export function ProjectsSidebar() {
         mode: 'readwrite',
       });
 
-      // Store the handle
-      setNewProjectHandle(dirHandle);
+      // Add the project immediately (no modal)
+      await addProject(dirHandle);
 
-      // Try to auto-detect the full path via Eden MCP server
+      // Get the newly added project (it's the last one)
+      const projects = useProjectsStore.getState().projects;
+      const newProject = projects[projects.length - 1];
+
+      // Try to auto-detect the full path via Eden MCP server in the background
       // Eden runs on port 3100 by default (see abov3-eden/config.json)
-      try {
-        const response = await fetch('http://localhost:3100/api/find-folder', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ folderName: dirHandle.name }),
-        });
-        const data = await response.json();
-        if (data.success && data.path) {
-          setNewProjectPath(data.path);
-        } else {
-          setNewProjectPath(''); // Let user enter manually
+      if (newProject) {
+        try {
+          const response = await fetch('http://localhost:3100/api/find-folder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ folderName: dirHandle.name }),
+          });
+          const data = await response.json();
+          if (data.success && data.path) {
+            // Auto-detected - save the path silently
+            updateProject(newProject.id, { fullPath: data.path });
+            console.log(`[Projects] Auto-detected path for ${dirHandle.name}: ${data.path}`);
+          }
+        } catch {
+          // Eden not available - path can be configured later via settings icon
+          console.log(`[Projects] Path auto-detection unavailable for ${dirHandle.name}, can be configured via settings`);
         }
-      } catch {
-        // Eden not available, let user enter manually
-        setNewProjectPath('');
       }
     } catch (error: any) {
       // User cancelled or browser doesn't support File System Access API
@@ -138,26 +159,6 @@ export function ProjectsSidebar() {
         alert(`Failed to add project: ${error.message}`);
       }
     }
-  };
-
-  // Complete adding the project with the full path
-  const handleConfirmNewProject = async () => {
-    if (!newProjectHandle) return;
-
-    await addProject(newProjectHandle);
-
-    // If user provided a path, save it
-    if (newProjectPath.trim()) {
-      // Get the newly added project (it's the last one)
-      const projects = useProjectsStore.getState().projects;
-      const newProject = projects[projects.length - 1];
-      if (newProject) {
-        updateProject(newProject.id, { fullPath: newProjectPath.trim() });
-      }
-    }
-
-    setNewProjectHandle(null);
-    setNewProjectPath('');
   };
 
   const handleRequestPermission = async (projectId: string, projectName: string) => {
@@ -526,61 +527,6 @@ export function ProjectsSidebar() {
         </ModalDialog>
       </Modal>
 
-      {/* New Project Path Prompt Modal */}
-      <Modal
-        open={!!newProjectHandle}
-        onClose={() => {
-          setNewProjectHandle(null);
-          setNewProjectPath('');
-        }}
-      >
-        <ModalDialog sx={{ maxWidth: 550 }}>
-          <ModalClose />
-          <Typography level="h4" startDecorator={<FolderOpenIcon />}>
-            Add Project: {newProjectHandle?.name}
-          </Typography>
-          <Typography level="body-sm" sx={{ mt: 1, mb: 2 }}>
-            You selected the folder <strong>{newProjectHandle?.name}</strong>.
-            <br /><br />
-            Please enter the <strong>full path</strong> to this folder so AI tools can execute commands in the correct location.
-          </Typography>
-
-          <FormControl>
-            <FormLabel>Full Path to Folder</FormLabel>
-            <Input
-              value={newProjectPath}
-              onChange={(e) => setNewProjectPath(e.target.value)}
-              placeholder={`C:\\Users\\YourName\\...\\${newProjectHandle?.name}`}
-              sx={{ fontFamily: 'monospace' }}
-              autoFocus
-            />
-            <FormHelperText>
-              Copy the path from your file explorer&apos;s address bar.
-              <br />
-              <strong>Tip:</strong> In Windows Explorer, click the address bar to see the full path.
-            </FormHelperText>
-          </FormControl>
-
-          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', mt: 2 }}>
-            <Button
-              variant="plain"
-              color="neutral"
-              onClick={() => {
-                setNewProjectHandle(null);
-                setNewProjectPath('');
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleConfirmNewProject}
-              disabled={!newProjectPath.trim()}
-            >
-              Add Project
-            </Button>
-          </Box>
-        </ModalDialog>
-      </Modal>
     </Box>
   );
 }
