@@ -60,6 +60,7 @@ type TextToImageVendor =
   | 'gemini'
   | 'localai'
   | 'openai'
+  | 'pollinations'
   | 'xai'
   ;
 

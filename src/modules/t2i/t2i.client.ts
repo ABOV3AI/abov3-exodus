@@ -17,6 +17,8 @@ import { shallowEquals } from '~/common/util/hooks/useShallowObject';
 
 import type { T2iCreateImageOutput } from './t2i.server';
 import { openAIGenerateImagesOrThrow, openAIImageModelsCurrentGeneratorName } from './dalle/openaiGenerateImages';
+import { pollinationsGenerateImagesOrThrow, pollinationsCurrentGeneratorName } from './pollinations/pollinationsGenerateImages';
+import { usePollinationsStore } from './pollinations/store-module-pollinations';
 import { useTextToImageStore } from './store-module-t2i';
 
 
@@ -109,6 +111,11 @@ async function _t2iGenerateImagesOrThrow({ providerId, vendor }: TextToImageProv
       if (!providerId)
         throw new Error('No OpenAI Model Service configured for TextToImage');
       return await openAIGenerateImagesOrThrow(providerId, prompt, aixInlineImageParts, count);
+
+    case 'pollinations':
+      // Pollinations.ai - free, no API key required
+      const pollinationsSettings = usePollinationsStore.getState().getSettings();
+      return await pollinationsGenerateImagesOrThrow(prompt, count, pollinationsSettings);
 
     case 'xai':
       throw new Error('xAI image generation integration coming soon');
@@ -211,10 +218,11 @@ function _findLlmsT2IServices(llms: ReadonlyArray<DLLM>, services: ReadonlyArray
 
 // Vendor priority system for auto-selection (lower number = higher priority)
 const T2I_VENDOR_PRIORITIES = {
-  openai: 1,    // highest priority (mature, reliable)
-  gemini: 2,    // second (Google Imagen - future)
-  xai: 3,       // third (Grok vision - future reference)
-  localai: 9,   // lowest (experimental)
+  openai: 1,      // highest priority (mature, reliable)
+  pollinations: 2, // second (free, no API key, always available)
+  gemini: 3,      // third (Google Imagen - future)
+  xai: 4,         // fourth (Grok vision - future reference)
+  localai: 9,     // lowest (experimental)
 } as const;
 
 
@@ -254,8 +262,15 @@ function _getTextToImageProviders(llmsModelServices: T2ILlmsModelServices[]) {
     }
   }
 
-  // Insert other services here if needed (non-LLM/Service based)
-  // ... (e.g. we used to have Prodia here)
+  // Add Pollinations.ai - always available, no API key required
+  providers.push({
+    providerId: 'pollinations',
+    label: 'Pollinations.ai',
+    painter: pollinationsCurrentGeneratorName(),
+    description: 'Free image generation - no API key required',
+    configured: true, // Always configured (no API key needed)
+    vendor: 'pollinations',
+  });
 
   // Sort providers by vendor priority (then by label for deterministic ordering)
   return providers.sort((a, b) => {

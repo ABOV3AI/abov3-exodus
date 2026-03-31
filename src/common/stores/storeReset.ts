@@ -27,6 +27,7 @@ import { useElevenlabsStore } from '~/modules/elevenlabs/store-module-elevenlabs
 import { useGoogleSearchStore } from '~/modules/google/store-module-google';
 import { useTextToImageStore } from '~/modules/t2i/store-module-t2i';
 import { useDalleStore } from '~/modules/t2i/dalle/store-module-dalle';
+import { usePollinationsStore } from '~/modules/t2i/pollinations/store-module-pollinations';
 import { useAppPersonasStore } from '~/apps/personas/store-app-personas';
 import { usePurposeStore } from '~/apps/chat/components/persona-selector/store-purposes';
 
@@ -238,6 +239,22 @@ export function resetDalleStore(): void {
     dalleSizeD2: '1024x1024',
   });
   console.log('[StoreReset] DALL-E store reset');
+}
+
+
+/**
+ * Reset Pollinations settings to defaults
+ */
+export function resetPollinationsStore(): void {
+  usePollinationsStore.setState({
+    model: 'flux',
+    width: 1024,
+    height: 1024,
+    seed: undefined,
+    nologo: true,
+    enhance: true,
+  });
+  console.log('[StoreReset] Pollinations store reset');
 }
 
 
@@ -490,6 +507,7 @@ export async function clearIndexedDBStores(): Promise<void> {
     'app-module-google-search',
     'app-module-t2i',
     'app-module-dalle',
+    'app-module-pollinations',
     'app-module-pauline',
     'app-module-browse',
     // Additional stores for complete user isolation
@@ -545,6 +563,7 @@ export async function resetAllUserStores(): Promise<void> {
   resetGoogleSearchStore();
   resetT2IStore();
   resetDalleStore();
+  resetPollinationsStore();
   resetPersonasStore();
   resetPurposesStore();
 

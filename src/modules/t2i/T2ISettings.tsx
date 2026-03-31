@@ -1,10 +1,12 @@
 import * as React from 'react';
 
-import { Alert } from '@mui/joy';
+import { Alert, Box } from '@mui/joy';
 
 import { FormChipControl } from '~/common/components/forms/FormChipControl';
 import { FormRadioOption } from '~/common/components/forms/FormRadioControl';
 import { useCapabilityTextToImage } from '~/common/components/useCapabilities';
+
+import { PollinationsSettings } from './pollinations/PollinationsSettings';
 
 
 export function T2ISettings() {
@@ -16,6 +18,9 @@ export function T2ISettings() {
     activeProviderId,
     setActiveProviderId,
   } = useCapabilityTextToImage();
+
+  // Check if Pollinations is the active provider
+  const isPollinationsActive = activeProviderId === 'pollinations';
 
 
   // derived state
@@ -43,14 +48,23 @@ export function T2ISettings() {
 
     ) : (
 
-      <FormChipControl
-        title='Text-to-Image'
-        description='Active Service'
-        // tooltip='Select the service to use for text-to-image generation.'
-        disabled={!mayWork}
-        options={providerOptions}
-        value={activeProviderId ?? undefined} onChange={setActiveProviderId}
-      />
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <FormChipControl
+          title='Text-to-Image'
+          description='Active Service'
+          // tooltip='Select the service to use for text-to-image generation.'
+          disabled={!mayWork}
+          options={providerOptions}
+          value={activeProviderId ?? undefined} onChange={setActiveProviderId}
+        />
+
+        {/* Show Pollinations settings when active */}
+        {isPollinationsActive && (
+          <Box sx={{ mt: 1, pl: 1, borderLeft: '2px solid', borderColor: 'primary.softBg' }}>
+            <PollinationsSettings />
+          </Box>
+        )}
+      </Box>
 
     )}
 
