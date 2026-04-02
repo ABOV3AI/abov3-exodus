@@ -42,8 +42,8 @@ export const SEARXNG_INSTANCES = [
 export const useWebToolsStore = create<WebToolsState>()(
   persist(
     (set) => ({
-      // Default to SearXNG (no API key required!)
-      searchProvider: 'auto',
+      // Default to DuckDuckGo (free, reliable, no API key required!)
+      searchProvider: 'duckduckgo',
       setSearchProvider: (provider) => set({ searchProvider: provider }),
 
       // Default to a reliable public instance
@@ -60,12 +60,12 @@ export const useWebToolsStore = create<WebToolsState>()(
     }),
     {
       name: 'app-web-tools',
-      version: 2,
+      version: 3,
       migrate: (persistedState: any, version: number) => {
-        // Migrate from v1: if Google is set but not configured, switch to auto
-        if (version < 2 && persistedState?.searchProvider === 'google') {
-          console.log('[Web Tools] Migrating from Google to auto search provider');
-          persistedState.searchProvider = 'auto';
+        // Migrate from v1/v2: if Google or auto is set, switch to DuckDuckGo
+        if (version < 3 && (persistedState?.searchProvider === 'google' || persistedState?.searchProvider === 'auto')) {
+          console.log('[Web Tools] Migrating to DuckDuckGo search provider');
+          persistedState.searchProvider = 'duckduckgo';
         }
         return persistedState;
       },
