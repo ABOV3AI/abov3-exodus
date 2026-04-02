@@ -60,7 +60,15 @@ export const useWebToolsStore = create<WebToolsState>()(
     }),
     {
       name: 'app-web-tools',
-      version: 1,
+      version: 2,
+      migrate: (persistedState: any, version: number) => {
+        // Migrate from v1: if Google is set but not configured, switch to auto
+        if (version < 2 && persistedState?.searchProvider === 'google') {
+          console.log('[Web Tools] Migrating from Google to auto search provider');
+          persistedState.searchProvider = 'auto';
+        }
+        return persistedState;
+      },
     }
   )
 );
