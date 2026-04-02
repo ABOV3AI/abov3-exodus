@@ -81,14 +81,55 @@ function extractMCPToolName(toolId: string): string | null {
 }
 
 /**
+ * Check if an error is a stale file handle error
+ * This occurs when the file system state changed since the handle was acquired
+ */
+function isStaleHandleError(error: any): boolean {
+  const message = error?.message?.toLowerCase() || '';
+  return message.includes('state cached') ||
+         message.includes('state had changed') ||
+         message.includes('interface object') ||
+         error?.name === 'InvalidStateError' ||
+         error?.name === 'NotFoundError';
+}
+
+/**
+ * Request fresh permission for a directory handle
+ */
+async function refreshHandlePermission(handle: FileSystemDirectoryHandle): Promise<boolean> {
+  try {
+    const permission = await handle.requestPermission({ mode: 'readwrite' });
+    return permission === 'granted';
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Execute MCP file tools locally using browser's File System Access API
+ * Includes automatic retry for stale handle errors
  */
 async function executeLocalFileOperation(
   toolName: string,
   args: Record<string, unknown>,
-  projectHandle: FileSystemDirectoryHandle
+  projectHandle: FileSystemDirectoryHandle,
+  isRetry: boolean = false
 ): Promise<ToolExecutionResult> {
   try {
+    // Before operations, verify we have permission (helps prevent stale errors)
+    if (!isRetry) {
+      const permission = await projectHandle.queryPermission({ mode: 'readwrite' });
+      if (permission !== 'granted') {
+        const granted = await refreshHandlePermission(projectHandle);
+        if (!granted) {
+          return {
+            error: 'File system permission lost. Please re-select the project folder.',
+            metadata: { requiresReselect: true }
+          };
+        }
+      }
+    }
+
     switch (toolName) {
       case 'read_file': {
         const filePath = args.path as string;
@@ -237,6 +278,19 @@ async function executeLocalFileOperation(
         return { error: `Unknown file operation: ${toolName}` };
     }
   } catch (error: any) {
+    // Check for stale handle errors and retry once with permission refresh
+    if (!isRetry && isStaleHandleError(error)) {
+      console.log('[Tools] Detected stale file handle, attempting to refresh permission and retry...');
+      const refreshed = await refreshHandlePermission(projectHandle);
+      if (refreshed) {
+        // Retry the operation
+        return executeLocalFileOperation(toolName, args, projectHandle, true);
+      }
+      return {
+        error: 'File system handle became stale. Please re-select the project folder to continue.',
+        metadata: { requiresReselect: true }
+      };
+    }
     return { error: `File operation failed: ${error.message}` };
   }
 }
