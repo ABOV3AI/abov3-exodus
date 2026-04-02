@@ -211,10 +211,10 @@ export const webToolsRouter = createTRPCRouter({
       }
 
       if (provider === 'google') {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Google search requires configuration in Settings → Services → Google Search',
-        });
+        // Google requires API keys - automatically fall back to free search
+        // This handles users with old localStorage settings
+        console.log('[WebTools] Google search requested but not configured, falling back to auto');
+        return await searchAutoServer(query, numResults ?? 10, searxngInstance);
       }
 
       throw new TRPCError({
